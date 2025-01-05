@@ -1,0 +1,27 @@
+package com.example.project.domain.boardartletter.entity;
+
+import com.example.project.common.entity.BaseEntity;
+import com.example.project.domain.artletter.entity.Artletter;
+import com.example.project.domain.board.entity.Board;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "BoardArtletter")
+public class BoardArtletter extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long boardLetterId;
+
+    @ManyToOne
+    @JoinColumn(name = "board_id", nullable = false)
+    private Board board;
+
+    @ManyToOne
+    @JoinColumn(name = "letter_id", nullable = false)
+    private Artletter artletter;
+}
