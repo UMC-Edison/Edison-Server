@@ -1,8 +1,6 @@
-package com.example.project.domain.boardartletter.entity;
+package com.example.project.domain.board.entity;
 
-import com.example.project.common.entity.BaseEntity;
 import com.example.project.domain.artletter.entity.Artletter;
-import com.example.project.domain.board.entity.Board;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +9,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "BoardArtletter")
-public class BoardArtletter extends BaseEntity {
+public class BoardArtletter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

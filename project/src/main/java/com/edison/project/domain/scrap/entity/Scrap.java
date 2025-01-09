@@ -1,6 +1,5 @@
 package com.example.project.domain.scrap.entity;
 
-import com.example.project.common.entity.BaseEntity;
 import com.example.project.domain.artletter.entity.Artletter;
 import com.example.project.domain.member.entity.Member;
 import jakarta.persistence.*;
@@ -11,7 +10,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "Scrap")
-public class Scrap extends BaseEntity {
+public class Scrap {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

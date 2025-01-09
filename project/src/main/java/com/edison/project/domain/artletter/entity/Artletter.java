@@ -8,7 +8,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Artletter")
+@Table(name = "Artletter", indexes = {
+        @Index(name = "idx_artletter_title", columnList = "title"),
+        @Index(name = "idx_artletter_writer", columnList = "writer")
+})
+
 public class Artletter extends BaseEntity {
 
     @Id
@@ -17,6 +21,8 @@ public class Artletter extends BaseEntity {
 
     private String title;
     private String content;
+    private String writer;
+    private int readTime;
     private String tag;
 
     @Enumerated(EnumType.STRING)

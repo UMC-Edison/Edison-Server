@@ -1,6 +1,6 @@
 package com.example.project.domain.board.entity;
 
-import com.example.project.common.entity.BaseEntity;
+import com.example.project.domain.common.entity.BaseEntity;
 import com.example.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Getter;

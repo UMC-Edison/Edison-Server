@@ -1,6 +1,6 @@
 package com.example.project.domain.bubble.entity;
 
-import com.example.project.common.entity.BaseEntity;
+import com.example.project.domain.common.entity.BaseEntity;
 import com.example.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -22,4 +22,13 @@ public class Bubble extends BaseEntity {
 
     private String title;
     private String content;
+    private String mainImg;
+    private boolean isDeleted;
+
+    @ManyToOne
+    @JoinColumn(name = "linked_bubble")
+    private Bubble linkedBubble;
+
 }
+
+
