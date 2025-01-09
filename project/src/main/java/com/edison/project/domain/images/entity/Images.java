@@ -1,6 +1,5 @@
 package com.example.project.domain.images.entity;
 
-import com.example.project.common.entity.BaseEntity;
 import com.example.project.domain.artletter.entity.Artletter;
 import com.example.project.domain.board.entity.Board;
 import com.example.project.domain.bubble.entity.Bubble;
@@ -12,7 +11,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "Images")
-public class Images extends BaseEntity {
+public class Images {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
