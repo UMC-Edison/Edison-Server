@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 
 @Getter
 @RequiredArgsConstructor
@@ -18,6 +19,7 @@ public class ApiResponse {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final PageInfo pageInfo;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Object result;
 
@@ -54,6 +56,10 @@ public class ApiResponse {
     public static ResponseEntity<ApiResponse> onFailure(ErrorStatus error) {
         return new ResponseEntity<>(
                 new ApiResponse(false, error.getCode(), error.getMessage(), null, null), error.getHttpStatus());
+    }
+
+    public static ResponseEntity<ApiResponse> onFailure(ErrorStatus error, String message) {
+        return new ResponseEntity<>(new ApiResponse(false, error.getCode(), error.getMessage(message), null, null), error.getHttpStatus());
     }
 
 }
