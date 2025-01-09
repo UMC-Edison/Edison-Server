@@ -26,5 +26,7 @@ public class Member extends BaseEntity {
     private boolean isDeleted;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Bubble> bubbles = new ArrayList<>();
+    private List<Bubble> bubbles = new: ArrayList<>();
+
+    private String providerId; // 구글 로그인 식별 용도
 }
