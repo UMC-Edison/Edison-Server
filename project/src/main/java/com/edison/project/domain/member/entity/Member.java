@@ -1,9 +1,13 @@
 package com.example.project.domain.member.entity;
 
 import com.example.project.domain.common.entity.BaseEntity;
+import com.example.project.domain.bubble.entity.Bubble;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -17,16 +21,21 @@ public class Member extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "member_id")
     private Long memberId;
 
+    @Column(name = "nickname", nullable = false, length = 50)
     private String nickname;
-    private String email;
-    private String password;
 
+    @Column(name = "email", nullable = false, unique = true, length = 100)
+    private String email;
+
+    @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Bubble> bubbles = new: ArrayList<>();
+    private List<Bubble> bubbles = new ArrayList<>();
 
+    @Column(name = "provider_id", length = 100)
     private String providerId; // 구글 로그인 식별 용도
 }

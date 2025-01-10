@@ -8,18 +8,22 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "BoardArtletter")
+@Table(name = "BoardArtletter", indexes = {
+        @Index(name = "idx_board_artletter_board_id", columnList = "board_id"),
+        @Index(name = "idx_board_artletter_letter_id", columnList = "letter_id")
+})
 public class BoardArtletter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "board_letter_id")
     private Long boardLetterId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", nullable = false)
     private Board board;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "letter_id", nullable = false)
     private Artletter artletter;
 }

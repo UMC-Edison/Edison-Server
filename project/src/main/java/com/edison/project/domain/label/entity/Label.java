@@ -13,11 +13,14 @@ public class Label extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "label_id")
     private Long labelId;
 
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "color", nullable = false)
     private LabelColor color;
 
     public enum LabelColor {
