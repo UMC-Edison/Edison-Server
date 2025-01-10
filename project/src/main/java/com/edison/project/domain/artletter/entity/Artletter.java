@@ -1,6 +1,6 @@
 package com.edison.project.domain.artletter.entity;
 
-import com.example.project.domain.common.entity.BaseEntity;
+import com.edison.project.domain.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

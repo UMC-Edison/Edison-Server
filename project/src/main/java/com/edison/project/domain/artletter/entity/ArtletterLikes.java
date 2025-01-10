@@ -1,6 +1,6 @@
 package com.edison.project.domain.artletter.entity;
 
-import com.example.project.domain.member.entity.Member;
+import com.edison.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
