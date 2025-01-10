@@ -1,7 +1,7 @@
-package com.example.project.domain.bubble.entity;
+package com.edison.project.domain.bubble.entity;
 
-import com.example.project.domain.common.entity.BaseEntity;
-import com.example.project.domain.member.entity.Member;
+import com.edison.project.domain.common.entity.BaseEntity;
+import com.edison.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

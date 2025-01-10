@@ -1,4 +1,4 @@
-package com.example.project.domain.member.entity;
+package com.edison.project.domain.member.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

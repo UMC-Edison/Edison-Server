@@ -1,7 +1,7 @@
-package com.example.project.domain.scrap.entity;
+package com.edison.project.domain.scrap.entity;
 
-import com.example.project.domain.artletter.entity.Artletter;
-import com.example.project.domain.member.entity.Member;
+import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
