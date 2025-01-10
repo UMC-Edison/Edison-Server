@@ -1,6 +1,6 @@
-package com.example.project.domain.bubble.entity;
+package com.edison.project.domain.bubble.entity;
 
-import com.example.project.domain.label.entity.Label;
+import com.edison.project.domain.label.entity.Label;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

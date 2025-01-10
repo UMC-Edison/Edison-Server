@@ -1,4 +1,4 @@
-package com.example.project.domain.common.entity;
+package com.edison.project.domain.common.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

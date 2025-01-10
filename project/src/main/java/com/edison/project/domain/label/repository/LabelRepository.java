@@ -1,6 +1,6 @@
-package com.example.project.domain.label.repository;
+package com.edison.project.domain.label.repository;
 
-import com.example.project.domain.label.entity.Label;
+import com.edison.project.domain.label.entity.Label;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface LabelRepository extends JpaRepository<Label, Long> {
