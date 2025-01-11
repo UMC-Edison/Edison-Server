@@ -22,7 +22,14 @@ public enum ErrorStatus {
 
     // 멤버 관려 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
-    NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다.");
+    NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
+
+    // 버블 관련 애러
+    BUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4001", "버블을 찾을 수 없습니다."),
+
+    // 라벨 관련 에러
+    LABELS_TOO_MANY(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨 개수는 최대 3개까지 가능합니다."),
+    LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

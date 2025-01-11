@@ -16,7 +16,7 @@ public class BubbleLabel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "bubble_label_id")
-    private Integer bubbleLabelId;
+    private Long bubbleLabelId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bubble_id", nullable = false)
