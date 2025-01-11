@@ -27,7 +27,11 @@ public enum ErrorStatus {
     // 라벨 관련 에러
 
     LABEL_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨 이름은 최대 20자까지 가능합니다."),
-    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상입니다.");
+    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상입니다."),
+
+    // 아트보드 관련 에러
+    KEYWORD_IS_NOT_VALID(HttpStatus.BAD_REQUEST, "LETTER4001", "입력값이 존재하지 않습니다."),
+    RESULT_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4002", "검색 결과가 존재하지 않습니다.");
 
 
     private final HttpStatus httpStatus;
