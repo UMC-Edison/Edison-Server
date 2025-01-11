@@ -3,11 +3,12 @@ package com.edison.project.domain.bubble.entity;
 import com.edison.project.domain.common.entity.BaseEntity;
 import com.edison.project.domain.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
+import java.util.Set;
 
 @Getter
-@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "Bubble", indexes = {
         @Index(name = "idx_bubble_member_id", columnList = "member_id"),
@@ -39,6 +40,19 @@ public class Bubble extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "linked_bubble")
     private Bubble linkedBubble;
+
+    @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BubbleLabel> labels;
+
+    @Builder
+    public Bubble(Member member, String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> labels) {
+        this.member = member;
+        this.title = title;
+        this.content = content;
+        this.mainImg = mainImg;
+        this.linkedBubble = linkedBubble;
+        this.labels = labels;
+    }
 
 }
 
