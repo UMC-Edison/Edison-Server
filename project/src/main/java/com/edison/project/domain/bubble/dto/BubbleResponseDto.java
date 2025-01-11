@@ -4,6 +4,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 public class BubbleResponseDto {
 
@@ -16,9 +17,9 @@ public class BubbleResponseDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private List<Long> labels;
-        private Long likedBubble;
-        private LocalDateTime createAt;
-        private LocalDateTime updateAt;
+        private Set<Long> labels;
+        private Long linkedBubbleId;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
     }
 }

@@ -5,6 +5,7 @@ import com.edison.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -41,8 +42,8 @@ public class Bubble extends BaseEntity {
     @JoinColumn(name = "linked_bubble")
     private Bubble linkedBubble;
 
-    @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<BubbleLabel> labels;
+    @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private Set<BubbleLabel> labels = new HashSet<>();
 
     @Builder
     public Bubble(Member member, String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> labels) {
@@ -51,6 +52,10 @@ public class Bubble extends BaseEntity {
         this.content = content;
         this.mainImg = mainImg;
         this.linkedBubble = linkedBubble;
+        this.labels = labels;
+    }
+
+    public void setLabels(Set<BubbleLabel> labels) {
         this.labels = labels;
     }
 

@@ -17,10 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,56 +33,41 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public BubbleResponseDto.CreateResultDto createBubble(BubbleRequestDto.CreateDto requestDto) {
-        //요청 데이터 확인을 위한 로그 출력
-        log.info("📥 [Bubble Create Request] memberId: {}, title: {}, linkedBubbleId: {}, labels: {}",
-                requestDto.getMemberId(), requestDto.getTitle(), requestDto.getLinkedBubble(), requestDto.getLabels());
-
-
         // Member 조회
         Member member = memberRepository.findById(requestDto.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         // linkedBubble 검증
         Bubble linkedBubble = null;
-        if (requestDto.getLinkedBubble() != null) {
-            linkedBubble = bubbleRepository.findById(requestDto.getLinkedBubble())
+        if (requestDto.getLinkedBubbleId() != null) {
+            linkedBubble = bubbleRepository.findById(requestDto.getLinkedBubbleId())
                     .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
         }
 
-        // 라벨 검증 - null이면 빈 리스트 할당, 3개 제한
-        List<Long> labelIds = requestDto.getLabels() != null ? requestDto.getLabels() : new ArrayList<>();
-        if (labelIds.size() > 3) {
-            throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
-        }
+        // 라벨 검증
+        Set<Long> labelIds = Optional.ofNullable(requestDto.getLabels()).orElse(Collections.emptySet());
+        if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
 
-        List<Label> labels = labelRepository.findAllById(labelIds);
-        if (labels.size() != labelIds.size()) {
-            throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
-        }
+        Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
+        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
 
-        // 버블 생성
-        Bubble bubble = Bubble.builder()
+        // 버블 생성 및 저장
+        Bubble savedBubble = bubbleRepository.save(Bubble.builder()
                 .member(member)
                 .title(requestDto.getTitle())
                 .content(requestDto.getContent())
                 .mainImg(requestDto.getMainImageUrl())
                 .linkedBubble(linkedBubble)
-                .build();
+                .labels(new HashSet<>()) // 초기화
+                .build());
 
-        Bubble savedBubble = bubbleRepository.save(bubble);
+        // 라벨과 버블 매핑 후 저장
+        Set<BubbleLabel> bubbleLabels = labels.stream()
+                .map(label -> BubbleLabel.builder().bubble(savedBubble).label(label).build())
+                .collect(Collectors.toSet());
 
-        // 라벨 저장
-        Set<BubbleLabel> bubbleLabels = new HashSet<>();
-        if (!labelIds.isEmpty()) {
-
-            bubbleLabels = labels.stream()
-                    .map(label -> BubbleLabel.builder()
-                            .bubble(savedBubble)
-                            .label(label)
-                            .build())
-                    .collect(Collectors.toSet());
-            bubbleLabelRepository.saveAll(bubbleLabels);
-        }
+        bubbleLabelRepository.saveAll(bubbleLabels);
+        savedBubble.getLabels().addAll(bubbleLabels);
 
         // ResponseDto 반환
         return BubbleResponseDto.CreateResultDto.builder()
@@ -94,9 +76,9 @@ public class BubbleServiceImpl implements BubbleService {
                 .content(savedBubble.getContent())
                 .mainImageUrl(savedBubble.getMainImg())
                 .labels(labelIds)
-                .likedBubble(linkedBubble != null ? linkedBubble.getBubbleId() : null)
-                .createAt(savedBubble.getCreatedAt())
-                .updateAt(savedBubble.getUpdatedAt())
+                .linkedBubbleId(Optional.ofNullable(linkedBubble).map(Bubble::getBubbleId).orElse(null))
+                .createdAt(savedBubble.getCreatedAt())
+                .updatedAt(savedBubble.getUpdatedAt())
                 .build();
     }
 

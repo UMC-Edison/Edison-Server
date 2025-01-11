@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Set;
 
 @Getter
 public class BubbleRequestDto {
@@ -15,11 +16,12 @@ public class BubbleRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateDto {
+
         private Long memberId;
         private String title;
         private String content;
         private String mainImageUrl;
-        private List<Long> labels;
-        private Long linkedBubble;
+        private Set<Long> labels;  // 중복 방지
+        private Long linkedBubbleId;
     }
 }
