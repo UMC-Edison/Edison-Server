@@ -79,4 +79,13 @@ public class LabelCommandServiceImpl implements LabelCommandService {
                 .color(updatedLabel.getColor().name())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public void deleteLabel(Long labelId) {
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LABEL_NOT_FOUND));
+
+        labelRepository.deleteById(label.getLabelId());
+    }
 }

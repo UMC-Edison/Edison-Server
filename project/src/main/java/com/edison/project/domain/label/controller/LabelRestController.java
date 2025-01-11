@@ -6,6 +6,7 @@ import com.edison.project.domain.label.dto.LabelRequestDTO;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.service.LabelCommandService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,5 +29,12 @@ public class LabelRestController {
             @RequestBody @Valid LabelRequestDTO.CreateDto request) {
         LabelResponseDTO.CreateResultDto response = labelCommandService.updateLabel(labelId, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    @DeleteMapping("/{labelId}")
+    public ResponseEntity<ApiResponse> deleteLabel(@PathVariable @NotNull Long labelId) {
+        labelCommandService.deleteLabel(labelId);
+        return ApiResponse.onSuccess(SuccessStatus._OK);
+
     }
 }
