@@ -2,13 +2,14 @@ package com.edison.project.domain.label.entity;
 
 import com.edison.project.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "Label")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Label extends BaseEntity {
 
     @Id
