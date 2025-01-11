@@ -5,6 +5,7 @@ import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.label.dto.LabelRequestDTO;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.service.LabelCommandService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +17,7 @@ public class LabelRestController {
     private final LabelCommandService labelCommandService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse> createLabel(@RequestBody LabelRequestDTO.CreateDto request) {
+    public ResponseEntity<ApiResponse> createLabel(@RequestBody @Valid LabelRequestDTO.CreateDto request) {
         LabelResponseDTO.CreateResultDto response = labelCommandService.createLabel(request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
