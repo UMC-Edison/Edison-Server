@@ -21,4 +21,12 @@ public class LabelRestController {
         LabelResponseDTO.CreateResultDto response = labelCommandService.createLabel(request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
+
+    @PatchMapping("/{labelId}")
+    public ResponseEntity<ApiResponse> updateLabel(
+            @PathVariable Long labelId,
+            @RequestBody @Valid LabelRequestDTO.CreateDto request) {
+        LabelResponseDTO.CreateResultDto response = labelCommandService.updateLabel(labelId, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
 }

@@ -46,4 +46,37 @@ public class LabelCommandServiceImpl implements LabelCommandService {
                 .color(savedLabel.getColor().name())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public LabelResponseDTO.CreateResultDto updateLabel(Long labelId, LabelRequestDTO.CreateDto request) {
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LABEL_NOT_FOUND));
+
+        // **중복: 라벨 이름 길이 검증
+        if (request.getName().length() > 20) {
+            throw new GeneralException(ErrorStatus.LABEL_NAME_TOO_LONG);
+        }
+
+        // **중복: 라벨 색상 Enum 값 검증
+        try {
+            Label.LabelColor.valueOf(request.getColor());
+        } catch (IllegalArgumentException e) {
+            throw new GeneralException(ErrorStatus.INVALID_COLOR);
+        }
+
+        Label updatedLabel = label.toBuilder()
+                .name(request.getName())
+                .color(Label.LabelColor.valueOf(request.getColor()))
+                .build();
+
+        labelRepository.save(updatedLabel);
+
+        // **중복
+        return LabelResponseDTO.CreateResultDto.builder()
+                .id(updatedLabel.getLabelId())
+                .name(updatedLabel.getName())
+                .color(updatedLabel.getColor().name())
+                .build();
+    }
 }
