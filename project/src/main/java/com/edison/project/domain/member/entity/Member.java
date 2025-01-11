@@ -1,6 +1,6 @@
 package com.edison.project.domain.member.entity;
 
-import com.edison.project.domain.common.entity.BaseEntity;
+import com.edison.project.global.common.entity.BaseEntity;
 import com.edison.project.domain.bubble.entity.Bubble;
 import jakarta.persistence.*;
 import lombok.Getter;
