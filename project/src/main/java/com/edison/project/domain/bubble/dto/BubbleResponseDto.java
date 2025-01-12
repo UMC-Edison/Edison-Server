@@ -22,4 +22,22 @@ public class BubbleResponseDto {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DeleteResultDto {
+        private Long bubbleId;
+        private boolean isDeleted;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RestoreResultDto {
+        private Long bubbleId;
+        private boolean isRestored;
+    }
 }

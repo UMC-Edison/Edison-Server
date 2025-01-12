@@ -59,6 +59,10 @@ public class Bubble extends BaseEntity {
         this.labels = labels;
     }
 
+    public void setDeleted(boolean deleted) {
+        this.isDeleted = deleted;
+    }
+
 }
 
 
