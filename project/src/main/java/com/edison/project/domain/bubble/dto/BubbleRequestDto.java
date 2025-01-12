@@ -24,4 +24,22 @@ public class BubbleRequestDto {
         private Set<Long> labelIds;  // 중복 방지
         private Long linkedBubbleId;
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DeleteDto {
+        private Long memberId;
+        private Long bubbleId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RestoreDto {
+        private Long memberId;
+        private Long bubbleId;;
+    }
 }

@@ -8,10 +8,7 @@ import com.edison.project.domain.bubble.service.BubbleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/bubbles")
@@ -19,10 +16,30 @@ import org.springframework.web.bind.annotation.RestController;
 public class BubbleRestController {
     private final BubbleService bubbleService;
 
+    // 버블 생성
     @PostMapping
     public ResponseEntity<ApiResponse> createBubble(@RequestBody @Valid BubbleRequestDto.CreateDto request) {
         BubbleResponseDto.CreateResultDto response = bubbleService.createBubble(request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
 
+    //버블 삭제
+    @PatchMapping("/{bubbleId}/delete")
+    public ResponseEntity<ApiResponse> deleteBubble(
+            @PathVariable Long bubbleId,
+            @RequestBody @Valid BubbleRequestDto.DeleteDto request) {
+        request.setBubbleId(bubbleId);
+        BubbleResponseDto.DeleteResultDto result = bubbleService.deleteBubble(request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
+
+    //버블 복원
+    @PatchMapping("/{bubbleId}/restore")
+    public ResponseEntity<ApiResponse> restoreBubble(
+            @PathVariable Long bubbleId,
+            @RequestBody @Valid BubbleRequestDto.RestoreDto request) {
+        request.setBubbleId(bubbleId);
+        BubbleResponseDto.RestoreResultDto result = bubbleService.restoreBubble(request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 }

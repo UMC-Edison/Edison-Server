@@ -82,4 +82,49 @@ public class BubbleServiceImpl implements BubbleService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public BubbleResponseDto.DeleteResultDto deleteBubble(BubbleRequestDto.DeleteDto requestDto) {
+
+        // Bubble 조회
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(requestDto.getBubbleId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 삭제 권한 확인
+        if (!bubble.getMember().getMemberId().equals(requestDto.getMemberId())) {
+            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+        }
+
+        bubble.setDeleted(true);
+        bubbleRepository.save(bubble);
+
+        return BubbleResponseDto.DeleteResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .isDeleted(bubble.isDeleted())
+                .build();
+    }
+
+    // 버블 복원
+    @Override
+    @Transactional
+    public BubbleResponseDto.RestoreResultDto restoreBubble(BubbleRequestDto.RestoreDto requestDto) {
+
+        // Bubble 조회
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(requestDto.getBubbleId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 복원 권한 확인
+        if(!bubble.getMember().getMemberId().equals(requestDto.getMemberId())) {
+            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+        }
+
+        bubble.setDeleted(false);
+        bubbleRepository.save(bubble);
+
+        return BubbleResponseDto.RestoreResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .isRestored(!bubble.isDeleted())
+                .build();
+    }
+
 }

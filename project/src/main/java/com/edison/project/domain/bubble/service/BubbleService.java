@@ -5,4 +5,6 @@ import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 
 public interface BubbleService {
     BubbleResponseDto.CreateResultDto createBubble(BubbleRequestDto.CreateDto requestDto);
+    BubbleResponseDto.DeleteResultDto deleteBubble(BubbleRequestDto.DeleteDto requestDto);
+    BubbleResponseDto.RestoreResultDto restoreBubble(BubbleRequestDto.RestoreDto requestDto);
 }
