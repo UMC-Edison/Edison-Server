@@ -45,7 +45,7 @@ public class BubbleServiceImpl implements BubbleService {
         }
 
         // 라벨 검증
-        Set<Long> labelIds = Optional.ofNullable(requestDto.getLabels()).orElse(Collections.emptySet());
+        Set<Long> labelIds = Optional.ofNullable(requestDto.getLabelIds()).orElse(Collections.emptySet());
         if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
 
         Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));

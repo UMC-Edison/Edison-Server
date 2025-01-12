@@ -21,7 +21,7 @@ public class BubbleRequestDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private Set<Long> labels;  // 중복 방지
+        private Set<Long> labelIds;  // 중복 방지
         private Long linkedBubbleId;
     }
 }
