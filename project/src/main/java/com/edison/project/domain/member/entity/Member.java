@@ -1,6 +1,7 @@
 package com.edison.project.domain.member.entity;
 
-import com.edison.project.domain.common.entity.BaseEntity;
+import com.edison.project.domain.label.entity.Label;
+import com.edison.project.global.common.entity.BaseEntity;
 import com.edison.project.domain.bubble.entity.Bubble;
 import jakarta.persistence.*;
 import lombok.*;
@@ -37,5 +38,8 @@ public class Member extends BaseEntity {
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Bubble> bubbles = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Label> labels = new ArrayList<>();
 
 }
