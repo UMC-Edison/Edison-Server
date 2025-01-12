@@ -30,7 +30,10 @@ public enum ErrorStatus {
     LABELS_TOO_MANY(HttpStatus.BAD_REQUEST, "BUBBLE_LABEL4001", "라벨 개수는 최대 3개까지 가능합니다."),
 
     // 라벨 관련 에러
-    LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨을 찾을 수 없습니다.");
+    LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨을 찾을 수 없습니다.");
+    LABEL_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨 이름은 최대 20자까지 가능합니다."),
+    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상입니다.");
+
 
     private final HttpStatus httpStatus;
     private final String code;
