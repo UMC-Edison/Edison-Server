@@ -88,9 +88,14 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
     @Override
     @Transactional
-    public void deleteLabel(Long labelId) {
+    public void deleteLabel(Long labelId, Long memberId) {
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+
+        // 삭제 권한 확인
+        if (!label.getMember().getMemberId().equals(memberId)) {
+            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+        }
 
         labelRepository.deleteById(label.getLabelId());
     }

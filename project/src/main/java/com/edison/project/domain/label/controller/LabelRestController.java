@@ -32,8 +32,10 @@ public class LabelRestController {
     }
 
     @DeleteMapping("/{labelId}")
-    public ResponseEntity<ApiResponse> deleteLabel(@PathVariable @NotNull Long labelId) {
-        labelCommandService.deleteLabel(labelId);
+    public ResponseEntity<ApiResponse> deleteLabel(
+            @PathVariable @NotNull Long labelId,
+            @RequestBody @Valid LabelRequestDTO.DeleteDto request) {
+        labelCommandService.deleteLabel(labelId, request.getMemberId());
         return ApiResponse.onSuccess(SuccessStatus._OK);
 
     }
