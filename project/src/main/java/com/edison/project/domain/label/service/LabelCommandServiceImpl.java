@@ -6,6 +6,8 @@ import com.edison.project.domain.label.dto.LabelRequestDTO;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.label.repository.LabelRepository;
+import com.edison.project.domain.member.entity.Member;
+import com.edison.project.domain.member.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class LabelCommandServiceImpl implements LabelCommandService {
 
     private final LabelRepository labelRepository;
+    private final MemberRepository memberRepository;
 
     @Override
     @Transactional
     public LabelResponseDTO.CreateResultDto createLabel(LabelRequestDTO.CreateDto request) {
+        Member member = memberRepository.findById(request.getUserId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         // 라벨 이름 길이 검증
         if (request.getName().length() > 20) {
@@ -35,13 +40,14 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
         Label label = Label.builder()
                 .name(request.getName())
-                .color(Label.LabelColor.valueOf(request.getColor())) // 라벨 String(Dto) -> enum(Entity) 명시적 변환
+                .color(Label.LabelColor.valueOf(request.getColor())) // 라벨 String -> enum 명시적 변환
+                .member(member)
                 .build();
 
         Label savedLabel = labelRepository.save(label);
 
         return LabelResponseDTO.CreateResultDto.builder()
-                .id(savedLabel.getLabelId())
+                .labelId(savedLabel.getLabelId())
                 .name(savedLabel.getName())
                 .color(savedLabel.getColor().name())
                 .build();
@@ -51,7 +57,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
     @Transactional
     public LabelResponseDTO.CreateResultDto updateLabel(Long labelId, LabelRequestDTO.CreateDto request) {
         Label label = labelRepository.findById(labelId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LABEL_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
         // **중복: 라벨 이름 길이 검증
         if (request.getName().length() > 20) {
@@ -74,7 +80,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
         // **중복
         return LabelResponseDTO.CreateResultDto.builder()
-                .id(updatedLabel.getLabelId())
+                .labelId(updatedLabel.getLabelId())
                 .name(updatedLabel.getName())
                 .color(updatedLabel.getColor().name())
                 .build();
@@ -84,7 +90,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
     @Transactional
     public void deleteLabel(Long labelId) {
         Label label = labelRepository.findById(labelId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LABEL_NOT_FOUND));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
         labelRepository.deleteById(label.getLabelId());
     }

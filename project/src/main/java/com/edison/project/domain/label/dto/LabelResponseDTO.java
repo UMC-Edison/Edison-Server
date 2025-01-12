@@ -9,7 +9,7 @@ public class LabelResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateResultDto {
-        private Long id;
+        private Long labelId;
         private String name;
         private String color;
     }

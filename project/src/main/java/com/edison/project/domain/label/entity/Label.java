@@ -1,5 +1,6 @@
 package com.edison.project.domain.label.entity;
 
+import com.edison.project.domain.member.entity.Member;
 import com.edison.project.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,6 +24,10 @@ public class Label extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "color", nullable = false)
     private LabelColor color;
+
+    @ManyToOne
+    @JoinColumn(name = "member_id") // 로그인 안한 유저 id값 없다면, nullable=true 추가
+    private Member member;
 
     public enum LabelColor {
         PINK400("#FF47AD"),
