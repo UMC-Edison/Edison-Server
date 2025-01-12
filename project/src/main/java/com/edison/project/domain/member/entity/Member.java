@@ -3,8 +3,7 @@ package com.edison.project.domain.member.entity;
 import com.edison.project.domain.common.entity.BaseEntity;
 import com.edison.project.domain.bubble.entity.Bubble;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +15,9 @@ import java.util.List;
         @Index(name = "idx_member_email", columnList = "email"),
         @Index(name = "idx_member_nickname", columnList = "nickname")
 })
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 
 public class Member extends BaseEntity {
 
@@ -24,7 +26,7 @@ public class Member extends BaseEntity {
     @Column(name = "member_id")
     private Long memberId;
 
-    @Column(name = "nickname", nullable = false, length = 50)
+    @Column(name = "nickname", length = 50)
     private String nickname;
 
     @Column(name = "email", nullable = false, unique = true, length = 100)
@@ -36,6 +38,4 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Bubble> bubbles = new ArrayList<>();
 
-    @Column(name = "provider_id", length = 100)
-    private String providerId; // 구글 로그인 식별 용도
 }
