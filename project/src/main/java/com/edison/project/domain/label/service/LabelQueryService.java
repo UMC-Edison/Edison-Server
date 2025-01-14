@@ -5,4 +5,5 @@ import com.edison.project.domain.label.dto.LabelResponseDTO;
 
 public interface LabelQueryService {
     List<LabelResponseDTO.ListResultDto> getLabelInfoList(Long memberId);
+    LabelResponseDTO.DetailResultDto getLabelDetailInfoList(Long memberId, Long labelId);
 }

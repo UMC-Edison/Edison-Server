@@ -1,5 +1,7 @@
 package com.edison.project.domain.label.service;
 
+import com.edison.project.domain.bubble.dto.BubbleResponseDto;
+import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
@@ -19,17 +21,13 @@ import java.util.stream.Collectors;
 public class LabelQueryServiceImpl implements LabelQueryService {
     private final LabelRepository labelRepository;
     private final MemberRepository memberRepository;
+    private final BubbleLabelRepository bubbleLabelRepository;
 
     @Override
     public List<LabelResponseDTO.ListResultDto> getLabelInfoList(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
-
-//        사용자에 null값이 들어갈 수 없는 경우, 주석 해제할 것
-//        if (memberId == null) {
-//            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
-//        }
 
         List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(memberId);
 
@@ -47,4 +45,45 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .collect(Collectors.toList());
 
     }
+
+    @Override
+    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(Long memberId, Long labelId) {
+        // **중복**
+        if (!memberRepository.existsById(memberId)) {
+            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+        }
+
+        Label label = labelRepository.findById(labelId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+
+        List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(labelId);
+
+        // BubbleDetailDto 변환
+        //** map 내부의 함수 -> 버블 상세내용조회 api 구현 후 함수로 뽑아 중복 제거 가능
+        List<BubbleResponseDto.CreateResultDto> bubbleDetails = bubbles.stream()
+                .map(bubble -> BubbleResponseDto.CreateResultDto.builder()
+                        .bubbleId(bubble.getBubbleId())
+                        .title(bubble.getTitle())
+                        .content(bubble.getContent())
+                        .mainImageUrl(bubble.getMainImg())
+                        .labels(bubble.getLabels().stream()
+                                .map(bl -> bl.getLabel().getLabelId())
+                                .collect(Collectors.toSet()))
+                        .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
+                        .createdAt(bubble.getCreatedAt())
+                        .updatedAt(bubble.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        // DetailResultDto 반환
+        return LabelResponseDTO.DetailResultDto.builder()
+                .labelId(label.getLabelId())
+                .name(label.getName())
+                .color(label.getColor().name())
+                .bubbleCount((long) bubbleDetails.size())
+                .bubbles(bubbleDetails)
+                .build();
+    }
+
+
 }

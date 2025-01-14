@@ -1,6 +1,9 @@
 package com.edison.project.domain.label.dto;
 
+import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import lombok.*;
+
+import java.util.List;
 
 public class LabelResponseDTO {
 
@@ -23,5 +26,17 @@ public class LabelResponseDTO {
         private String name;
         private String color;
         private Long bubbleCount;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DetailResultDto {
+        private Long labelId;
+        private String name;
+        private String color;
+        private Long bubbleCount;
+        private List<BubbleResponseDto.CreateResultDto> bubbles;
     }
 }
