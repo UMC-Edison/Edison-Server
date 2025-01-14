@@ -27,7 +27,8 @@ public class LabelRequestDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DeleteDto {
-        @NotNull(message = "(DTO)유저 ID는 필수입니다.")
+        // @NotNull(message = "(DTO)유저 ID는 필수입니다.")
         private Long memberId;
     }
+
 }

@@ -5,17 +5,21 @@ import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.label.dto.LabelRequestDTO;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.service.LabelCommandService;
+import com.edison.project.domain.label.service.LabelQueryService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/labels")
 @RequiredArgsConstructor
 public class LabelRestController {
     private final LabelCommandService labelCommandService;
+    private final LabelQueryService labelQueryService;
 
     @PostMapping
     public ResponseEntity<ApiResponse> createLabel(@RequestBody @Valid LabelRequestDTO.CreateDto request) {
@@ -38,5 +42,12 @@ public class LabelRestController {
         labelCommandService.deleteLabel(labelId, request.getMemberId());
         return ApiResponse.onSuccess(SuccessStatus._OK);
 
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse> getLabelsWithBubbleCounts(
+            @RequestParam(name = "memberId") Long memberId) {
+        List<LabelResponseDTO.ListResultDto> labels = labelQueryService.getLabelListByMemberId(memberId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, labels);
     }
 }
