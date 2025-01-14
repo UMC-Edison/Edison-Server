@@ -28,19 +28,40 @@ public class MemberServiceImpl implements MemberService{
 
     @Transactional
     public ResponseEntity<ApiResponse> generateTokensForOidcUser(String email) {
-        Long memberId = createUserIfNotExist(email);
-        String accessToken = jwtUtil.generateAccessToken(memberId, email);
-        String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
 
-        RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
-        refreshTokenRepository.save(tokenEntity);
+        if (!memberRepository.existsByEmail(email)){
+            Long memberId = createUserIfNotExist(email);
+            String accessToken = jwtUtil.generateAccessToken(memberId, email);
+            String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
 
-        MemberResponseDto.LoginResultDto dto = MemberResponseDto.LoginResultDto.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
+            RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
+            refreshTokenRepository.save(tokenEntity);
 
-        return ApiResponse.onSuccess(_OK, dto);
+            MemberResponseDto.LoginResultDto dto = MemberResponseDto.LoginResultDto.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+
+            return ApiResponse.onSuccess(_OK, dto);
+        }
+        else{
+            // 이미 존재하는 사용자의 경우
+            Long memberId = memberRepository.findByEmail(email).get().getMemberId();
+            String accessToken = jwtUtil.generateAccessToken(memberId, email);
+            String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
+
+            refreshTokenRepository.deleteByEmail(email);
+            RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
+            refreshTokenRepository.save(tokenEntity);
+
+            MemberResponseDto.LoginResultDto dto = MemberResponseDto.LoginResultDto.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .build();
+
+            return ApiResponse.onSuccess(_OK, dto);
+        }
+
     }
 
     public Long createUserIfNotExist(String email) {
