@@ -22,9 +22,9 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     @Override
     public List<LabelResponseDTO.ListResultDto> getLabelInfoList(Long memberId) {
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        if (!memberRepository.existsById(memberId)) {
+            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+        }
 
 //        사용자에 null값이 들어갈 수 없는 경우, 주석 해제할 것
 //        if (memberId == null) {

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/labels")
 @RequiredArgsConstructor
+@Validated
 public class LabelRestController {
     private final LabelCommandService labelCommandService;
     private final LabelQueryService labelQueryService;
@@ -46,7 +48,7 @@ public class LabelRestController {
 
     @GetMapping
     public ResponseEntity<ApiResponse> getLabelList(
-            @RequestParam(name = "memberId") Long memberId) {
+            @RequestParam Long memberId) {
         List<LabelResponseDTO.ListResultDto> labels = labelQueryService.getLabelInfoList(memberId);
         return ApiResponse.onSuccess(SuccessStatus._OK, labels);
     }
