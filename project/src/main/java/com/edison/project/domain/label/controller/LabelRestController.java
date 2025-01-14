@@ -45,9 +45,9 @@ public class LabelRestController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> getLabelsWithBubbleCounts(
+    public ResponseEntity<ApiResponse> getLabelList(
             @RequestParam(name = "memberId") Long memberId) {
-        List<LabelResponseDTO.ListResultDto> labels = labelQueryService.getLabelListByMemberId(memberId);
+        List<LabelResponseDTO.ListResultDto> labels = labelQueryService.getLabelInfoList(memberId);
         return ApiResponse.onSuccess(SuccessStatus._OK, labels);
     }
 }
