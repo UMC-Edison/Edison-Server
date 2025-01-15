@@ -42,7 +42,8 @@ public enum ErrorStatus {
     WRITER_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4005", "writer field 관련 오류"),
     CONTENT_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4006", "content field 관련 오류"),
     TAG_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4007", "tag field 관련 오류"),
-    CATEGORY_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4008", "category field 관련 오류");
+    CATEGORY_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4008", "category field 관련 오류"),
+    KEYWORD_IS_EMPTY(HttpStatus.BAD_REQUEST, "LETTER4009", "keyword field 관련 오류");
 
     private final HttpStatus httpStatus;
     private final String code;

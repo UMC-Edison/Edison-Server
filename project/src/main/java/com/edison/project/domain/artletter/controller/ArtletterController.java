@@ -8,6 +8,9 @@ import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -92,27 +95,27 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
-    // GET: Search Artletters by keyword
+    // GET으로 키워드 기반 search 기능
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        // 키워드가 없는 경우
-        if (keyword == null || keyword.isBlank()) {
-            return ApiResponse.onFailure(ErrorStatus.KEYWORD_IS_NOT_VALID);
+        if(keyword == null) {
+            // 키워드 비어있을 때 에러핸들링
+            return ApiResponse.onFailure(ErrorStatus.KEYWORD_IS_EMPTY);
         }
 
-        // 검색 결과 처리
-        ArtletterDTO.ListResponseDto response = artletterService.searchArtletters(keyword, page, size);
-
-        if (response.getArtletters() == null || response.getArtletters().isEmpty()) {
+        if (keyword.trim().isEmpty()) {
             // 검색 결과가 없을 때 처리
             return ApiResponse.onFailure(ErrorStatus.RESULT_NOT_FOUND);
         }
 
-        // 검색 결과가 있는 경우 성공 응답
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Artletter> results = artletterService.searchArtletters(keyword, pageable);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
     }
 }

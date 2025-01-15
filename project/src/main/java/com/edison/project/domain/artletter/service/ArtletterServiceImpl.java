@@ -60,22 +60,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ArtletterDTO.ListResponseDto searchArtletters(String keyword, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-
-        Page<Artletter> artletters = artletterRepository.searchByKeyword(keyword, pageable); // Custom 메서드 사용
-
-        List<ArtletterDTO.CreateResponseDto> results = artletters.getContent().stream()
-                .map(artletter -> ArtletterDTO.CreateResponseDto.builder()
-                        .id(artletter.getLetterId())
-                        .title(artletter.getTitle())
-                        .build())
-                .collect(Collectors.toList());
-
-        return ArtletterDTO.ListResponseDto.builder()
-                .artletters(results)
-                .totalPages(artletters.getTotalPages())
-                .totalElements(artletters.getTotalElements())
-                .build();
+    public Page<Artletter> searchArtletters(String keyword, Pageable pageable) {
+        return artletterRepository.searchByKeyword(keyword, pageable);
     }
 }

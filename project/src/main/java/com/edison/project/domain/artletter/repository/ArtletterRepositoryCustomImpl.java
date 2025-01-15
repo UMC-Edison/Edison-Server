@@ -21,7 +21,11 @@ public class ArtletterRepositoryCustomImpl implements ArtletterRepositoryCustom 
         TypedQuery<Artletter> query = entityManager.createQuery(queryStr, Artletter.class);
         query.setParameter("keyword", "%" + keyword + "%");
 
-        int totalRows = query.getResultList().size();
+        String countQueryStr = "SELECT COUNT(a) FROM Artletter a WHERE a.title LIKE :keyword OR a.content LIKE :keyword";
+        TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr, Long.class);
+        countQuery.setParameter("keyword", "%" + keyword + "%");
+        long totalRows = countQuery.getSingleResult();
+
         query.setFirstResult((int) pageable.getOffset());
         query.setMaxResults(pageable.getPageSize());
 
