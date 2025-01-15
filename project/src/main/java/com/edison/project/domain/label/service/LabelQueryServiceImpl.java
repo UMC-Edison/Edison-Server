@@ -56,6 +56,11 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
+        // 요청한 라벨이 memberId에 속해 있는지(해당 사용자가 만든 라벨이 맞는지) 검증
+        if (!label.getMember().getMemberId().equals(memberId)) {
+            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+        }
+
         List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(labelId);
 
         // BubbleDetailDto 변환
