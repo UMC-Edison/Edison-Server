@@ -44,6 +44,8 @@ public class Artletter extends BaseEntity {
         CATEGORY1, CATEGORY2, CATEGORY3
     }
 
+    private String thumbnail;
+
     // Builder 패턴 적용
     @Builder
     public Artletter(Long letterId, String title, String content, String writer, int readTime, String tag, ArtletterCategory category) {
@@ -54,5 +56,6 @@ public class Artletter extends BaseEntity {
         this.readTime = readTime;
         this.tag = tag;
         this.category = category;
+        this.thumbnail = thumbnail;
     }
 }

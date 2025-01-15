@@ -34,12 +34,15 @@ public class ArtletterDTO {
         @NotNull
         private Integer readTime;
         private String tag;
+        private String thumbnail;
     }
 
     @Data
     @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class CreateResponseDto {
-        private Long id;
+        private Long artletterId;
         private String title;
     }
 
@@ -48,9 +51,11 @@ public class ArtletterDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ListResponseDto {
-        private List<CreateResponseDto> artletters;
-        private int totalPages;
-        private long totalElements;
+        private Long artletterId;
+        private String title;
+        private String thumbnail;
+        private int likes;
+        private int scraps;
     }
 
     public static ArtletterDTO fromEntity(Artletter artletter, int likes, int scraps) {

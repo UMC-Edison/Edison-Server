@@ -1,6 +1,9 @@
 package com.edison.project.domain.artletter.service;
 
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
+import com.edison.project.domain.artletter.dto.ArtletterDTO.ListResponseDto;
+import com.edison.project.domain.artletter.dto.PageInfoDTO;
+import com.edison.project.domain.artletter.dto.TestDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
@@ -22,22 +25,31 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ArtletterDTO.ListResponseDto getAllArtletters(int page, int size) {
+    public TestDTO getAllArtletters(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> artletters = artletterRepository.findAll(pageable); // JpaRepository 기본 메서드 사용
+        Page<Artletter> artletterPage = artletterRepository.findAll(pageable);
 
-        List<ArtletterDTO.CreateResponseDto> results = artletters.getContent().stream()
-                .map(artletter -> ArtletterDTO.CreateResponseDto.builder()
-                        .id(artletter.getLetterId())
+        // Artletter -> ArtletterDTO.ListResponseDto 변환
+        List<ArtletterDTO.ListResponseDto> result = artletterPage.getContent().stream()
+                .map(artletter -> ArtletterDTO.ListResponseDto.builder()
+                        .artletterId(artletter.getLetterId())
                         .title(artletter.getTitle())
+                        .thumbnail("thumbnail_url_placeholder") // 썸네일 로직 추가 예정
+                        // .likes(artletter.getLikes())
+                        // .scraps(artletter.getScraps())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
-        return ArtletterDTO.ListResponseDto.builder()
-                .artletters(results)
-                .totalPages(artletters.getTotalPages())
-                .totalElements(artletters.getTotalElements())
-                .build();
+        // 페이지 정보 생성
+        PageInfoDTO pageInfo = new PageInfoDTO(
+                artletterPage.getNumber(),
+                artletterPage.getSize(),
+                artletterPage.getTotalElements(),
+                artletterPage.getTotalPages()
+        );
+
+        // TestDTO 생성
+        return new TestDTO(true, 200, "요청이 성공적으로 처리되었습니다.", pageInfo, result);
     }
 
     @Override
@@ -54,7 +66,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         Artletter savedArtletter = artletterRepository.save(artletter); // JpaRepository 기본 메서드 사용
 
         return ArtletterDTO.CreateResponseDto.builder()
-                .id(savedArtletter.getLetterId())
+                .artletterId(savedArtletter.getLetterId())
                 .title(savedArtletter.getTitle())
                 .build();
     }

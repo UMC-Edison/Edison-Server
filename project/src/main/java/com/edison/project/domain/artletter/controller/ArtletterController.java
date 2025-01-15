@@ -4,6 +4,7 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
+import com.edison.project.domain.artletter.dto.TestDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class ArtletterController {
         Object contentObj = request.get("content");
         Object tagObj = request.get("tag");
         Object categoryObj = request.get("category");
+        Object thumbnailObj = request.get("thumbnail");
 
         // readTime 검증
         if (readTimeObj == null || !(readTimeObj instanceof Integer) || (Integer) readTimeObj <= 0) {
@@ -89,13 +91,25 @@ public class ArtletterController {
         dto.setContent((String) contentObj);
         dto.setTag((String) tagObj);
         dto.setCategory(Artletter.ArtletterCategory.valueOf((String) categoryObj));
+        dto.setThumbnail((String) thumbnailObj);
 
         // Service 호출
         ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(dto);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
-    // GET으로 키워드 기반 search 기능
+    // GET: 전체 아트레터 조회
+    @GetMapping
+    public ResponseEntity<ApiResponse> getAllArtletters(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        TestDTO response = artletterService.getAllArtletters(page, size);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    // GET: 키워드 기반 search 기능
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
             @RequestParam(value = "keyword", required = false) String keyword,
