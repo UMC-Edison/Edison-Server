@@ -13,4 +13,15 @@ public class LabelResponseDTO {
         private String name;
         private String color;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ListResultDto {
+        private Long labelId;
+        private String name;
+        private String color;
+        private Long bubbleCount;
+    }
 }
