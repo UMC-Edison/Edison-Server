@@ -18,10 +18,10 @@ public class JwtUtil {
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
 
-    public String generateAccessToken(Long memebrId, String email) {
+    public String generateAccessToken(Long memberId, String email) {
         return JWT.create()
-                .withSubject(email)
-                .withClaim("memebrId", memebrId)
+                .withSubject(String.valueOf(memberId))
+                .withClaim("email", email)
                 .withExpiresAt(new Date(System.currentTimeMillis() + accessTokenExpiration))
                 .sign(Algorithm.HMAC256(secretKey));
     }
@@ -44,11 +44,11 @@ public class JwtUtil {
     }
 
     public Long extractUserId(String token) {
-        return JWT.decode(token).getClaim("memberId").asLong();
+        return Long.parseLong(JWT.decode(token).getSubject());
 
     }
 
     public String extractEmail(String token) {
-        return JWT.decode(token).getSubject();
+        return JWT.decode(token).getClaim("email").asString();
     }
 }

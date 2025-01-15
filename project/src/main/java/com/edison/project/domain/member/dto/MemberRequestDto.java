@@ -5,23 +5,16 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-public class MemberResponseDto {
+public class MemberRequestDto {
 
     @Builder
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class LoginResultDto{
-        String accessToken;
-        String refreshToken;
-    }
-
-    @Builder
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProfileResultDto{
+    public static class ProfileDto {
         private String nickname;
         private String profileImageUrl;
     }
+
+
 }
