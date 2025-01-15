@@ -19,6 +19,8 @@ public enum ErrorStatus {
     // 입력값 검증 관련 에러
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "VALID401", "입력값이 올바르지 않습니다."),
 
+    // 로그인 관련 에러
+    LOGIN_CANCELLED(HttpStatus.BAD_REQUEST, "LOGIN4001", "로그인이 취소되었습니다."),
 
     // 멤버 관려 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
