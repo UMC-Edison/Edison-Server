@@ -15,6 +15,7 @@ import com.edison.project.domain.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -125,6 +126,37 @@ public class BubbleServiceImpl implements BubbleService {
                 .bubbleId(bubble.getBubbleId())
                 .isRestored(!bubble.isDeleted())
                 .build();
+    }
+
+    public List<String> getCombinedTexts() {
+        List<Bubble> bubbles = bubbleRepository.findAll();
+        return bubbles.stream()
+                .map(bubble -> bubble.getTitle() + " " + bubble.getContent() + " " + getLabels(bubble))
+                .collect(Collectors.toList());
+    }
+
+    private String getLabels(Bubble bubble) {
+        return bubble.getLabels().stream() // Bubble에서 BubbleLabel 리스트 가져오기
+                .map(bubbleLabel -> bubbleLabel.getLabel().getName()) // BubbleLabel을 통해 Label의 이름 가져오기
+                .collect(Collectors.joining(" ")); // 라벨 이름을 공백으로 구분하여 반환
+    }
+
+    public double[][] get2DCoordinates(double[][] data) throws Exception {
+        // Fetch combined texts
+        List<String> combinedTexts = getCombinedTexts();
+
+        // Calculate TF-IDF
+        TfidfVectorizer vectorizer = new TfidfVectorizer();
+        Map<Integer, Map<String, Double>> tfIdfMap = vectorizer.calculateTfIdf(combinedTexts);
+
+        // Convert to matrix
+        double[][] tfIdfMatrix = tfIdfMap.values().stream()
+                .map(map -> map.values().stream().mapToDouble(Double::doubleValue).toArray())
+                .toArray(double[][]::new);
+
+        // Perform PCA
+        PcaReducer pcaReducer = new PcaReducer();
+        return pcaReducer.reduceTo2D(tfIdfMatrix);
     }
 
 }

@@ -4,11 +4,16 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
+import com.edison.project.domain.bubble.dto.PcaRequestDto;
 import com.edison.project.domain.bubble.service.BubbleService;
+import com.edison.project.domain.bubble.service.PcaReducer;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/bubbles")
