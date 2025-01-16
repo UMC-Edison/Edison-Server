@@ -1,5 +1,6 @@
 package com.edison.project.domain.artletter.dto;
 
+import com.edison.project.common.response.PageInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,6 @@ public class TestDTO {
     private boolean isSuccess;
     private int code;
     private String message;
-    private PageInfoDTO pageInfo;
+    private PageInfo pageInfo;
     private List<ArtletterDTO.ListResponseDto> result;
 }

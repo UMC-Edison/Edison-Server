@@ -1,19 +1,16 @@
 package com.edison.project.domain.artletter.service;
 
+import com.edison.project.common.response.PageInfo;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
-import com.edison.project.domain.artletter.dto.ArtletterDTO.ListResponseDto;
-import com.edison.project.domain.artletter.dto.PageInfoDTO;
 import com.edison.project.domain.artletter.dto.TestDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
-import com.edison.project.domain.artletter.service.ArtletterService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class ArtletterServiceImpl implements ArtletterService {
@@ -41,9 +38,10 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .toList();
 
         // 페이지 정보 생성
-        PageInfoDTO pageInfo = new PageInfoDTO(
+        PageInfo pageInfo = new PageInfo(
                 artletterPage.getNumber(),
                 artletterPage.getSize(),
+                artletterPage.hasNext(),
                 artletterPage.getTotalElements(),
                 artletterPage.getTotalPages()
         );
