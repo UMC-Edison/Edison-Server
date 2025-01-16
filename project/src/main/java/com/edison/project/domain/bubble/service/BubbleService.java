@@ -2,9 +2,11 @@ package com.edison.project.domain.bubble.service;
 
 import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
+import com.edison.project.global.security.CustomUserPrincipal;
+import jakarta.validation.Valid;
 
 public interface BubbleService {
-    BubbleResponseDto.CreateResultDto createBubble(BubbleRequestDto.CreateDto requestDto);
-    BubbleResponseDto.DeleteResultDto deleteBubble(BubbleRequestDto.DeleteDto requestDto);
-    BubbleResponseDto.RestoreResultDto restoreBubble(BubbleRequestDto.RestoreDto requestDto);
+    BubbleResponseDto.CreateResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.CreateDto requestDto);
+    BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.DeleteDto requestDto);
+    BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.RestoreDto requestDto);
 }

@@ -10,7 +10,9 @@ import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,12 +26,12 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     private final BubbleLabelRepository bubbleLabelRepository;
 
     @Override
-    public List<LabelResponseDTO.ListResultDto> getLabelInfoList(Long memberId) {
-        if (!memberRepository.existsById(memberId)) {
+    public List<LabelResponseDTO.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
 
-        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(memberId);
+        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(userPrincipal.getMemberId());
 
         return labelInfoList.stream()
                 .map(result -> {
@@ -47,9 +49,9 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     }
 
     @Override
-    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(Long memberId, Long labelId) {
+    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long labelId) {
         // **중복**
-        if (!memberRepository.existsById(memberId)) {
+        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
 
@@ -57,7 +59,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
         // 요청한 라벨이 memberId에 속해 있는지(해당 사용자가 만든 라벨이 맞는지) 검증
-        if (!label.getMember().getMemberId().equals(memberId)) {
+        if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
