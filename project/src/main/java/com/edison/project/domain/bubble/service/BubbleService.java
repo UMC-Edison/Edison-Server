@@ -16,4 +16,6 @@ public interface BubbleService {
     BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
 
     ResponseEntity<ApiResponse> getBubblesByMember(Long memberId, Pageable pageable);
+    ResponseEntity<ApiResponse> getRecentBubblesByMember(Long memberId, Pageable pageable);
+
 }

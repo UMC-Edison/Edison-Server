@@ -24,6 +24,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDateTime;
 import java.util.*;
         import java.util.stream.Collectors;
 
@@ -172,6 +174,42 @@ public class BubbleServiceImpl implements BubbleService {
                         .updatedAt(bubble.getUpdatedAt())
                         .build())
                 .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> getRecentBubblesByMember(Long memberId, Pageable pageable) {
+        LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
+
+        // 7일 이내 버블 조회
+        Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(memberId, sevenDaysago, pageable);
+
+        // DTO로 변환
+        List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
+                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
+                        .bubbleId(bubble.getBubbleId())
+                        .title(bubble.getTitle())
+                        .content(bubble.getContent())
+                        .mainImageUrl(bubble.getMainImg())
+                        .labels(bubble.getLabels().stream()
+                                .map(label -> label.getLabel().getName())
+                                .collect(Collectors.toList()))
+                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                                .map(Bubble::getBubbleId)
+                                .orElse(null))
+                        .createdAt(bubble.getCreatedAt())
+                        .updatedAt(bubble.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        PageInfo pageInfo = new PageInfo(
+                bubblePage.getNumber(),
+                bubblePage.getSize(),
+                bubblePage.hasNext(),
+                bubblePage.getTotalElements(),
+                bubblePage.getTotalPages()
+        );
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
