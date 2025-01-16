@@ -65,15 +65,15 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
         // BubbleDetailDto 변환
         //** map 내부의 함수 -> 버블 상세내용조회 api 구현 후 함수로 뽑아 중복 제거 가능
-        List<BubbleResponseDto.CreateResultDto> bubbleDetails = bubbles.stream()
-                .map(bubble -> BubbleResponseDto.CreateResultDto.builder()
+        List<BubbleResponseDto.ListResultDto> bubbleDetails = bubbles.stream()
+                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
                         .bubbleId(bubble.getBubbleId())
                         .title(bubble.getTitle())
                         .content(bubble.getContent())
                         .mainImageUrl(bubble.getMainImg())
                         .labels(bubble.getLabels().stream()
-                                .map(bl -> bl.getLabel().getLabelId())
-                                .collect(Collectors.toSet()))
+                                .map(bl -> bl.getLabel().getName())
+                                .collect(Collectors.toList()))
                         .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
                         .createdAt(bubble.getCreatedAt())
                         .updatedAt(bubble.getUpdatedAt())

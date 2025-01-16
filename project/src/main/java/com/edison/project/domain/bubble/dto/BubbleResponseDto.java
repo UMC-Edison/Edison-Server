@@ -12,12 +12,12 @@ public class BubbleResponseDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateResultDto {
+    public static class ListResultDto {
         private Long bubbleId;
         private String title;
         private String content;
         private String mainImageUrl;
-        private Set<Long> labels;
+        private List<String> labels;
         private Long linkedBubbleId;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;

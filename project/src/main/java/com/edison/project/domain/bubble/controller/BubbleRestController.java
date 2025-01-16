@@ -7,8 +7,13 @@ import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.domain.bubble.service.BubbleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import org.springframework.data.domain.Pageable;
+
 
 @RestController
 @RequestMapping("/bubbles")
@@ -18,8 +23,8 @@ public class BubbleRestController {
 
     // 버블 생성
     @PostMapping
-    public ResponseEntity<ApiResponse> createBubble(@RequestBody @Valid BubbleRequestDto.CreateDto request) {
-        BubbleResponseDto.CreateResultDto response = bubbleService.createBubble(request);
+    public ResponseEntity<ApiResponse> createBubble(@RequestBody @Valid BubbleRequestDto.ListDto request) {
+        BubbleResponseDto.ListResultDto response = bubbleService.createBubble(request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
@@ -41,5 +46,18 @@ public class BubbleRestController {
         request.setBubbleId(bubbleId);
         BubbleResponseDto.RestoreResultDto result = bubbleService.restoreBubble(request);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
+
+    // 버블 전체 목록 조회
+    @GetMapping
+    public ResponseEntity<ApiResponse> getBubblesByMember(
+            @RequestParam Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        // 최신순 정렬
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(memberId, pageable);
+        return response;
     }
 }
