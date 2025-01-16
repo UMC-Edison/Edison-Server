@@ -46,12 +46,12 @@ public class Member extends BaseEntity {
     private List<Label> labels = new ArrayList<>();
 
     //복사 빌더 메서드
-    public Member registerProfile(String nickname, String profileImg) {
+    public Member registerProfile(String nickname) {
         return Member.builder()
                 .memberId(this.memberId)
                 .email(this.email)
                 .nickname(nickname)
-                .profileImg(profileImg)
+                .profileImg(this.profileImg)
                 .isDeleted(this.isDeleted)
                 .bubbles(new ArrayList<>(this.bubbles))
                 .labels(new ArrayList<>(this.labels))

@@ -4,12 +4,9 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.service.CustomOidcUserService;
 import com.edison.project.domain.member.service.MemberServiceImpl;
-import com.edison.project.global.security.CustomUserPrincipal;
+import com.edison.project.global.security.CustomAuthenticationEntryPoint;
 import com.edison.project.global.security.JwtAuthenticationFilter;
-import com.edison.project.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,22 +14,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -40,8 +31,8 @@ public class SecurityConfig {
 
     private final MemberServiceImpl memberService;
     private final CustomOidcUserService customOidcUserService;
-    private final JwtUtil jwtUtil;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
 
     //Spring Security 설정
@@ -53,6 +44,9 @@ public class SecurityConfig {
                         .requestMatchers("/members/register").authenticated()
                         .requestMatchers("/favicon.ico").permitAll()
                         .anyRequest().permitAll()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customAuthenticationEntryPoint) // EntryPoint 등록
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // OIDC 전용 (구글로그인)

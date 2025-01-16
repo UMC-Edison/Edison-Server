@@ -1,6 +1,8 @@
 package com.edison.project.domain.member.controller;
 
+import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -19,9 +21,8 @@ public class MemberRestController {
 
 
     @PostMapping("/register")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> registerMember(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberResponseDto.ProfileResultDto request) {
-        return memberService.registerMember(userPrincipal.getMemberId(), request);
+        return memberService.registerMember(userPrincipal, request);
     }
 
 }

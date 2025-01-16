@@ -2,11 +2,13 @@ package com.edison.project.domain.member.service;
 
 import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.entity.RefreshToken;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.repository.RefreshTokenRepository;
+import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -78,17 +80,20 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> registerMember(Long memberId, MemberResponseDto.ProfileResultDto request) {
+    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal, MemberResponseDto.ProfileResultDto request) {
 
-        Member member = memberRepository.findById(memberId)
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(GeneralException::loginRequired);
 
-        member = member.registerProfile(request.getNickname(), request.getProfileImageUrl());
+        if (request.getNickname()==null || request.getNickname() == "") {
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        member = member.registerProfile(request.getNickname());
         memberRepository.save(member);
 
         MemberResponseDto.ProfileResultDto response = MemberResponseDto.ProfileResultDto.builder()
                 .nickname(member.getNickname())
-                .profileImageUrl(member.getProfileImg())
                 .build();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);

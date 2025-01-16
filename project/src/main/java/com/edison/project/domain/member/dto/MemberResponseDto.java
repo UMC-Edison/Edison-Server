@@ -22,6 +22,5 @@ public class MemberResponseDto {
     @AllArgsConstructor
     public static class ProfileResultDto{
         private String nickname;
-        private String profileImageUrl;
     }
 }
