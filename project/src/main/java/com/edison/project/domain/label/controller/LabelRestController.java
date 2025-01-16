@@ -7,7 +7,6 @@ import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.service.LabelCommandService;
 import com.edison.project.domain.label.service.LabelQueryService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +23,7 @@ public class LabelRestController {
     private final LabelQueryService labelQueryService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse> createLabel(@RequestBody @Valid LabelRequestDTO.CreateDto request) {
+    public ResponseEntity<ApiResponse> createLabel(@RequestBody @Valid LabelRequestDTO.CreateAndUpdateDto request) {
         LabelResponseDTO.CreateResultDto response = labelCommandService.createLabel(request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
@@ -32,7 +31,7 @@ public class LabelRestController {
     @PatchMapping("/{labelId}")
     public ResponseEntity<ApiResponse> updateLabel(
             @PathVariable Long labelId,
-            @RequestBody @Valid LabelRequestDTO.CreateDto request) {
+            @RequestBody @Valid LabelRequestDTO.CreateAndUpdateDto request) {
         LabelResponseDTO.CreateResultDto response = labelCommandService.updateLabel(labelId, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }

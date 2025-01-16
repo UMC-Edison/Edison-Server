@@ -22,8 +22,8 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
     @Override
     @Transactional
-    public LabelResponseDTO.CreateResultDto createLabel(LabelRequestDTO.CreateDto request) {
-        Member member = memberRepository.findById(request.getUserId())
+    public LabelResponseDTO.CreateResultDto createLabel(LabelRequestDTO.CreateAndUpdateDto request) {
+        Member member = memberRepository.findById(request.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         // 라벨 이름 길이 검증
@@ -48,7 +48,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
     @Override
     @Transactional
-    public LabelResponseDTO.CreateResultDto updateLabel(Long labelId, LabelRequestDTO.CreateDto request) {
+    public LabelResponseDTO.CreateResultDto updateLabel(Long labelId, LabelRequestDTO.CreateAndUpdateDto request) {
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
