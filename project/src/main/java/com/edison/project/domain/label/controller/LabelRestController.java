@@ -39,7 +39,7 @@ public class LabelRestController {
 
     @DeleteMapping("/{labelId}")
     public ResponseEntity<ApiResponse> deleteLabel(
-            @PathVariable @NotNull Long labelId,
+            @PathVariable Long labelId,
             @RequestBody @Valid LabelRequestDTO.DeleteDto request) {
         labelCommandService.deleteLabel(labelId, request.getMemberId());
         return ApiResponse.onSuccess(SuccessStatus._OK);
@@ -52,4 +52,13 @@ public class LabelRestController {
         List<LabelResponseDTO.ListResultDto> labels = labelQueryService.getLabelInfoList(memberId);
         return ApiResponse.onSuccess(SuccessStatus._OK, labels);
     }
+
+    @GetMapping("/{labelId}")
+    public ResponseEntity<ApiResponse> getLabelDetail(
+            @PathVariable Long labelId,
+            @RequestParam Long memberId) {
+        LabelResponseDTO.DetailResultDto details = labelQueryService.getLabelDetailInfoList(memberId, labelId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, details);
+    }
+
 }
