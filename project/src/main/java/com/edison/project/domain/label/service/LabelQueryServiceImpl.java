@@ -38,7 +38,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                     return LabelResponseDTO.ListResultDto.builder()
                             .labelId(label.getLabelId())
                             .name(label.getName())
-                            .color(label.getColor().name())
+                            .color(label.getColor())
                             .bubbleCount(bubbleCount != null ? bubbleCount : 0L) // 버블 없는 라벨은 0으로 처리
                             .build();
                 })
@@ -84,7 +84,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         return LabelResponseDTO.DetailResultDto.builder()
                 .labelId(label.getLabelId())
                 .name(label.getName())
-                .color(label.getColor().name())
+                .color(label.getColor())
                 .bubbleCount((long) bubbleDetails.size())
                 .bubbles(bubbleDetails)
                 .build();

@@ -19,6 +19,7 @@ public class LabelRequestDTO {
         private String name;
 
         @NotBlank(message = "(DTO)라벨 색상은 필수입니다.")
+        @Pattern(regexp = "^[0-9]{1,10}$", message = "컬러는 1자리 이상 10자리 이하의 숫자로만 이루어져야 합니다.")
         private String color;
     }
 
