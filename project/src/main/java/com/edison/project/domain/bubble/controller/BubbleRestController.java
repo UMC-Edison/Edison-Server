@@ -60,4 +60,14 @@ public class BubbleRestController {
         ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(memberId, pageable);
         return response;
     }
+
+    @GetMapping("/recent")
+    public ResponseEntity<ApiResponse> getRecentBubblesByMember(
+            @RequestParam Long memberId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        // 최신순 정렬
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return bubbleService.getRecentBubblesByMember(memberId, pageable);
+    }
 }
