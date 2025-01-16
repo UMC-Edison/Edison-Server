@@ -2,18 +2,18 @@ package com.edison.project.domain.bubble.controller;
 
 import com.edison.project.domain.bubble.service.PcaReducer;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/pca")
 @RequiredArgsConstructor
-public class PcaController {
+public class SpaceController {
 
     private final PcaReducer pcaReducer;
 
-    @GetMapping("/reduce-all")
+    @GetMapping("/space")
     public double[][] reduceAllBubblesTo2D() {
-        // Fetch all data from the database, compute TF-IDF, and apply PCA
+        // 데이터 전부 가져와서 TF-IDF -> PCA
         return pcaReducer.reduceAllBubblesTo2D();
     }
 }

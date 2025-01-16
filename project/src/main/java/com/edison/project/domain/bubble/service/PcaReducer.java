@@ -10,8 +10,6 @@ import com.edison.project.domain.bubble.repository.BubbleRepository;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
 import com.edison.project.domain.label.repository.LabelRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
-import com.edison.project.domain.bubble.entity.BubbleLabel;
-import com.edison.project.domain.label.entity.Label;
 
 import java.util.List;
 import java.util.Map;
@@ -39,10 +37,10 @@ public class PcaReducer {
     }
 
     public double[][] reduceAllBubblesTo2D() {
-        // Fetch all bubbles from the database
+        // 버블 전부 가져오기
         List<Bubble> bubbles = bubbleRepository.findAll();
 
-        // Map bubble IDs to their associated labels
+        // 버블 id를 label과 mapping
         Map<Long, List<String>> bubbleLabels = bubbleLabelRepository.findAll().stream()
                 .collect(Collectors.groupingBy(
                         bubbleLabel -> bubbleLabel.getBubble().getBubbleId(),
@@ -52,7 +50,7 @@ public class PcaReducer {
                         )
                 ));
 
-        // Combine title, content, and labels into a single text for each bubble
+        // title, content, and labels을 묶어서 text 만들기
         List<String> bubbleTexts = bubbles.stream()
                 .map(bubble -> {
                     String labels = String.join(" ", bubbleLabels.getOrDefault(bubble.getBubbleId(), List.of()));
@@ -60,20 +58,19 @@ public class PcaReducer {
                 })
                 .collect(Collectors.toList());
 
-        // Compute TF-IDF matrix (this part assumes you have a utility for TF-IDF computation)
+        // TF-IDF matrix 연산
         double[][] tfIdfMatrix = computeTfIdfMatrix(bubbleTexts);
 
-        // Perform PCA to reduce the TF-IDF matrix to 2D
         return performPca(tfIdfMatrix);
     }
 
     private double[][] computeTfIdfMatrix(List<String> texts) {
-        // Step 1: Tokenize the text and build a vocabulary
+        // Step 1: text tokenizing 하기
         List<List<String>> tokenizedTexts = texts.stream()
                 .map(text -> List.of(text.split("\\s+"))) // Split by whitespace
                 .collect(Collectors.toList());
 
-        // Flatten tokens and create a vocabulary (unique terms)
+        // 토큰 flatten, 어휘(고유 용어) 생성하기
         List<String> vocabulary = tokenizedTexts.stream()
                 .flatMap(List::stream)
                 .distinct()
@@ -82,7 +79,7 @@ public class PcaReducer {
         int numDocuments = texts.size();
         int numTerms = vocabulary.size();
 
-        // Step 2: Term Frequency (TF) matrix
+        // Step 2: Term Frequency (TF) matrix 연산
         double[][] tfMatrix = new double[numDocuments][numTerms];
         for (int docIndex = 0; docIndex < numDocuments; docIndex++) {
             List<String> tokens = tokenizedTexts.get(docIndex);
@@ -93,7 +90,7 @@ public class PcaReducer {
             }
         }
 
-        // Step 3: Inverse Document Frequency (IDF)
+        // Step 3: Inverse Document Frequency (IDF) 연산
         double[] idfVector = new double[numTerms];
         for (int termIndex = 0; termIndex < numTerms; termIndex++) {
             String term = vocabulary.get(termIndex);
@@ -103,7 +100,7 @@ public class PcaReducer {
             idfVector[termIndex] = Math.log((double) numDocuments / (1 + docsWithTerm));
         }
 
-        // Step 4: Compute TF-IDF matrix
+        // Step 4: TF-IDF matrix 연산
         double[][] tfIdfMatrix = new double[numDocuments][numTerms];
         for (int docIndex = 0; docIndex < numDocuments; docIndex++) {
             for (int termIndex = 0; termIndex < numTerms; termIndex++) {

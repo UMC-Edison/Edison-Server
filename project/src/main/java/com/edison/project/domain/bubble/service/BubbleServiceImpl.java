@@ -15,9 +15,6 @@ import com.edison.project.domain.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.linear.MatrixUtils;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -117,56 +114,5 @@ public class BubbleServiceImpl implements BubbleService {
                 .build();
     }
 
-    public List<String> getCombinedTexts() {
-        List<Bubble> bubbles = bubbleRepository.findAll();
-        return bubbles.stream()
-                .map(bubble -> bubble.getTitle() + " " + bubble.getContent() + " " + getLabels(bubble))
-                .collect(Collectors.toList());
-    }
 
-    private String getLabels(Bubble bubble) {
-        return bubble.getLabels().stream()
-                .map(bubbleLabel -> bubbleLabel.getLabel().getName())
-                .collect(Collectors.joining(" "));
-    }
-
-    public double[][] calculateTfIdf(List<String> combinedTexts) {
-        Map<String, Integer> termDocCount = new HashMap<>();
-        Map<Integer, Map<String, Double>> tfMap = new HashMap<>();
-
-        for (int docId = 0; docId < combinedTexts.size(); docId++) {
-            String[] terms = combinedTexts.get(docId).split(" ");
-            Map<String, Double> termFrequency = new HashMap<>();
-            for (String term : terms) {
-                termFrequency.put(term, termFrequency.getOrDefault(term, 0.0) + 1);
-            }
-            tfMap.put(docId, termFrequency);
-
-            for (String term : termFrequency.keySet()) {
-                termDocCount.put(term, termDocCount.getOrDefault(term, 0) + 1);
-            }
-        }
-
-        double[][] tfIdfMatrix = new double[combinedTexts.size()][];
-
-        for (int docId = 0; docId < combinedTexts.size(); docId++) {
-            Map<String, Double> termFrequency = tfMap.get(docId);
-            double[] tfIdfValues = new double[termDocCount.size()];
-            int index = 0;
-            for (String term : termDocCount.keySet()) {
-                double tf = termFrequency.getOrDefault(term, 0.0);
-                double idf = Math.log((double) combinedTexts.size() / (1 + termDocCount.get(term)));
-                tfIdfValues[index++] = tf * idf;
-            }
-            tfIdfMatrix[docId] = tfIdfValues;
-        }
-        return tfIdfMatrix;
-    }
-
-    public double[][] performPca(double[][] tfIdfMatrix) {
-        RealMatrix matrix = MatrixUtils.createRealMatrix(tfIdfMatrix);
-        SingularValueDecomposition svd = new SingularValueDecomposition(matrix);
-        RealMatrix u = svd.getU();
-        return u.getSubMatrix(0, u.getRowDimension() - 1, 0, 1).getData();
-    }
 }
