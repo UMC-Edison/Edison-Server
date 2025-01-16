@@ -32,10 +32,8 @@ public class BubbleRestController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> deleteBubble(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId,
-            @RequestBody @Valid BubbleRequestDto.DeleteDto request) {
-        request.setBubbleId(bubbleId);
-        BubbleResponseDto.DeleteResultDto result = bubbleService.deleteBubble(userPrincipal, request);
+            @PathVariable Long bubbleId) {
+        BubbleResponseDto.DeleteResultDto result = bubbleService.deleteBubble(userPrincipal, bubbleId);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
@@ -44,10 +42,8 @@ public class BubbleRestController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> restoreBubble(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId,
-            @RequestBody @Valid BubbleRequestDto.RestoreDto request) {
-        request.setBubbleId(bubbleId);
-        BubbleResponseDto.RestoreResultDto result = bubbleService.restoreBubble(userPrincipal, request);
+            @PathVariable Long bubbleId) {
+        BubbleResponseDto.RestoreResultDto result = bubbleService.restoreBubble(userPrincipal, bubbleId);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 }

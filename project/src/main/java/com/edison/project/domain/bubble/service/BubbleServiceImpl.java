@@ -85,10 +85,10 @@ public class BubbleServiceImpl implements BubbleService {
 
     @Override
     @Transactional
-    public BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.DeleteDto requestDto) {
+    public BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
 
         // Bubble 조회
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(requestDto.getBubbleId())
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         // 삭제 권한 확인
@@ -108,10 +108,10 @@ public class BubbleServiceImpl implements BubbleService {
     // 버블 복원
     @Override
     @Transactional
-    public BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.RestoreDto requestDto) {
+    public BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
 
         // Bubble 조회
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(requestDto.getBubbleId())
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(bubbleId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         // 복원 권한 확인

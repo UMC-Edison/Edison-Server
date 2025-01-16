@@ -47,8 +47,7 @@ public class LabelRestController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> deleteLabel(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long labelId,
-            @RequestBody @Valid LabelRequestDTO.DeleteDto request) {
+            @PathVariable Long labelId) {
         labelCommandService.deleteLabel(userPrincipal, labelId);
         return ApiResponse.onSuccess(SuccessStatus._OK);
 

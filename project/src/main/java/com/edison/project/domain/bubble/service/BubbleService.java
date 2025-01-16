@@ -7,6 +7,6 @@ import jakarta.validation.Valid;
 
 public interface BubbleService {
     BubbleResponseDto.CreateResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.CreateDto requestDto);
-    BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.DeleteDto requestDto);
-    BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.RestoreDto requestDto);
+    BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
+    BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
 }
