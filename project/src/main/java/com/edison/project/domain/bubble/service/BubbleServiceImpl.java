@@ -15,7 +15,9 @@ import com.edison.project.domain.member.repository.MemberRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.SingularValueDecomposition;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -34,35 +36,30 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public BubbleResponseDto.CreateResultDto createBubble(BubbleRequestDto.CreateDto requestDto) {
-        // Member 조회
         Member member = memberRepository.findById(requestDto.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        // linkedBubble 검증
         Bubble linkedBubble = null;
         if (requestDto.getLinkedBubbleId() != null) {
             linkedBubble = bubbleRepository.findById(requestDto.getLinkedBubbleId())
                     .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
         }
 
-        // 라벨 검증
         Set<Long> labelIds = Optional.ofNullable(requestDto.getLabelIds()).orElse(Collections.emptySet());
         if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
 
         Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
         if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
 
-        // 버블 생성 및 저장
         Bubble savedBubble = bubbleRepository.save(Bubble.builder()
                 .member(member)
                 .title(requestDto.getTitle())
                 .content(requestDto.getContent())
                 .mainImg(requestDto.getMainImageUrl())
                 .linkedBubble(linkedBubble)
-                .labels(new HashSet<>()) // 초기화
+                .labels(new HashSet<>())
                 .build());
 
-        // 라벨과 버블 매핑 후 저장
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(savedBubble).label(label).build())
                 .collect(Collectors.toSet());
@@ -70,7 +67,6 @@ public class BubbleServiceImpl implements BubbleService {
         bubbleLabelRepository.saveAll(bubbleLabels);
         savedBubble.getLabels().addAll(bubbleLabels);
 
-        // ResponseDto 반환
         return BubbleResponseDto.CreateResultDto.builder()
                 .bubbleId(savedBubble.getBubbleId())
                 .title(savedBubble.getTitle())
@@ -86,12 +82,9 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public BubbleResponseDto.DeleteResultDto deleteBubble(BubbleRequestDto.DeleteDto requestDto) {
-
-        // Bubble 조회
         Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(requestDto.getBubbleId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
-        // 삭제 권한 확인
         if (!bubble.getMember().getMemberId().equals(requestDto.getMemberId())) {
             throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
@@ -105,17 +98,13 @@ public class BubbleServiceImpl implements BubbleService {
                 .build();
     }
 
-    // 버블 복원
     @Override
     @Transactional
     public BubbleResponseDto.RestoreResultDto restoreBubble(BubbleRequestDto.RestoreDto requestDto) {
-
-        // Bubble 조회
         Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(requestDto.getBubbleId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
-        // 복원 권한 확인
-        if(!bubble.getMember().getMemberId().equals(requestDto.getMemberId())) {
+        if (!bubble.getMember().getMemberId().equals(requestDto.getMemberId())) {
             throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
@@ -136,27 +125,48 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     private String getLabels(Bubble bubble) {
-        return bubble.getLabels().stream() // Bubble에서 BubbleLabel 리스트 가져오기
-                .map(bubbleLabel -> bubbleLabel.getLabel().getName()) // BubbleLabel을 통해 Label의 이름 가져오기
-                .collect(Collectors.joining(" ")); // 라벨 이름을 공백으로 구분하여 반환
+        return bubble.getLabels().stream()
+                .map(bubbleLabel -> bubbleLabel.getLabel().getName())
+                .collect(Collectors.joining(" "));
     }
 
-    public double[][] get2DCoordinates(double[][] data) throws Exception {
-        // Fetch combined texts
-        List<String> combinedTexts = getCombinedTexts();
+    public double[][] calculateTfIdf(List<String> combinedTexts) {
+        Map<String, Integer> termDocCount = new HashMap<>();
+        Map<Integer, Map<String, Double>> tfMap = new HashMap<>();
 
-        // Calculate TF-IDF
-        TfidfVectorizer vectorizer = new TfidfVectorizer();
-        Map<Integer, Map<String, Double>> tfIdfMap = vectorizer.calculateTfIdf(combinedTexts);
+        for (int docId = 0; docId < combinedTexts.size(); docId++) {
+            String[] terms = combinedTexts.get(docId).split(" ");
+            Map<String, Double> termFrequency = new HashMap<>();
+            for (String term : terms) {
+                termFrequency.put(term, termFrequency.getOrDefault(term, 0.0) + 1);
+            }
+            tfMap.put(docId, termFrequency);
 
-        // Convert to matrix
-        double[][] tfIdfMatrix = tfIdfMap.values().stream()
-                .map(map -> map.values().stream().mapToDouble(Double::doubleValue).toArray())
-                .toArray(double[][]::new);
+            for (String term : termFrequency.keySet()) {
+                termDocCount.put(term, termDocCount.getOrDefault(term, 0) + 1);
+            }
+        }
 
-        // Perform PCA
-        PcaReducer pcaReducer = new PcaReducer();
-        return pcaReducer.reduceTo2D(tfIdfMatrix);
+        double[][] tfIdfMatrix = new double[combinedTexts.size()][];
+
+        for (int docId = 0; docId < combinedTexts.size(); docId++) {
+            Map<String, Double> termFrequency = tfMap.get(docId);
+            double[] tfIdfValues = new double[termDocCount.size()];
+            int index = 0;
+            for (String term : termDocCount.keySet()) {
+                double tf = termFrequency.getOrDefault(term, 0.0);
+                double idf = Math.log((double) combinedTexts.size() / (1 + termDocCount.get(term)));
+                tfIdfValues[index++] = tf * idf;
+            }
+            tfIdfMatrix[docId] = tfIdfValues;
+        }
+        return tfIdfMatrix;
     }
 
+    public double[][] performPca(double[][] tfIdfMatrix) {
+        RealMatrix matrix = MatrixUtils.createRealMatrix(tfIdfMatrix);
+        SingularValueDecomposition svd = new SingularValueDecomposition(matrix);
+        RealMatrix u = svd.getU();
+        return u.getSubMatrix(0, u.getRowDimension() - 1, 0, 1).getData();
+    }
 }

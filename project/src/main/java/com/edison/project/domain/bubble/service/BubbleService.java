@@ -10,5 +10,6 @@ public interface BubbleService {
     BubbleResponseDto.DeleteResultDto deleteBubble(BubbleRequestDto.DeleteDto requestDto);
     BubbleResponseDto.RestoreResultDto restoreBubble(BubbleRequestDto.RestoreDto requestDto);
     List<String> getCombinedTexts();
-    double[][] get2DCoordinates(double[][] data) throws Exception;
+    double[][] calculateTfIdf(List<String> combinedTexts);
+    double[][] performPca(double[][] tfIdfMatrix);
 }
