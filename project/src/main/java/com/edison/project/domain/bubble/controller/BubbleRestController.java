@@ -49,7 +49,7 @@ public class BubbleRestController {
     }
 
     // 버블 전체 목록 조회
-    @GetMapping
+    @GetMapping("/space")
     public ResponseEntity<ApiResponse> getBubblesByMember(
             @RequestParam Long memberId,
             @RequestParam(defaultValue = "0") int page,
@@ -59,5 +59,12 @@ public class BubbleRestController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(memberId, pageable);
         return response;
+    }
+
+    // 버블 상세정보 조회
+    @GetMapping("/{bubbleId}")
+    public ResponseEntity<ApiResponse> getBubble(@PathVariable Long bubbleId) {
+        BubbleResponseDto.ListResultDto response = bubbleService.getBubble(bubbleId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 }
