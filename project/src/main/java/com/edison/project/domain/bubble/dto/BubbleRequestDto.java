@@ -15,7 +15,7 @@ public class BubbleRequestDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateDto {
+    public static class ListDto {
 
         private String title;
         private String content;

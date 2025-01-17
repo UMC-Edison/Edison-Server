@@ -37,6 +37,6 @@ public class LabelResponseDTO {
         private String name;
         private String color;
         private Long bubbleCount;
-        private List<BubbleResponseDto.CreateResultDto> bubbles;
+        private List<BubbleResponseDto.ListResultDto> bubbles;
     }
 }
