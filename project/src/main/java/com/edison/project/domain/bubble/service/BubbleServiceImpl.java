@@ -40,6 +40,10 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         // Member 조회
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
@@ -92,6 +96,9 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
 
         // Bubble 조회
         Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId)
@@ -115,6 +122,9 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
 
         // Bubble 조회
         Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(bubbleId)

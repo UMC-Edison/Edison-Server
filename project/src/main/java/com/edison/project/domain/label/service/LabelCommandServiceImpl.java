@@ -25,6 +25,10 @@ public class LabelCommandServiceImpl implements LabelCommandService {
     @Override
     @Transactional
     public LabelResponseDTO.CreateResultDto createLabel(CustomUserPrincipal userPrincipal, LabelRequestDTO.CreateDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
@@ -58,6 +62,13 @@ public class LabelCommandServiceImpl implements LabelCommandService {
     @Override
     @Transactional
     public LabelResponseDTO.CreateResultDto updateLabel(CustomUserPrincipal userPrincipal, Long labelId, LabelRequestDTO.CreateDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
@@ -91,6 +102,10 @@ public class LabelCommandServiceImpl implements LabelCommandService {
     @Override
     @Transactional
     public void deleteLabel(CustomUserPrincipal userPrincipal, Long labelId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 

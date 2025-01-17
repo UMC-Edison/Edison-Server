@@ -27,6 +27,10 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     @Override
     public List<LabelResponseDTO.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         if (!memberRepository.existsById(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
@@ -50,6 +54,10 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     @Override
     public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long labelId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         // **중복**
         if (!memberRepository.existsById(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
