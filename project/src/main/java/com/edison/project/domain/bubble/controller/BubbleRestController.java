@@ -27,8 +27,8 @@ public class BubbleRestController {
     // 버블 생성
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> createBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody @Valid BubbleRequestDto.CreateDto request) {
-        BubbleResponseDto.CreateResultDto response = bubbleService.createBubble(userPrincipal, request);
+    public ResponseEntity<ApiResponse> createBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody @Valid BubbleRequestDto.ListDto request) {
+        BubbleResponseDto.ListResultDto response = bubbleService.createBubble(userPrincipal, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
