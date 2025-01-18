@@ -75,5 +75,6 @@ public class BubbleRestController {
         // 최신순 정렬
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return bubbleService.getRecentBubblesByMember(userPrincipal, pageable);
+
     }
 }
