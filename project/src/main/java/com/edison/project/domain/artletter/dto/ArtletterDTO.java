@@ -58,18 +58,5 @@ public class ArtletterDTO {
         private int scraps;
     }
 
-    public static ArtletterDTO fromEntity(Artletter artletter, int likes, int scraps) {
-        return new ArtletterDTO(
-                artletter.getLetterId(),
-                artletter.getTitle(),
-                "thumbnail_url_placeholder",
-                // 아트레터 내부에 사진 들어가는건 아직 구현 안 됨
-                // 내부에 최대 5장, 썸네일 1장
-                likes,
-                scraps
-        );
-    }
-
-
 }
 

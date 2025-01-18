@@ -4,10 +4,8 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
-import com.edison.project.domain.artletter.dto.TestDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.service.ArtletterService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -104,7 +102,7 @@ public class ArtletterController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        TestDTO response = artletterService.getAllArtletters(page, size);
+        Map<String, Object> response = artletterService.getAllArtletters(page, size);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
