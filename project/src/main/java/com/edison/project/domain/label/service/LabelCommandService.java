@@ -2,9 +2,10 @@ package com.edison.project.domain.label.service;
 
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.dto.LabelRequestDTO;
+import com.edison.project.global.security.CustomUserPrincipal;
 
 public interface LabelCommandService {
-    LabelResponseDTO.CreateResultDto createLabel(LabelRequestDTO.CreateDto request);
-    LabelResponseDTO.CreateResultDto updateLabel(Long labelId, LabelRequestDTO.CreateDto request);
-    void deleteLabel(Long labelId, Long memberId);
+    LabelResponseDTO.CreateResultDto createLabel(CustomUserPrincipal userPrincipal, LabelRequestDTO.CreateDto request);
+    LabelResponseDTO.CreateResultDto updateLabel(CustomUserPrincipal userPrincipal, Long labelId, LabelRequestDTO.CreateDto request);
+    void deleteLabel(CustomUserPrincipal userPrincipal, Long labelId);
 }
