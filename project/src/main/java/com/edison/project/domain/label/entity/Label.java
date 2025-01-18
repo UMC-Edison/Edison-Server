@@ -24,8 +24,8 @@ public class Label extends BaseEntity {
     @Column(name = "name")
     private String name;
 
-    @Column(name = "color", nullable = false, length = 10)
-    private String color;
+    @Column(name = "color", nullable = false)
+    private int color;
 
     @ManyToOne
     @JoinColumn(name = "member_id") // 로그인 안한 유저 id값 없다면, nullable=true 추가

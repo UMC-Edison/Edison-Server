@@ -21,6 +21,7 @@ public enum ErrorStatus {
 
     // 로그인 관련 에러
     LOGIN_CANCELLED(HttpStatus.BAD_REQUEST, "LOGIN4001", "로그인이 취소되었습니다."),
+    LOGIN_REQUIRED(HttpStatus.UNAUTHORIZED, "LOGIN4002", "로그인이 필요합니다."),
 
     // 멤버 관려 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
@@ -34,7 +35,7 @@ public enum ErrorStatus {
     // 라벨 관련 에러
     LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨을 찾을 수 없습니다."),
     LABEL_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨 이름은 최대 20자까지 가능합니다."),
-    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상입니다.");
+    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다.");
 
 
     private final HttpStatus httpStatus;

@@ -14,7 +14,7 @@ public class LabelResponseDTO {
     public static class CreateResultDto {
         private Long labelId;
         private String name;
-        private String color;
+        private int color;
     }
 
     @Getter
@@ -24,7 +24,7 @@ public class LabelResponseDTO {
     public static class ListResultDto {
         private Long labelId;
         private String name;
-        private String color;
+        private int color;
         private Long bubbleCount;
     }
 
@@ -35,8 +35,8 @@ public class LabelResponseDTO {
     public static class DetailResultDto {
         private Long labelId;
         private String name;
-        private String color;
+        private int color;
         private Long bubbleCount;
-        private List<BubbleResponseDto.CreateResultDto> bubbles;
+        private List<BubbleResponseDto.ListResultDto> bubbles;
     }
 }
