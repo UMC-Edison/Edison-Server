@@ -15,6 +15,7 @@ import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.label.repository.LabelRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +39,13 @@ public class BubbleServiceImpl implements BubbleService {
 
     @Override
     @Transactional
-    public BubbleResponseDto.ListResultDto createBubble(BubbleRequestDto.ListDto requestDto) {
+    public BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         // Member 조회
-        Member member = memberRepository.findById(requestDto.getMemberId())
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         // linkedBubble 검증
@@ -90,14 +95,17 @@ public class BubbleServiceImpl implements BubbleService {
 
     @Override
     @Transactional
-    public BubbleResponseDto.DeleteResultDto deleteBubble(BubbleRequestDto.DeleteDto requestDto) {
+    public BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
 
         // Bubble 조회
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(requestDto.getBubbleId())
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         // 삭제 권한 확인
-        if (!bubble.getMember().getMemberId().equals(requestDto.getMemberId())) {
+        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
@@ -113,14 +121,17 @@ public class BubbleServiceImpl implements BubbleService {
     // 버블 복원
     @Override
     @Transactional
-    public BubbleResponseDto.RestoreResultDto restoreBubble(BubbleRequestDto.RestoreDto requestDto) {
+    public BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
 
         // Bubble 조회
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(requestDto.getBubbleId())
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(bubbleId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         // 복원 권한 확인
-        if(!bubble.getMember().getMemberId().equals(requestDto.getMemberId())) {
+        if(!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 

@@ -5,11 +5,14 @@ import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.domain.bubble.service.BubbleService;
+import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.data.domain.Pageable;
@@ -23,28 +26,29 @@ public class BubbleRestController {
 
     // 버블 생성
     @PostMapping
-    public ResponseEntity<ApiResponse> createBubble(@RequestBody @Valid BubbleRequestDto.ListDto request) {
-        BubbleResponseDto.ListResultDto response = bubbleService.createBubble(request);
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> createBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody @Valid BubbleRequestDto.ListDto request) {
+        BubbleResponseDto.ListResultDto response = bubbleService.createBubble(userPrincipal, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
     //버블 삭제
     @PatchMapping("/{bubbleId}/delete")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> deleteBubble(
-            @PathVariable Long bubbleId,
-            @RequestBody @Valid BubbleRequestDto.DeleteDto request) {
-        request.setBubbleId(bubbleId);
-        BubbleResponseDto.DeleteResultDto result = bubbleService.deleteBubble(request);
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable Long bubbleId) {
+        BubbleResponseDto.DeleteResultDto result = bubbleService.deleteBubble(userPrincipal, bubbleId);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
     //버블 복원
     @PatchMapping("/{bubbleId}/restore")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> restoreBubble(
-            @PathVariable Long bubbleId,
-            @RequestBody @Valid BubbleRequestDto.RestoreDto request) {
-        request.setBubbleId(bubbleId);
-        BubbleResponseDto.RestoreResultDto result = bubbleService.restoreBubble(request);
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable Long bubbleId) {
+        BubbleResponseDto.RestoreResultDto result = bubbleService.restoreBubble(userPrincipal, bubbleId);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
