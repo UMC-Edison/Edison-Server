@@ -177,8 +177,17 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public BubbleResponseDto.ListResultDto getBubble(Long bubbleId) {
+    public BubbleResponseDto.ListResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 조회 권한 확인
+        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+        }
 
         return BubbleResponseDto.ListResultDto.builder()
                 .bubbleId(bubble.getBubbleId())
