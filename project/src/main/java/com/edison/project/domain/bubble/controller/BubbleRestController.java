@@ -64,4 +64,16 @@ public class BubbleRestController {
         ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(memberId, pageable);
         return response;
     }
+
+    @GetMapping("/deleted")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getDeletedBubbles(
+        @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        ResponseEntity<ApiResponse> response = bubbleService.getDeletedBubbles(userPrincipal, pageable);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
 }

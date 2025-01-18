@@ -176,4 +176,39 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
+    @Override
+    public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        // Member 조회
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedTrue(userPrincipal.getMemberId(), pageable);
+
+        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
+                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+
+        // Bubble 데이터 변환
+        List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
+                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
+                        .bubbleId(bubble.getBubbleId())
+                        .title(bubble.getTitle())
+                        .content(bubble.getContent())
+                        .mainImageUrl(bubble.getMainImg())
+                        .labels(bubble.getLabels().stream()
+                                .map(label -> label.getLabel().getName())
+                                .collect(Collectors.toList()))
+                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                                .map(Bubble::getBubbleId)
+                                .orElse(null))
+                        .createdAt(bubble.getCreatedAt())
+                        .updatedAt(bubble.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+    }
 }

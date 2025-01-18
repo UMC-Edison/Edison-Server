@@ -18,5 +18,6 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     Optional<Bubble> findByBubbleIdAndIsDeletedTrue(Long bubbleId);
 
     Page<Bubble> findByMember_MemberIdAndIsDeletedFalse(Long memberId, Pageable pageable);
+    Page<Bubble> findByMember_MemberIdAndIsDeletedTrue(Long memberId, Pageable pageable);
 
 }
