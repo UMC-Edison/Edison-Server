@@ -67,12 +67,13 @@ public class BubbleRestController {
         return response;
     }
 
-    // 전체 버블 검색
+    // 버블 검색
     @GetMapping("/search")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> searchBubbles(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam String keyword,
+            @RequestParam(defaultValue = "false") boolean recent,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
@@ -81,6 +82,6 @@ public class BubbleRestController {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        return bubbleService.searchBubbles(userPrincipal, keyword, pageable);
+        return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
 }

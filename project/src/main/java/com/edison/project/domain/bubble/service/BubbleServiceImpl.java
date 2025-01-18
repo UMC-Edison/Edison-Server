@@ -24,6 +24,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
         import java.util.stream.Collectors;
 
@@ -176,10 +180,10 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
-    // 전체 버블 검색
+    // 버블 검색
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, Pageable pageable) {
+    public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, boolean recent, Pageable pageable) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -187,6 +191,17 @@ public class BubbleServiceImpl implements BubbleService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         List<Bubble> bubbles = bubbleRepository.searchBubblesByKeyword(keyword);
+
+        // 7일 이내 필터링 조건
+        if (Boolean.TRUE.equals(recent)) {
+            ZonedDateTime sevenDaysAgoZoned = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).minusDays(7);
+            LocalDateTime sevenDaysAgo = sevenDaysAgoZoned.toLocalDateTime();
+
+            bubbles = bubbles.stream()
+                    .filter(bubble -> bubble.getUpdatedAt().isAfter(sevenDaysAgo))
+                    .collect(Collectors.toList());
+        }
+
 
         // 검색어 정렬 : 제목, 본문, 오래된 순서 순
         List<Bubble> sortedBubbles = bubbles.stream()
