@@ -176,4 +176,40 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
+    // 전체 버블 검색
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, Pageable pageable) {
+        Page<Bubble> bubblePage = bubbleRepository.searchBubblesByKeyword(keyword, pageable);
+
+        // **중복 제거 가능**
+        PageInfo pageInfo = new PageInfo(
+                bubblePage.getNumber(),
+                bubblePage.getSize(),
+                bubblePage.hasNext(),
+                bubblePage.getTotalElements(),
+                bubblePage.getTotalPages()
+        );
+
+        List<BubbleResponseDto.ListResultDto> results = bubblePage.getContent().stream()
+                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
+                        .bubbleId(bubble.getBubbleId())
+                        .title(bubble.getTitle())
+                        .content(bubble.getContent())
+                        .mainImageUrl(bubble.getMainImg())
+                        .labels(bubble.getLabels().stream()
+                                .map(bl -> bl.getLabel().getName())
+                                .collect(Collectors.toList()))
+                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                                .map(Bubble::getBubbleId)
+                                .orElse(null))
+                        .createdAt(bubble.getCreatedAt())
+                        .updatedAt(bubble.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
+    }
+
+
 }
