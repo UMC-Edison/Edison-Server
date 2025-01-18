@@ -106,7 +106,6 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 삭제 권한 확인
         if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
         bubble.setDeleted(true);
@@ -132,7 +131,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 복원 권한 확인
         if(!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
         bubble.setDeleted(false);
@@ -186,7 +185,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 조회 권한 확인
         if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
         return BubbleResponseDto.ListResultDto.builder()
