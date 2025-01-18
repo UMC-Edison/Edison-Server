@@ -1,6 +1,8 @@
 package com.edison.project.domain.bubble.controller;
 
+import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
@@ -73,6 +75,10 @@ public class BubbleRestController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new GeneralException(ErrorStatus.INVALID_KEYWORD);
+        }
 
         Pageable pageable = PageRequest.of(page, size);
         return bubbleService.searchBubbles(userPrincipal, keyword, pageable);

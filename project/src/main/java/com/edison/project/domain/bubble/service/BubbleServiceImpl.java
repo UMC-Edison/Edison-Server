@@ -180,6 +180,12 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+        memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
         List<Bubble> bubbles = bubbleRepository.searchBubblesByKeyword(keyword);
 
         // 검색어 정렬 : 제목, 본문, 오래된 순서 순
