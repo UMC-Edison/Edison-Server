@@ -39,7 +39,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
         Label label = Label.builder()
                 .name(request.getName())
-                .color(request.getColor()) // 라벨 String -> enum 명시적 변환
+                .color(request.getColor())
                 .member(member)
                 .build();
 
