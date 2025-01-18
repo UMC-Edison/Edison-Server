@@ -147,12 +147,13 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getBubblesByMember(Long memberId, Pageable pageable) {
-        // Member 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+    @Transactional
+    public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(memberId, pageable);
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(userPrincipal.getMemberId(), pageable);
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
@@ -179,11 +180,15 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getRecentBubblesByMember(Long memberId, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
 
         // 7일 이내 버블 조회
-        Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(memberId, sevenDaysago, pageable);
+        Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
 
         // DTO로 변환
         List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
