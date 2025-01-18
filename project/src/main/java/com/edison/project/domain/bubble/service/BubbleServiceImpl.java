@@ -180,18 +180,40 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, Pageable pageable) {
-        Page<Bubble> bubblePage = bubbleRepository.searchBubblesByKeyword(keyword, pageable);
+        List<Bubble> bubbles = bubbleRepository.searchBubblesByKeyword(keyword);
 
-        // **중복 제거 가능**
+        // 검색어 정렬 : 제목, 본문, 오래된 순서 순
+        List<Bubble> sortedBubbles = bubbles.stream()
+                .sorted((b1, b2) -> {
+                    boolean b1TitleMatch = b1.getTitle().contains(keyword);
+                    boolean b2TitleMatch = b2.getTitle().contains(keyword);
+                    if (b1TitleMatch && !b2TitleMatch) return -1;
+                    if (!b1TitleMatch && b2TitleMatch) return 1;
+
+                    int b1ContentMatchCount = countOccurrences(b1.getContent(), keyword);
+                    int b2ContentMatchCount = countOccurrences(b2.getContent(), keyword);
+                    if (b1ContentMatchCount != b2ContentMatchCount) {
+                        return Integer.compare(b2ContentMatchCount, b1ContentMatchCount);
+                    }
+
+                    return b1.getUpdatedAt().compareTo(b2.getUpdatedAt());
+                })
+                .collect(Collectors.toList());
+
+        // 페이징 적용
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), sortedBubbles.size());
+        List<Bubble> paginatedBubbles = sortedBubbles.subList(start, end);
+
         PageInfo pageInfo = new PageInfo(
-                bubblePage.getNumber(),
-                bubblePage.getSize(),
-                bubblePage.hasNext(),
-                bubblePage.getTotalElements(),
-                bubblePage.getTotalPages()
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                end < sortedBubbles.size(),
+                (long) sortedBubbles.size(),
+                (sortedBubbles.size() + pageable.getPageSize() - 1) / pageable.getPageSize()
         );
 
-        List<BubbleResponseDto.ListResultDto> results = bubblePage.getContent().stream()
+        List<BubbleResponseDto.ListResultDto> results = paginatedBubbles.stream()
                 .map(bubble -> BubbleResponseDto.ListResultDto.builder()
                         .bubbleId(bubble.getBubbleId())
                         .title(bubble.getTitle())
@@ -211,5 +233,15 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
     }
 
+    private int countOccurrences(String content, String keyword) {
+        if (content == null || keyword == null || keyword.isEmpty()) return 0;
+        int count = 0;
+        int idx = content.indexOf(keyword);
+        while (idx != -1) {
+            count++;
+            idx = content.indexOf(keyword, idx + keyword.length());
+        }
+        return count;
+    }
 
 }

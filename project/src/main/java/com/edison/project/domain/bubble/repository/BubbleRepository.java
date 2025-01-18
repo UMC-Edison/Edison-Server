@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -25,6 +26,6 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
             "LEFT JOIN b.labels bl " +
             "WHERE (b.title LIKE %:keyword% OR b.content LIKE %:keyword% OR bl.label.name LIKE %:keyword%) " +
             "AND b.isDeleted = false")
-    Page<Bubble> searchBubblesByKeyword(String keyword, Pageable pageable);
+    List<Bubble> searchBubblesByKeyword(String keyword);
 
 }
