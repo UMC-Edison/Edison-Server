@@ -2,6 +2,7 @@ package com.edison.project.global.security;
 
 import com.edison.project.global.util.JwtUtil;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+
             throws IOException, jakarta.servlet.ServletException {
 
         String authHeader = request.getHeader("Authorization");
@@ -40,6 +42,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
+  
         filterChain.doFilter(request, response);
     }
 }
+

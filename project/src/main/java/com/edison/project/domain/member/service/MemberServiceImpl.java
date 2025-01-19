@@ -1,20 +1,20 @@
 package com.edison.project.domain.member.service;
 
+import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.entity.RefreshToken;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.repository.RefreshTokenRepository;
+import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
-import org.springframework.web.bind.annotation.ResponseBody;
-
-import java.util.Optional;
 
 import static com.edison.project.common.status.SuccessStatus._OK;
 
@@ -26,6 +26,7 @@ public class MemberServiceImpl implements MemberService{
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
 
+    @Override
     @Transactional
     public ResponseEntity<ApiResponse> generateTokensForOidcUser(String email) {
 
@@ -64,6 +65,7 @@ public class MemberServiceImpl implements MemberService{
 
     }
 
+    @Override
     public Long createUserIfNotExist(String email) {
         return memberRepository.findByEmail(email)
                 .map(Member::getMemberId)
@@ -75,4 +77,28 @@ public class MemberServiceImpl implements MemberService{
                     return member.getMemberId();
                 });
     }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal, MemberResponseDto.ProfileResultDto request) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(GeneralException::loginRequired);
+
+        if (request.getNickname()==null || request.getNickname() == "") {
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        member = member.registerProfile(request.getNickname());
+        memberRepository.save(member);
+
+        MemberResponseDto.ProfileResultDto response = MemberResponseDto.ProfileResultDto.builder()
+                .nickname(member.getNickname())
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+
+
 }

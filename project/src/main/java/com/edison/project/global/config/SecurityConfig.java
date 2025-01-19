@@ -4,6 +4,7 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.service.CustomOidcUserService;
 import com.edison.project.domain.member.service.MemberServiceImpl;
+import com.edison.project.global.security.CustomAuthenticationEntryPoint;
 import com.edison.project.global.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +19,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -32,14 +32,19 @@ public class SecurityConfig {
     private final MemberServiceImpl memberService;
     private final CustomOidcUserService customOidcUserService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    //Spring Security 설정
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+  
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/members/register").authenticated()
+                        .requestMatchers("/favicon.ico").permitAll()
                         .anyRequest().permitAll()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customAuthenticationEntryPoint) // EntryPoint 등록
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // OIDC 전용 (구글로그인)
