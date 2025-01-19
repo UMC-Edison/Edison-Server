@@ -16,7 +16,6 @@ public class BubbleRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ListDto {
-
         private String title;
         private String content;
         private String mainImageUrl;
