@@ -33,9 +33,7 @@ public class SecurityConfig {
     private final CustomOidcUserService customOidcUserService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
-
-
-    //Spring Security 설정
+  
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http

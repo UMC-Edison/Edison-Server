@@ -28,8 +28,8 @@ public class JwtUtil {
 
     public String generateRefreshToken(Long memberId, String email) {
         return JWT.create()
-                .withSubject(email)
-                .withClaim("memberId", memberId)
+                .withSubject(String.valueOf(memberId))
+                .withClaim("email", email)
                 .withExpiresAt(new Date(System.currentTimeMillis() + refreshTokenExpiration))
                 .sign(Algorithm.HMAC256(secretKey));
     }
