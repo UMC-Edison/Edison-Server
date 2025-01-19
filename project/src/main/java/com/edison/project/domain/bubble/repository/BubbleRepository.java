@@ -32,9 +32,8 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     );
     // 전체 버블 검색
     @Query("SELECT b FROM Bubble b " +
-            "LEFT JOIN b.labels bl " +
-            "WHERE (b.title LIKE %:keyword% OR b.content LIKE %:keyword% OR bl.label.name LIKE %:keyword%) " +
+            "WHERE (b.title LIKE %:keyword% OR b.content LIKE %:keyword% " +
+            "OR EXISTS (SELECT 1 FROM BubbleLabel bl WHERE bl.bubble = b AND bl.label.name LIKE %:keyword%)) " +
             "AND b.isDeleted = false")
-    List<Bubble> searchBubblesByKeyword(String keyword);
-
+    List<Bubble> searchBubblesByKeyword(@Param("keyword") String keyword);
 }
