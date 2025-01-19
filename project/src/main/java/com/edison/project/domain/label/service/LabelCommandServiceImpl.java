@@ -37,16 +37,9 @@ public class LabelCommandServiceImpl implements LabelCommandService {
             throw new GeneralException(ErrorStatus.LABEL_NAME_TOO_LONG);
         }
 
-        // 라벨 색상 Enum 값 검증
-        try {
-            Label.LabelColor.valueOf(request.getColor());
-        } catch (IllegalArgumentException e) {
-            throw new GeneralException(ErrorStatus.INVALID_COLOR);
-        }
-
         Label label = Label.builder()
                 .name(request.getName())
-                .color(Label.LabelColor.valueOf(request.getColor())) // 라벨 String -> enum 명시적 변환
+                .color(request.getColor())
                 .member(member)
                 .build();
 
@@ -55,7 +48,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
         return LabelResponseDTO.CreateResultDto.builder()
                 .labelId(savedLabel.getLabelId())
                 .name(savedLabel.getName())
-                .color(savedLabel.getColor().name())
+                .color(savedLabel.getColor())
                 .build();
     }
 
@@ -77,16 +70,9 @@ public class LabelCommandServiceImpl implements LabelCommandService {
             throw new GeneralException(ErrorStatus.LABEL_NAME_TOO_LONG);
         }
 
-        // **중복: 라벨 색상 Enum 값 검증
-        try {
-            Label.LabelColor.valueOf(request.getColor());
-        } catch (IllegalArgumentException e) {
-            throw new GeneralException(ErrorStatus.INVALID_COLOR);
-        }
-
         Label updatedLabel = label.toBuilder()
                 .name(request.getName())
-                .color(Label.LabelColor.valueOf(request.getColor()))
+                .color(request.getColor())
                 .build();
 
         labelRepository.save(updatedLabel);
@@ -95,7 +81,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
         return LabelResponseDTO.CreateResultDto.builder()
                 .labelId(updatedLabel.getLabelId())
                 .name(updatedLabel.getName())
-                .color(updatedLabel.getColor().name())
+                .color(updatedLabel.getColor())
                 .build();
     }
 
