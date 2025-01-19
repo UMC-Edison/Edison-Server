@@ -108,7 +108,6 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 삭제 권한 확인
         if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
         bubble.setDeleted(true);
@@ -134,7 +133,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 복원 권한 확인
         if(!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
         bubble.setDeleted(false);
@@ -217,6 +216,36 @@ public class BubbleServiceImpl implements BubbleService {
         );
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+    }
+
+
+    @Override
+    public BubbleResponseDto.ListResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 조회 권한 확인
+        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        return BubbleResponseDto.ListResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(bubble.getLabels().stream()
+                        .map(label -> label.getLabel().getName())
+                        .collect(Collectors.toList()))
+                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                        .map(Bubble::getBubbleId)
+                        .orElse(null))
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .build();
     }
 
 }
