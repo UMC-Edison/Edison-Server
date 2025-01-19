@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomUserPrincipal {
+
     private Long memberId;
     private String email;
+
 }
