@@ -53,17 +53,19 @@ public class BubbleRestController {
     }
 
     // 버블 전체 목록 조회
-    @GetMapping
+    @GetMapping("/space")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getBubblesByMember(
-            @RequestParam Long memberId,
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         // 최신순 정렬
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(memberId, pageable);
+        ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(userPrincipal, pageable);
         return response;
     }
+
 
     @GetMapping("/deleted")
     @PreAuthorize("isAuthenticated()")
@@ -74,5 +76,25 @@ public class BubbleRestController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return bubbleService.getDeletedBubbles(userPrincipal, pageable);
+
+    // 버블 상세정보 조회
+    @GetMapping("/{bubbleId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @PathVariable Long bubbleId) {
+        BubbleResponseDto.ListResultDto response = bubbleService.getBubble(userPrincipal, bubbleId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    // 7일 내 버블 목록 조회
+    @GetMapping("/recent")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getRecentBubblesByMember(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        // 최신순 정렬
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return bubbleService.getRecentBubblesByMember(userPrincipal, pageable);
+
     }
 }

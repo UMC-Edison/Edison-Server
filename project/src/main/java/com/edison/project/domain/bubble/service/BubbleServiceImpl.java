@@ -28,7 +28,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-        import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -109,7 +109,6 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 삭제 권한 확인
         if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
         bubble.setDeleted(true);
@@ -135,7 +134,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 복원 권한 확인
         if(!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
         bubble.setDeleted(false);
@@ -148,12 +147,13 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getBubblesByMember(Long memberId, Pageable pageable) {
-        // Member 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+    @Transactional
+    public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(memberId, pageable);
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(userPrincipal.getMemberId(), pageable);
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
@@ -221,4 +221,75 @@ public class BubbleServiceImpl implements BubbleService {
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
+  
+  @Override
+  public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+  
+        LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
+
+        // 7일 이내 버블 조회
+        Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
+
+        // DTO로 변환
+        List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
+                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
+                        .bubbleId(bubble.getBubbleId())
+                        .title(bubble.getTitle())
+                        .content(bubble.getContent())
+                        .mainImageUrl(bubble.getMainImg())
+                        .labels(bubble.getLabels().stream()
+                                .map(label -> label.getLabel().getName())
+                                .collect(Collectors.toList()))
+                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                                .map(Bubble::getBubbleId)
+                                .orElse(null))
+                        .createdAt(bubble.getCreatedAt())
+                        .updatedAt(bubble.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        PageInfo pageInfo = new PageInfo(
+                bubblePage.getNumber(),
+                bubblePage.getSize(),
+                bubblePage.hasNext(),
+                bubblePage.getTotalElements(),
+                bubblePage.getTotalPages()
+        );
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+    }
+
+
+    @Override
+    public BubbleResponseDto.ListResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 조회 권한 확인
+        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        return BubbleResponseDto.ListResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(bubble.getLabels().stream()
+                        .map(label -> label.getLabel().getName())
+                        .collect(Collectors.toList()))
+                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                        .map(Bubble::getBubbleId)
+                        .orElse(null))
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .build();
+    }
+
 }

@@ -4,8 +4,11 @@ import com.edison.project.domain.bubble.entity.Bubble;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -20,4 +23,11 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     Page<Bubble> findByMember_MemberIdAndIsDeletedFalse(Long memberId, Pageable pageable);
     Page<Bubble> findByMember_MemberIdAndIsDeletedTrue(Long memberId, Pageable pageable);
 
+    // 7일 이내 버블 목록
+    @Query("SELECT b from Bubble b where b.member.memberId = :memberId AND b.isDeleted = false AND b.updatedAt >= :startDate")
+    Page <Bubble> findRecentBubblesByMember(
+            @Param("memberId") Long memberId,
+            @Param("startDate") LocalDateTime startDate,
+            Pageable pageable
+    );
 }
