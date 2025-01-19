@@ -53,15 +53,28 @@ public class BubbleRestController {
     }
 
     // 버블 전체 목록 조회
-    @GetMapping
+    @GetMapping("/space")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getBubblesByMember(
-            @RequestParam Long memberId,
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
         // 최신순 정렬
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(memberId, pageable);
+        ResponseEntity<ApiResponse> response = bubbleService.getBubblesByMember(userPrincipal, pageable);
         return response;
+    }
+
+    @GetMapping("/recent")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getRecentBubblesByMember(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        // 최신순 정렬
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return bubbleService.getRecentBubblesByMember(userPrincipal, pageable);
+
     }
 }
