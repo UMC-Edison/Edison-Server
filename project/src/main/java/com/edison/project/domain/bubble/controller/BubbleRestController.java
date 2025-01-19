@@ -102,6 +102,8 @@ public class BubbleRestController {
             throw new GeneralException(ErrorStatus.INVALID_KEYWORD);
         }
 
+        keyword = keyword.trim();
+
         Pageable pageable = PageRequest.of(page, size);
         return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
