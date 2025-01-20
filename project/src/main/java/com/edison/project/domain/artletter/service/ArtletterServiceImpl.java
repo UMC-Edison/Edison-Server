@@ -23,37 +23,11 @@ public class ArtletterServiceImpl implements ArtletterService {
         this.artletterRepository = artletterRepository;
     }
 
-    @Override
-    public Map<String, Object> getAllArtletters(int page, int size) {
+    public Page<Artletter> getAllArtletters(int page, int size) {
+        // 페이지 요청 생성
         Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> artletterPage = artletterRepository.findAll(pageable);
 
-        // Artletter -> ArtletterDTO.ListResponseDto 변환
-        List<ArtletterDTO.ListResponseDto> result = artletterPage.getContent().stream()
-                .map(artletter -> ArtletterDTO.ListResponseDto.builder()
-                        .artletterId(artletter.getLetterId())
-                        .title(artletter.getTitle())
-                        .thumbnail("https://example.com/thumbnail" + artletter.getLetterId() + ".jpg")
-                        // .likes(artletter.getLikes())
-                        // .scraps(artletter.getScraps())
-                        .build())
-                .toList();
-
-        // PageInfo 생성
-        PageInfo pageInfo = new PageInfo(
-                artletterPage.getNumber() + 1, // Page number starts from 1
-                artletterPage.getSize(),
-                artletterPage.hasNext(),
-                artletterPage.getTotalElements(),
-                artletterPage.getTotalPages()
-        );
-
-        // 최종 응답 Map 생성
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("pageInfo", pageInfo); // 최상위 키로 pageInfo 추가
-        response.put("pages", result); // 최상위 키로 result 추가
-
-        return response;
+        return artletterRepository.findAll(pageable);
     }
 
 

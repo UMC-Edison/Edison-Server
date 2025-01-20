@@ -10,7 +10,7 @@ import java.util.Map;
 
 
 public interface ArtletterService {
-    Map<String, Object>  getAllArtletters(int page, int size);
+    Page<Artletter> getAllArtletters(int page, int size);
 
     ArtletterDTO.CreateResponseDto createArtletter(ArtletterDTO.CreateRequestDto request);
 

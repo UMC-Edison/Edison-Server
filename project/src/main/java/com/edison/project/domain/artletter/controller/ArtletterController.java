@@ -1,6 +1,7 @@
 package com.edison.project.domain.artletter.controller;
 
 import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
@@ -13,7 +14,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/artletters")
@@ -22,7 +26,7 @@ public class ArtletterController {
 
     private final ArtletterService artletterService;
 
-    // POST: Create Artletter
+    // POST: 아트레터 등록
     @PostMapping
     public ResponseEntity<ApiResponse> createArtletter(@RequestBody Map<String, Object> request) {
         // 필드 값 추출
@@ -100,14 +104,32 @@ public class ArtletterController {
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "20") int size) {
 
-        Map<String, Object> response = artletterService.getAllArtletters(page, size);
+        Page<Artletter> artletters = artletterService.getAllArtletters(page, size);
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+        // 필드(id, title)만 추출
+        List<Map<String, Object>> simplifiedResult = artletters.getContent().stream()
+                .map(artletter -> {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("id", artletter.getLetterId()); // letterId를 id로 변환
+                    map.put("title", artletter.getTitle());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, new PageInfo(
+                artletters.getNumber(),
+                artletters.getSize(),
+                artletters.hasNext(),
+                artletters.getTotalElements(),
+                artletters.getTotalPages()
+        ), simplifiedResult);
     }
 
-    // GET: 키워드 기반 search 기능
+
+
+    // GET: 키워드 기반 search
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
             @RequestParam(value = "keyword", required = false) String keyword,
