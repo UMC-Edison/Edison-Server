@@ -26,8 +26,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
-        import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -179,11 +180,54 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
+        // Member 조회
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedTrue(userPrincipal.getMemberId(), pageable);
+
+        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
+                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+
+        // Bubble 데이터 변환
+        List<BubbleResponseDto.DeletedListResultDto> bubbles = bubblePage.getContent().stream()
+                .map(bubble -> {
+                            LocalDateTime updatedAt = bubble.getUpdatedAt();
+                            LocalDateTime now = LocalDateTime.now();
+                            long remainDays = 30 - ChronoUnit.DAYS.between(updatedAt, now);
+
+                            return BubbleResponseDto.DeletedListResultDto.builder()
+                                    .bubbleId(bubble.getBubbleId())
+                                    .title(bubble.getTitle())
+                                    .content(bubble.getContent())
+                                    .mainImageUrl(bubble.getMainImg())
+                                    .labels(bubble.getLabels().stream()
+                                            .map(label -> label.getLabel().getName())
+                                            .collect(Collectors.toList()))
+                                    .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                                            .map(Bubble::getBubbleId)
+                                            .orElse(null))
+                                    .createdAt(bubble.getCreatedAt())
+                                    .updatedAt(updatedAt)
+                                    .remainDay((int) Math.max(remainDays, 0))
+                                    .build();
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+    }
+  
+  @Override
+  public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+  
         LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
 
         // 7일 이내 버블 조회
