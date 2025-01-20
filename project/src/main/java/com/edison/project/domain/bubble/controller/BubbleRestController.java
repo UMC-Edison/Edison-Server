@@ -68,6 +68,17 @@ public class BubbleRestController {
         return response;
     }
 
+
+    @GetMapping("/deleted")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getDeletedBubbles(
+        @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return bubbleService.getDeletedBubbles(userPrincipal, pageable);
+
     // 버블 상세정보 조회
     @GetMapping("/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
@@ -86,6 +97,7 @@ public class BubbleRestController {
         // 최신순 정렬
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return bubbleService.getRecentBubblesByMember(userPrincipal, pageable);
+
     }
 
     // 버블 검색

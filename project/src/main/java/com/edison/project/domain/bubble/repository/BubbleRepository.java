@@ -22,6 +22,7 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     Optional<Bubble> findByBubbleIdAndIsDeletedTrue(Long bubbleId);
 
     Page<Bubble> findByMember_MemberIdAndIsDeletedFalse(Long memberId, Pageable pageable);
+    Page<Bubble> findByMember_MemberIdAndIsDeletedTrue(Long memberId, Pageable pageable);
 
     // 7일 이내 버블 목록
     @Query("SELECT b from Bubble b where b.member.memberId = :memberId AND b.isDeleted = false AND b.updatedAt >= :startDate")

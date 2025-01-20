@@ -40,4 +40,20 @@ public class BubbleResponseDto {
         private Long bubbleId;
         private boolean isRestored;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DeletedListResultDto {
+        private Long bubbleId;
+        private String title;
+        private String content;
+        private String mainImageUrl;
+        private List<String> labels;
+        private Long linkedBubbleId;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+        private Integer remainDay;
+    }
 }
