@@ -23,4 +23,12 @@ public class MemberResponseDto {
     public static class ProfileResultDto{
         private String nickname;
     }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RefreshResultDto{
+        String accessToken;
+    }
 }

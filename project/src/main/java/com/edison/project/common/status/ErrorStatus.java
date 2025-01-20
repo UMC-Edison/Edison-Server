@@ -22,6 +22,8 @@ public enum ErrorStatus {
     // 로그인 관련 에러
     LOGIN_CANCELLED(HttpStatus.BAD_REQUEST, "LOGIN4001", "로그인이 취소되었습니다."),
     LOGIN_REQUIRED(HttpStatus.UNAUTHORIZED, "LOGIN4002", "로그인이 필요합니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "LOGIN4003", "유효하지 않은 토큰입니다."),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "LOGIN4004", "토큰이 만료되었습니다. 다시 로그인해 주세요."),
 
     // 멤버 관려 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),

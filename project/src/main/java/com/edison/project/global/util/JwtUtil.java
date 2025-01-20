@@ -2,6 +2,10 @@ package com.edison.project.global.util;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.edison.project.common.exception.GeneralException;
+import com.edison.project.common.status.ErrorStatus;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -50,5 +54,30 @@ public class JwtUtil {
 
     public String extractEmail(String token) {
         return JWT.decode(token).getClaim("email").asString();
+    }
+
+    public long getRemainingTime(String token) {
+        try {
+            DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC256(secretKey))
+                    .build()
+                    .verify(token);
+            return decodedJWT.getExpiresAt().getTime() - System.currentTimeMillis();
+        } catch (JWTVerificationException e) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+        }
+    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            DecodedJWT decodedJWT = JWT.require(Algorithm.HMAC256(secretKey))
+                    .build()
+                    .verify(token);
+
+            // 만료 시간 확인
+            Date expiration = decodedJWT.getExpiresAt();
+            return expiration.before(new Date()); // 만료되었는지 확인
+        } catch (JWTVerificationException e) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
     }
 }
