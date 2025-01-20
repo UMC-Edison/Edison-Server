@@ -10,7 +10,6 @@ import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +23,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
     @Override
     @Transactional
-    public LabelResponseDTO.CreateResultDto createLabel(CustomUserPrincipal userPrincipal, LabelRequestDTO.CreateDto request) {
+    public LabelResponseDTO.CreateResultDto createLabel(CustomUserPrincipal userPrincipal, LabelRequestDTO.CreateAndUpdateDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -54,7 +53,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
     @Override
     @Transactional
-    public LabelResponseDTO.CreateResultDto updateLabel(CustomUserPrincipal userPrincipal, Long labelId, LabelRequestDTO.CreateDto request) {
+    public LabelResponseDTO.CreateResultDto updateLabel(CustomUserPrincipal userPrincipal, Long labelId, LabelRequestDTO.CreateAndUpdateDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -88,10 +87,6 @@ public class LabelCommandServiceImpl implements LabelCommandService {
     @Override
     @Transactional
     public void deleteLabel(CustomUserPrincipal userPrincipal, Long labelId) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
