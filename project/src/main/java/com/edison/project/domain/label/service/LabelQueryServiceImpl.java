@@ -10,7 +10,9 @@ import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,12 +26,16 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     private final BubbleLabelRepository bubbleLabelRepository;
 
     @Override
-    public List<LabelResponseDTO.ListResultDto> getLabelInfoList(Long memberId) {
-        if (!memberRepository.existsById(memberId)) {
+    public List<LabelResponseDTO.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
 
-        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(memberId);
+        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(userPrincipal.getMemberId());
 
         return labelInfoList.stream()
                 .map(result -> {
@@ -38,7 +44,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                     return LabelResponseDTO.ListResultDto.builder()
                             .labelId(label.getLabelId())
                             .name(label.getName())
-                            .color(label.getColor().name())
+                            .color(label.getColor())
                             .bubbleCount(bubbleCount != null ? bubbleCount : 0L) // 버블 없는 라벨은 0으로 처리
                             .build();
                 })
@@ -47,9 +53,13 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     }
 
     @Override
-    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(Long memberId, Long labelId) {
+    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long labelId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         // **중복**
-        if (!memberRepository.existsById(memberId)) {
+        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
 
@@ -57,7 +67,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
         // 요청한 라벨이 memberId에 속해 있는지(해당 사용자가 만든 라벨이 맞는지) 검증
-        if (!label.getMember().getMemberId().equals(memberId)) {
+        if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus._UNAUTHORIZED);
         }
 
@@ -65,15 +75,15 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
         // BubbleDetailDto 변환
         //** map 내부의 함수 -> 버블 상세내용조회 api 구현 후 함수로 뽑아 중복 제거 가능
-        List<BubbleResponseDto.CreateResultDto> bubbleDetails = bubbles.stream()
-                .map(bubble -> BubbleResponseDto.CreateResultDto.builder()
+        List<BubbleResponseDto.ListResultDto> bubbleDetails = bubbles.stream()
+                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
                         .bubbleId(bubble.getBubbleId())
                         .title(bubble.getTitle())
                         .content(bubble.getContent())
                         .mainImageUrl(bubble.getMainImg())
                         .labels(bubble.getLabels().stream()
-                                .map(bl -> bl.getLabel().getLabelId())
-                                .collect(Collectors.toSet()))
+                                .map(bl -> bl.getLabel().getName())
+                                .collect(Collectors.toList()))
                         .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
                         .createdAt(bubble.getCreatedAt())
                         .updatedAt(bubble.getUpdatedAt())
@@ -84,7 +94,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         return LabelResponseDTO.DetailResultDto.builder()
                 .labelId(label.getLabelId())
                 .name(label.getName())
-                .color(label.getColor().name())
+                .color(label.getColor())
                 .bubbleCount((long) bubbleDetails.size())
                 .bubbles(bubbleDetails)
                 .build();

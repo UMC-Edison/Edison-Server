@@ -15,9 +15,7 @@ public class BubbleRequestDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateDto {
-
-        private Long memberId;
+    public static class ListDto {
         private String title;
         private String content;
         private String mainImageUrl;
@@ -30,7 +28,6 @@ public class BubbleRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DeleteDto {
-        private Long memberId;
         private Long bubbleId;
     }
 
@@ -39,7 +36,6 @@ public class BubbleRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RestoreDto {
-        private Long memberId;
-        private Long bubbleId;;
+        private Long bubbleId;
     }
 }
