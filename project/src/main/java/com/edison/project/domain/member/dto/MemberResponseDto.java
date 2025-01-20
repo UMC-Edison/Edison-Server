@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 public class MemberResponseDto {
 
     @Builder
@@ -22,5 +24,14 @@ public class MemberResponseDto {
     @AllArgsConstructor
     public static class ProfileResultDto{
         private String nickname;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IdentityTestSaveResultDto {
+        private String category;
+        private List<Integer> keywords;
     }
 }

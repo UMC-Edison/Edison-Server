@@ -4,8 +4,13 @@ import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
+import com.edison.project.domain.keywords.entity.Keywords;
+import com.edison.project.domain.keywords.repository.KeywordsRepository;
+import com.edison.project.domain.member.dto.MemberRequestDto;
 import com.edison.project.domain.member.dto.MemberResponseDto;
+import com.edison.project.domain.member.entity.MemberKeyword;
 import com.edison.project.domain.member.entity.RefreshToken;
+import com.edison.project.domain.member.repository.MemberKeywordRepository;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.repository.RefreshTokenRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -16,6 +21,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import static com.edison.project.common.status.SuccessStatus._OK;
 
 @Service
@@ -23,6 +31,8 @@ import static com.edison.project.common.status.SuccessStatus._OK;
 public class MemberServiceImpl implements MemberService{
 
     private final MemberRepository memberRepository;
+    private final MemberKeywordRepository memberKeywordRepository;
+    private final KeywordsRepository keywordsRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
 
@@ -98,6 +108,52 @@ public class MemberServiceImpl implements MemberService{
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
 
+    }
+
+    @Override
+    @Transactional
+    public MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
+        // 사용자 인증 확인
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // 최초 1회 설정 제한
+        if (memberKeywordRepository.existsByMember_MemberId(member.getMemberId())) {
+            throw new GeneralException(ErrorStatus.IDENTITY_ALREADY_SET);
+        }
+
+        // 존재하지 않는 카테고리 검증
+        String category = request.getCategory();
+        List<String> validCategories = List.of("CATEGORY1", "CATEGORY2", "CATEGORY3", "CATEGORY4");
+        if (!validCategories.contains(category)) {
+            throw new GeneralException(ErrorStatus.INVALID_CATEGORY);
+        }
+
+        // 존재하지 않는 키워드 검증
+        List<Keywords> keywords = keywordsRepository.findAllById(request.getKeywords());
+        if (keywords.isEmpty() || keywords.size() != request.getKeywords().size()) {
+            throw new GeneralException(ErrorStatus.INVALID_KEYWORDS);
+        }
+
+        // 카테고리와 키워드 맵핑 검증
+        if (!keywords.stream().allMatch(keyword -> category.equals(keyword.getCategory()))) {
+            throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
+        }
+
+        // 새로운 키워드 저장
+        List<MemberKeyword> memberKeywords = keywords.stream()
+                .map(keyword -> MemberKeyword.builder()
+                        .member(member)
+                        .keyword(keyword)
+                        .build())
+                .collect(Collectors.toList());
+        memberKeywordRepository.saveAll(memberKeywords);
+
+        // 응답 생성
+        return MemberResponseDto.IdentityTestSaveResultDto.builder()
+                .category(category)
+                .keywords(request.getKeywords())
+                .build();
     }
 
 
