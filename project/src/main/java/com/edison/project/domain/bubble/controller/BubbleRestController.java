@@ -120,4 +120,18 @@ public class BubbleRestController {
         Pageable pageable = PageRequest.of(page, size);
         return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
+
+    // 버블 수정
+    @PatchMapping("/{bubbleId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> updateBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable Long bubbleId,
+            @RequestBody @Valid BubbleRequestDto.ListDto request
+    ) {
+        BubbleResponseDto.ListResultDto response = bubbleService.updateBubble(userPrincipal, bubbleId, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+
 }
