@@ -26,6 +26,7 @@ public enum ErrorStatus {
     // 멤버 관련 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
     NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
+    NICKNAME_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4003", "닉네임이 변경되지 않았습니다."),
 
     // 버블 관련 애러
     BUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4001", "버블을 찾을 수 없습니다."),
@@ -46,8 +47,7 @@ public enum ErrorStatus {
     CONTENT_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4006", "content field 관련 오류"),
     TAG_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4007", "tag field 관련 오류"),
     CATEGORY_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4008", "category field 관련 오류"),
-    KEYWORD_IS_EMPTY(HttpStatus.BAD_REQUEST, "LETTER4009", "keyword field 관련 오류");
-    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다."),
+    KEYWORD_IS_EMPTY(HttpStatus.BAD_REQUEST, "LETTER4009", "keyword field 관련 오류"),
 
     // 검색 관련 에러
     INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다.");

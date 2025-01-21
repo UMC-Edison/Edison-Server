@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
 
+import java.util.Objects;
+
 import static com.edison.project.common.status.SuccessStatus._OK;
 
 @Service
@@ -115,6 +117,9 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
         }
 
+        if(Objects.equals(member.getNickname(), request.getNickname()) && request.getImageUrl()==null){
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_CHANGED);
+        }
 
         member.updateProfile(request.getNickname(), request.getImageUrl());
 
