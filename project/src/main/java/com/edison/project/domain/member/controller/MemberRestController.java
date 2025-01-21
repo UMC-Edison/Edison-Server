@@ -36,4 +36,10 @@ public class MemberRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
+    @GetMapping("/identity")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getIdentityKeywords(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        MemberResponseDto.IdentityKeywordsResultDto result = memberService.getIdentityKeywords(userPrincipal);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
 }

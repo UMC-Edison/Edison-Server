@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface KeywordsRepository extends JpaRepository<Keywords, Integer> {
     List<Keywords> findAllByCategory(String category);
+    List<Keywords> findAllByOrderByCategoryAsc();
 }
 

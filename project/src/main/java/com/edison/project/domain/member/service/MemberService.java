@@ -8,8 +8,13 @@ import org.springframework.http.ResponseEntity;
 
 public interface MemberService {
     ResponseEntity<ApiResponse> generateTokensForOidcUser(String email);
+
     Long createUserIfNotExist(String email);
+
     ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal, MemberResponseDto.ProfileResultDto request);
+
     MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request);
+
+    MemberResponseDto.IdentityKeywordsResultDto getIdentityKeywords(CustomUserPrincipal userPrincipal);
 
 }
