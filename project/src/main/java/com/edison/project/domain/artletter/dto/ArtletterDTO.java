@@ -58,5 +58,14 @@ public class ArtletterDTO {
         private int scraps;
     }
 
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LikeResponseDto {
+        private Long artletterId;
+        private int likesCnt;
+        private boolean isLiked;
+    }
 }
 

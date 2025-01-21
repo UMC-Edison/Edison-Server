@@ -1,9 +1,17 @@
 package com.edison.project.domain.artletter.service;
 
+import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.PageInfo;
+import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.entity.ArtletterLikes;
+import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
+import com.edison.project.domain.member.entity.Member;
+import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.global.security.CustomUserPrincipal;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,9 +26,13 @@ import java.util.Map;
 public class ArtletterServiceImpl implements ArtletterService {
 
     private final ArtletterRepository artletterRepository;
+    private final MemberRepository memberRepository;
+    private final ArtletterLikesRepository artletterLikesRepository;
 
-    public ArtletterServiceImpl(ArtletterRepository artletterRepository) {
+    public ArtletterServiceImpl(ArtletterRepository artletterRepository, MemberRepository memberRepository, ArtletterLikesRepository artletterLikesRepository) {
         this.artletterRepository = artletterRepository;
+        this.memberRepository = memberRepository;
+        this.artletterLikesRepository = artletterLikesRepository;
     }
 
     public Page<Artletter> getAllArtletters(int page, int size) {
@@ -51,7 +63,45 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
+    @Transactional
+    public ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Artletter artletter = artletterRepository.findById(letterId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
+
+        boolean alreadyLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
+
+        if (alreadyLiked) {
+            // 좋아요 취소
+            artletterLikesRepository.deleteByMemberAndArtletter(member, artletter);
+        } else {
+            // 좋아요
+            ArtletterLikes like = ArtletterLikes.builder()
+                    .member(member)
+                    .artletter(artletter)
+                    .build();
+
+            artletterLikesRepository.save(like);
+        }
+
+        int likeCnt = artletterLikesRepository.countByArtletter(artletter);
+
+        return ArtletterDTO.LikeResponseDto.builder()
+                .artletterId(letterId)
+                .likesCnt(likeCnt)
+                .isLiked(!alreadyLiked)
+                .build();
+    }
+
+    @Override
     public Page<Artletter> searchArtletters(String keyword, Pageable pageable) {
         return artletterRepository.searchByKeyword(keyword, pageable);
     }
+
 }
