@@ -2,12 +2,14 @@ package com.edison.project.domain.artletter.entity;
 
 import com.edison.project.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@Setter
 @Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "Artletter", indexes = {
         @Index(name = "idx_artletter_title", columnList = "title"),
         @Index(name = "idx_artletter_writer", columnList = "writer")
@@ -40,5 +42,20 @@ public class Artletter extends BaseEntity {
 
     public enum ArtletterCategory {
         CATEGORY1, CATEGORY2, CATEGORY3
+    }
+
+    private String thumbnail;
+
+    // Builder 패턴 적용
+    @Builder
+    public Artletter(Long letterId, String title, String content, String writer, int readTime, String tag, ArtletterCategory category) {
+        this.letterId = letterId;
+        this.title = title;
+        this.content = content;
+        this.writer = writer;
+        this.readTime = readTime;
+        this.tag = tag;
+        this.category = category;
+        this.thumbnail = thumbnail;
     }
 }
