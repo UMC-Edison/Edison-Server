@@ -113,6 +113,10 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
     public MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         // 사용자 인증 확인
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
@@ -141,6 +145,9 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
 
+        // 기존 키워드 삭제 (동일 카테고리에 한해 삭제)
+        //memberKeywordRepository.deleteByMember_MemberIdAndKeyword_Category(member.getMemberId(), category);
+
         // 새로운 키워드 저장
         List<MemberKeyword> memberKeywords = keywords.stream()
                 .map(keyword -> MemberKeyword.builder()
@@ -150,7 +157,6 @@ public class MemberServiceImpl implements MemberService{
                 .collect(Collectors.toList());
         memberKeywordRepository.saveAll(memberKeywords);
 
-        // 응답 생성
         return MemberResponseDto.IdentityTestSaveResultDto.builder()
                 .category(category)
                 .keywords(request.getKeywords())

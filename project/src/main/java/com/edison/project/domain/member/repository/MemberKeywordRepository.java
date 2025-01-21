@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface MemberKeywordRepository extends JpaRepository<MemberKeyword, Long> {
 
-    // 사용자별 특정 카테고리에 키워드 존재 여부 확인
+    @Modifying
+    @Query("DELETE FROM MemberKeyword mk WHERE mk.member.memberId = :memberId AND mk.keyword.category = :category")
+    void deleteByMember_MemberIdAndKeyword_Category(Long memberId, String category);
+
+    // 특정 카테고리에 대한 키워드가 이미 저장되어 있는지 확인
     boolean existsByMember_MemberIdAndKeyword_Category(Long memberId, String category);
 }
