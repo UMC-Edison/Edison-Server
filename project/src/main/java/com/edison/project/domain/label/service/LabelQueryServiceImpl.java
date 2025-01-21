@@ -73,30 +73,40 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
         List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(labelId);
 
-        // BubbleDetailDto 변환
-        //** map 내부의 함수 -> 버블 상세내용조회 api 구현 후 함수로 뽑아 중복 제거 가능
         List<BubbleResponseDto.ListResultDto> bubbleDetails = bubbles.stream()
-                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
-                        .bubbleId(bubble.getBubbleId())
-                        .title(bubble.getTitle())
-                        .content(bubble.getContent())
-                        .mainImageUrl(bubble.getMainImg())
-                        .labels(bubble.getLabels().stream()
-                                .map(bl -> bl.getLabel().getName())
-                                .collect(Collectors.toList()))
-                        .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
-                        .createdAt(bubble.getCreatedAt())
-                        .updatedAt(bubble.getUpdatedAt())
-                        .build())
+                .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
-        // DetailResultDto 반환
+        // BubbleDetailDto 변환
         return LabelResponseDTO.DetailResultDto.builder()
                 .labelId(label.getLabelId())
                 .name(label.getName())
                 .color(label.getColor())
                 .bubbleCount((long) bubbleDetails.size())
                 .bubbles(bubbleDetails)
+                .build();
+
+        }
+
+    // Bubble -> BubbleResponseDto 변환 함수 (중복 제거)
+    private BubbleResponseDto.ListResultDto convertToBubbleResponseDto(Bubble bubble) {
+        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+                        .labelId(bl.getLabel().getLabelId())
+                        .name(bl.getLabel().getName())
+                        .color(bl.getLabel().getColor())
+                        .build())
+                .collect(Collectors.toList());
+
+        return BubbleResponseDto.ListResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(labelDtos) // 라벨 정보 리스트
+                .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
                 .build();
     }
 
