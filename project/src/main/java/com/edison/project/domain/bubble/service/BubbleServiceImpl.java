@@ -11,6 +11,7 @@ import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
+import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.label.repository.LabelRepository;
 import com.edison.project.domain.member.entity.Member;
@@ -46,6 +47,30 @@ public class BubbleServiceImpl implements BubbleService {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    // Bubble -> BubbleResponseDto 변환 메서드 (공통 로직)
+    private BubbleResponseDto.ListResultDto convertToBubbleResponseDto(Bubble bubble) {
+        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+                        .labelId(bl.getLabel().getLabelId())
+                        .name(bl.getLabel().getName())
+                        .color(bl.getLabel().getColor())
+                        .build())
+                .collect(Collectors.toList());
+
+        return BubbleResponseDto.ListResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(labelDtos)
+                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                        .map(Bubble::getBubbleId)
+                        .orElse(null))
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .build();
+    }
 
     @Override
     @Transactional
@@ -90,17 +115,7 @@ public class BubbleServiceImpl implements BubbleService {
         bubbleLabelRepository.saveAll(bubbleLabels);
         savedBubble.getLabels().addAll(bubbleLabels);
 
-        // ResponseDto 반환
-        return BubbleResponseDto.ListResultDto.builder()
-                .bubbleId(savedBubble.getBubbleId())
-                .title(savedBubble.getTitle())
-                .content(savedBubble.getContent())
-                .mainImageUrl(savedBubble.getMainImg())
-                .labels(labels.stream().map(Label::getName).collect(Collectors.toList()))
-                .linkedBubbleId(Optional.ofNullable(linkedBubble).map(Bubble::getBubbleId).orElse(null))
-                .createdAt(savedBubble.getCreatedAt())
-                .updatedAt(savedBubble.getUpdatedAt())
-                .build();
+        return convertToBubbleResponseDto(savedBubble);
     }
 
     @Override
@@ -194,18 +209,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         entityManager.flush();
 
-        return BubbleResponseDto.ListResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
-                .title(bubble.getTitle())
-                .content(bubble.getContent())
-                .mainImageUrl(bubble.getMainImg())
-                .labels(bubble.getLabels().stream()
-                        .map(bl -> bl.getLabel().getName())
-                        .collect(Collectors.toList()))
-                .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
-                .createdAt(bubble.getCreatedAt())
-                .updatedAt(bubble.getUpdatedAt())
-                .build();
+        return convertToBubbleResponseDto(bubble);
     }
 
     @Override
@@ -222,20 +226,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         // Bubble 데이터 변환
         List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
-                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
-                        .bubbleId(bubble.getBubbleId())
-                        .title(bubble.getTitle())
-                        .content(bubble.getContent())
-                        .mainImageUrl(bubble.getMainImg())
-                        .labels(bubble.getLabels().stream()
-                                .map(label -> label.getLabel().getName())
-                                .collect(Collectors.toList()))
-                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                                .map(Bubble::getBubbleId)
-                                .orElse(null))
-                        .createdAt(bubble.getCreatedAt())
-                        .updatedAt(bubble.getUpdatedAt())
-                        .build())
+                .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
@@ -297,20 +288,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         // DTO로 변환
         List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
-                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
-                        .bubbleId(bubble.getBubbleId())
-                        .title(bubble.getTitle())
-                        .content(bubble.getContent())
-                        .mainImageUrl(bubble.getMainImg())
-                        .labels(bubble.getLabels().stream()
-                                .map(label -> label.getLabel().getName())
-                                .collect(Collectors.toList()))
-                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                                .map(Bubble::getBubbleId)
-                                .orElse(null))
-                        .createdAt(bubble.getCreatedAt())
-                        .updatedAt(bubble.getUpdatedAt())
-                        .build())
+                .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
         PageInfo pageInfo = new PageInfo(
@@ -338,20 +316,7 @@ public class BubbleServiceImpl implements BubbleService {
             throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
-        return BubbleResponseDto.ListResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
-                .title(bubble.getTitle())
-                .content(bubble.getContent())
-                .mainImageUrl(bubble.getMainImg())
-                .labels(bubble.getLabels().stream()
-                        .map(label -> label.getLabel().getName())
-                        .collect(Collectors.toList()))
-                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                        .map(Bubble::getBubbleId)
-                        .orElse(null))
-                .createdAt(bubble.getCreatedAt())
-                .updatedAt(bubble.getUpdatedAt())
-                .build();
+        return convertToBubbleResponseDto(bubble);
     }
 
     // 버블 검색
@@ -409,20 +374,7 @@ public class BubbleServiceImpl implements BubbleService {
         );
 
         List<BubbleResponseDto.ListResultDto> results = paginatedBubbles.stream()
-                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
-                        .bubbleId(bubble.getBubbleId())
-                        .title(bubble.getTitle())
-                        .content(bubble.getContent())
-                        .mainImageUrl(bubble.getMainImg())
-                        .labels(bubble.getLabels().stream()
-                                .map(bl -> bl.getLabel().getName())
-                                .collect(Collectors.toList()))
-                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                                .map(Bubble::getBubbleId)
-                                .orElse(null))
-                        .createdAt(bubble.getCreatedAt())
-                        .updatedAt(bubble.getUpdatedAt())
-                        .build())
+                .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
