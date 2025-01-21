@@ -150,6 +150,59 @@ public class BubbleServiceImpl implements BubbleService {
 
     @Override
     @Transactional
+    public BubbleResponseDto.ListResultDto updateBubble(CustomUserPrincipal userPrincipal, Long bubbleId, BubbleRequestDto.ListDto requestDto) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Bubble bubble = bubbleRepository.findById(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 수정 권한 확인
+        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        // linkedBubble 검증
+        Bubble linkedBubble = null;
+        if (requestDto.getLinkedBubbleId() != null) {
+            linkedBubble = bubbleRepository.findById(requestDto.getLinkedBubbleId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+        }
+
+        // 라벨 검증
+        Set<Long> labelIds = Optional.ofNullable(requestDto.getLabelIds()).orElse(Collections.emptySet());
+        if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
+
+        Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
+        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
+
+        Set<BubbleLabel> bubbleLabels = labels.stream()
+                .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
+                .collect(Collectors.toSet());
+
+        bubble.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getMainImageUrl(), linkedBubble, bubbleLabels);
+
+        bubbleRepository.save(bubble);
+
+        return BubbleResponseDto.ListResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(bubble.getLabels().stream()
+                        .map(bl -> bl.getLabel().getName())
+                        .collect(Collectors.toList()))
+                .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .build();
+    }
+
+    @Override
+    @Transactional
     public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
