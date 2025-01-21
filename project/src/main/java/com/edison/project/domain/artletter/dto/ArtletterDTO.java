@@ -44,6 +44,9 @@ public class ArtletterDTO {
     public static class CreateResponseDto {
         private Long artletterId;
         private String title;
+        private int likes;
+        private int scraps;
+        private boolean isScrap;
     }
 
     @Data
@@ -56,6 +59,7 @@ public class ArtletterDTO {
         private String thumbnail;
         private int likes;
         private int scraps;
+        private boolean isScrap;
     }
 
 }

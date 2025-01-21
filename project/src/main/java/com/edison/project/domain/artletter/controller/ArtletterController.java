@@ -7,11 +7,13 @@ import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.service.ArtletterService;
+import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -28,7 +30,7 @@ public class ArtletterController {
 
     // POST: 아트레터 등록
     @PostMapping
-    public ResponseEntity<ApiResponse> createArtletter(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<ApiResponse> createArtletter(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody Map<String, Object> request) {
         // 필드 값 추출
         Object readTimeObj = request.get("readTime");
         Object titleObj = request.get("title");
@@ -96,17 +98,18 @@ public class ArtletterController {
         dto.setThumbnail((String) thumbnailObj);
 
         // Service 호출
-        ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(dto);
+        ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(userPrincipal, dto);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
     // GET: 전체 아트레터 조회
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        Page<Artletter> artletters = artletterService.getAllArtletters(page, size);
+        Page<Artletter> artletters = artletterService.getAllArtletters(userPrincipal, page, size);
 
         // 필드(id, title)만 추출
         List<Map<String, Object>> simplifiedResult = artletters.getContent().stream()
@@ -132,6 +135,7 @@ public class ArtletterController {
     // GET: 키워드 기반 search
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -148,8 +152,17 @@ public class ArtletterController {
 
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> results = artletterService.searchArtletters(keyword, pageable);
+        Page<Artletter> results = artletterService.searchArtletters(userPrincipal, keyword, pageable);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
+    }
+
+    @GetMapping("/editor-pick")
+    public ResponseEntity<ApiResponse> getEditorArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        return artletterService.getEditorArtletters(userPrincipal, page, size);
     }
 }

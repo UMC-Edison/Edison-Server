@@ -7,5 +7,5 @@ import com.edison.project.domain.artletter.entity.Artletter;
 
 @Repository
 public interface ArtletterLikesRepository extends JpaRepository<ArtletterLikes, Long> {
-    int countByArtletter(Artletter artletter);
+    Integer countByArtletter_LetterId(Long letterId);
 }

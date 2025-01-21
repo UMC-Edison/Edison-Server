@@ -79,6 +79,7 @@ public class BubbleRestController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return bubbleService.getDeletedBubbles(userPrincipal, pageable);
 
+    }
     // 버블 상세정보 조회
     @GetMapping("/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
