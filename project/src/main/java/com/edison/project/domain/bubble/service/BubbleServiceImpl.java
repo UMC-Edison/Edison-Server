@@ -384,13 +384,17 @@ public class BubbleServiceImpl implements BubbleService {
             throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
+        // linkedBubble = bubbleId인 모든 버블의 linkedBubble 값을 null로 업데이트
+        bubbleRepository.clearLinkedBubble(bubbleId);
+
         bubbleRepository.delete(bubble);
         return null;
     }
 
     @Override
     // @Scheduled(cron = "0 0 0 * * ?") // 매일 새벽 0시에 실행
-    @Scheduled(cron = "0 28 15 * * ?", zone = "Asia/Seoul") // 테스트할 시간
+    @Scheduled(cron = "0 35 17 * * ?", zone = "Asia/Seoul") // 테스트할 시간
+    @Transactional
     public void deleteExpiredBubble() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiryDate = now.minusDays(30);
@@ -398,6 +402,12 @@ public class BubbleServiceImpl implements BubbleService {
         List<Bubble> expiredBubbles = bubbleRepository.findAllByUpdatedAtBeforeAndIsDeletedTrue(expiryDate);
 
         if (!expiredBubbles.isEmpty()) {
+            List<Long> bubbleIds = expiredBubbles.stream()
+                            .map(Bubble::getBubbleId)
+                                    .collect(Collectors.toList());
+
+            bubbleIds.forEach(bubbleRepository::clearLinkedBubble);
+
             bubbleRepository.deleteAll(expiredBubbles);
             log.info("Deleted {} expired bubbles", expiredBubbles.size());
         } else {

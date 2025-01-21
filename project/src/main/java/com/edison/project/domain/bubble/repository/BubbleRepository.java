@@ -1,9 +1,11 @@
 package com.edison.project.domain.bubble.repository;
 
 import com.edison.project.domain.bubble.entity.Bubble;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -42,4 +44,10 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     // 30일 지난 휴지통 버블 목록
     @Query("SELECT b from Bubble b where b.updatedAt < :expiryDate and b.isDeleted = true")
     List<Bubble> findAllByUpdatedAtBeforeAndIsDeletedTrue(@Param("expiryDate") LocalDateTime expiryDate);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Bubble b SET b.linkedBubble = null WHERE b.linkedBubble.bubbleId = :bubbleId")
+
+    void clearLinkedBubble(@Param("bubbleId") Long bubbleId);
 }
