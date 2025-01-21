@@ -33,39 +33,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             throws IOException, ServletException {
 
-        String authHeader = request.getHeader("Authorization");
+        try{
+            String authHeader = request.getHeader("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            if (jwtUtil.validateToken(token)) {
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                if (jwtUtil.validateToken(token)) {
 
-                if (redisTokenService.isTokenBlacklisted(token)) {
-                    throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+                    if (redisTokenService.isTokenBlacklisted(token)) {
+                        throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+                    }
+
+                    Long userId = jwtUtil.extractUserId(token);
+                    String email = jwtUtil.extractEmail(token);
+
+                    // Refresh Token 검증
+                    RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
+                            .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
+
+                    if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
+                        // Refresh Token이 만료된 경우 Access Token 블랙리스트 처리
+                        redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
+                        throw new GeneralException(ErrorStatus.TOKEN_EXPIRED);
+                    }
+
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            new CustomUserPrincipal(userId, email),
+                            null,
+                            List.of(new SimpleGrantedAuthority("USER"))
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
-
-                Long userId = jwtUtil.extractUserId(token);
-                String email = jwtUtil.extractEmail(token);
-
-                // Refresh Token 검증
-                RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
-                        .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
-
-                if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
-                    // Refresh Token이 만료된 경우 Access Token 블랙리스트 처리
-                    redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
-                    throw new GeneralException(ErrorStatus.TOKEN_EXPIRED);
-                }
-
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        new CustomUserPrincipal(userId, email),
-                        null,
-                        List.of(new SimpleGrantedAuthority("USER"))
-                );
-                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
+
+            filterChain.doFilter(request, response);
+        } catch (GeneralException e) {
+            // Custom Exception 처리
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"isSuccess\":false,\"code\":\"" + e.getErrorStatus().getCode() + "\",\"message\":\"" + e.getErrorStatus().getMessage() + "\"}");
         }
-  
-        filterChain.doFilter(request, response);
     }
 }
 

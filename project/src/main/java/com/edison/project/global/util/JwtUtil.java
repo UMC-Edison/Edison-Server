@@ -31,6 +31,14 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(Long memberId, String email) {
+        JWT.create()
+                .withSubject(String.valueOf(memberId))
+                .withClaim("email", email)
+                .withExpiresAt(new Date(System.currentTimeMillis() + refreshTokenExpiration))
+                .sign(Algorithm.HMAC256(secretKey));
+
+        System.out.println("Refresh Token Expiration (ms): " + refreshTokenExpiration);
+
         return JWT.create()
                 .withSubject(String.valueOf(memberId))
                 .withClaim("email", email)
@@ -77,7 +85,7 @@ public class JwtUtil {
             Date expiration = decodedJWT.getExpiresAt();
             return expiration.before(new Date()); // 만료되었는지 확인
         } catch (JWTVerificationException e) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+            throw new GeneralException(ErrorStatus.TOKEN_EXPIRED);
         }
     }
 }
