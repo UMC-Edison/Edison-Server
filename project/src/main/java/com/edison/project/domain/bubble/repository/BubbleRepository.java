@@ -31,10 +31,15 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
             @Param("startDate") LocalDateTime startDate,
             Pageable pageable
     );
+
     // 전체 버블 검색
     @Query("SELECT b FROM Bubble b " +
             "WHERE (b.title LIKE %:keyword% OR b.content LIKE %:keyword% " +
             "OR EXISTS (SELECT 1 FROM BubbleLabel bl WHERE bl.bubble = b AND bl.label.name LIKE %:keyword%)) " +
             "AND b.isDeleted = false")
     List<Bubble> searchBubblesByKeyword(@Param("keyword") String keyword);
+
+    // 30일 지난 휴지통 버블 목록
+    @Query("SELECT b from Bubble b where b.updatedAt < :expiryDate and b.isDeleted = true")
+    List<Bubble> findAllByUpdatedAtBeforeAndIsDeletedTrue(@Param("expiryDate") LocalDateTime expiryDate);
 }

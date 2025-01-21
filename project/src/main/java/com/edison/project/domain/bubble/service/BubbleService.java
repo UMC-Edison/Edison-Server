@@ -27,4 +27,6 @@ public interface BubbleService {
     ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, boolean recent, Pageable pageable);
 
     ResponseEntity<ApiResponse> hardDelteBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
+
+    void deleteExpiredBubble();
 }

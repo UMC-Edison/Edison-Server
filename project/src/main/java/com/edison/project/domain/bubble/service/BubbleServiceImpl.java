@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
@@ -385,6 +386,24 @@ public class BubbleServiceImpl implements BubbleService {
 
         bubbleRepository.delete(bubble);
         return null;
+    }
+
+    @Override
+    // @Scheduled(cron = "0 0 0 * * ?") // 매일 새벽 0시에 실행
+    @Scheduled(cron = "0 28 15 * * ?", zone = "Asia/Seoul") // 테스트할 시간
+    public void deleteExpiredBubble() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiryDate = now.minusDays(30);
+
+        List<Bubble> expiredBubbles = bubbleRepository.findAllByUpdatedAtBeforeAndIsDeletedTrue(expiryDate);
+
+        if (!expiredBubbles.isEmpty()) {
+            bubbleRepository.deleteAll(expiredBubbles);
+            log.info("Deleted {} expired bubbles", expiredBubbles.size());
+        } else {
+            log.info("No expired bubbles found for deletion");
+        }
+
     }
 
     private int countOccurrences(String content, String keyword) {
