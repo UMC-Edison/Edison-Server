@@ -18,5 +18,17 @@ public class MemberRequestDto {
         private String nickname;
     }
 
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UpdateProfileDto {
+
+        @NotBlank(message = "닉네임은 필수입니다.")
+        private String nickname;
+
+        private String imageUrl;
+    }
+
 
 }

@@ -4,6 +4,7 @@ import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
+import com.edison.project.domain.member.dto.MemberRequestDto;
 import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.entity.RefreshToken;
 import com.edison.project.domain.member.repository.MemberRepository;
@@ -80,7 +81,7 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal, MemberResponseDto.ProfileResultDto request) {
+    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal, MemberRequestDto.ProfileDto request) {
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(GeneralException::loginRequired);
@@ -94,6 +95,32 @@ public class MemberServiceImpl implements MemberService{
 
         MemberResponseDto.ProfileResultDto response = MemberResponseDto.ProfileResultDto.builder()
                 .nickname(member.getNickname())
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        if (request.getNickname()==null || request.getNickname() == "") {
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+
+        member.updateProfile(request.getNickname(), request.getImageUrl());
+
+        MemberResponseDto.UpdateProfileResultDto response = MemberResponseDto.UpdateProfileResultDto.builder()
+                .nickname(member.getNickname())
+                .imageUrl(request.getImageUrl())
                 .build();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
