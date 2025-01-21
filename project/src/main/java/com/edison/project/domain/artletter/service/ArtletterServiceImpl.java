@@ -64,12 +64,18 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
-    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, int page, int size) {
+    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal,  ArtletterDTO.EditorRequestDto editorRequestDto) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        List<ArtletterDTO.ListResponseDto> artletters = artletterRepository.findByLetterIdIn(List.of(1L, 2L, 3L)).stream()
+        List<Long> artletterIds = editorRequestDto.getArtletterIds();
+
+        if (artletterIds == null || artletterIds.isEmpty()) {
+            throw new GeneralException(ErrorStatus.ARTLETTER_ID_REQUIRED);
+        }
+
+        List<ArtletterDTO.ListResponseDto> artletters = artletterRepository.findByLetterIdIn(artletterIds).stream()
                 .map(artletter -> ArtletterDTO.ListResponseDto.builder()
                         .artletterId(artletter.getLetterId())
                         .title(artletter.getTitle())

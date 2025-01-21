@@ -157,12 +157,11 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
     }
 
-    @GetMapping("/editor-pick")
+    @PostMapping("/editor-pick")
     public ResponseEntity<ApiResponse> getEditorArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestBody ArtletterDTO.EditorRequestDto editorRequestDto) {
 
-        return artletterService.getEditorArtletters(userPrincipal, page, size);
+        return artletterService.getEditorArtletters(userPrincipal, editorRequestDto);
     }
 }

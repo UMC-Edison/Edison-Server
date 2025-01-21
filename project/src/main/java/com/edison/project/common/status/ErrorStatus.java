@@ -47,6 +47,7 @@ public enum ErrorStatus {
     TAG_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4007", "tag field 관련 오류"),
     CATEGORY_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4008", "category field 관련 오류"),
     KEYWORD_IS_EMPTY(HttpStatus.BAD_REQUEST, "LETTER4009", "keyword field 관련 오류"),
+    ARTLETTER_ID_REQUIRED(HttpStatus.BAD_REQUEST, "LETTER4010", "아트레터 ID를 입력해 주세요."),
 
     // 검색 관련 에러
     INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다.");

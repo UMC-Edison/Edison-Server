@@ -18,5 +18,5 @@ public interface ArtletterService {
 
     Page<Artletter> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, Pageable pageable);
 
-    ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, int page, int size);
+    ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal,  ArtletterDTO.EditorRequestDto editorRequestDto);
 }
