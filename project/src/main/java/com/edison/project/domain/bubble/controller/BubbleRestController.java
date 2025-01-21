@@ -1,6 +1,8 @@
 package com.edison.project.domain.bubble.controller;
 
+import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
@@ -66,6 +68,17 @@ public class BubbleRestController {
         return response;
     }
 
+
+    @GetMapping("/deleted")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getDeletedBubbles(
+        @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return bubbleService.getDeletedBubbles(userPrincipal, pageable);
+
     // 버블 상세정보 조회
     @GetMapping("/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
@@ -84,5 +97,26 @@ public class BubbleRestController {
         // 최신순 정렬
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return bubbleService.getRecentBubblesByMember(userPrincipal, pageable);
+
+    }
+
+    // 버블 검색
+    @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> searchBubbles(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "false") boolean recent,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new GeneralException(ErrorStatus.INVALID_KEYWORD);
+        }
+
+        keyword = keyword.trim();
+
+        Pageable pageable = PageRequest.of(page, size);
+        return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,6 +22,7 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     Optional<Bubble> findByBubbleIdAndIsDeletedTrue(Long bubbleId);
 
     Page<Bubble> findByMember_MemberIdAndIsDeletedFalse(Long memberId, Pageable pageable);
+    Page<Bubble> findByMember_MemberIdAndIsDeletedTrue(Long memberId, Pageable pageable);
 
     // 7일 이내 버블 목록
     @Query("SELECT b from Bubble b where b.member.memberId = :memberId AND b.isDeleted = false AND b.updatedAt >= :startDate")
@@ -29,4 +31,10 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
             @Param("startDate") LocalDateTime startDate,
             Pageable pageable
     );
+    // 전체 버블 검색
+    @Query("SELECT b FROM Bubble b " +
+            "WHERE (b.title LIKE %:keyword% OR b.content LIKE %:keyword% " +
+            "OR EXISTS (SELECT 1 FROM BubbleLabel bl WHERE bl.bubble = b AND bl.label.name LIKE %:keyword%)) " +
+            "AND b.isDeleted = false")
+    List<Bubble> searchBubblesByKeyword(@Param("keyword") String keyword);
 }

@@ -26,8 +26,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
-        import java.util.stream.Collectors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -179,11 +182,54 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
+        // Member 조회
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedTrue(userPrincipal.getMemberId(), pageable);
+
+        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
+                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+
+        // Bubble 데이터 변환
+        List<BubbleResponseDto.DeletedListResultDto> bubbles = bubblePage.getContent().stream()
+                .map(bubble -> {
+                            LocalDateTime updatedAt = bubble.getUpdatedAt();
+                            LocalDateTime now = LocalDateTime.now();
+                            long remainDays = 30 - ChronoUnit.DAYS.between(updatedAt, now);
+
+                            return BubbleResponseDto.DeletedListResultDto.builder()
+                                    .bubbleId(bubble.getBubbleId())
+                                    .title(bubble.getTitle())
+                                    .content(bubble.getContent())
+                                    .mainImageUrl(bubble.getMainImg())
+                                    .labels(bubble.getLabels().stream()
+                                            .map(label -> label.getLabel().getName())
+                                            .collect(Collectors.toList()))
+                                    .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                                            .map(Bubble::getBubbleId)
+                                            .orElse(null))
+                                    .createdAt(bubble.getCreatedAt())
+                                    .updatedAt(updatedAt)
+                                    .remainDay((int) Math.max(remainDays, 0))
+                                    .build();
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+    }
+  
+  @Override
+  public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+  
         LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
 
         // 7일 이내 버블 조회
@@ -246,6 +292,91 @@ public class BubbleServiceImpl implements BubbleService {
                 .createdAt(bubble.getCreatedAt())
                 .updatedAt(bubble.getUpdatedAt())
                 .build();
+    }
+
+    // 버블 검색
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, boolean recent, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+        memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        List<Bubble> bubbles = bubbleRepository.searchBubblesByKeyword(keyword);
+
+        // 7일 이내 필터링 조건
+        if (Boolean.TRUE.equals(recent)) {
+            ZonedDateTime sevenDaysAgoZoned = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).minusDays(7);
+            LocalDateTime sevenDaysAgo = sevenDaysAgoZoned.toLocalDateTime();
+
+            bubbles = bubbles.stream()
+                    .filter(bubble -> bubble.getUpdatedAt().isAfter(sevenDaysAgo))
+                    .collect(Collectors.toList());
+        }
+
+
+        // 검색어 정렬 : 제목, 본문, 오래된 순서 순
+        List<Bubble> sortedBubbles = bubbles.stream()
+                .sorted((b1, b2) -> {
+                    boolean b1TitleMatch = b1.getTitle().contains(keyword);
+                    boolean b2TitleMatch = b2.getTitle().contains(keyword);
+                    if (b1TitleMatch && !b2TitleMatch) return -1;
+                    if (!b1TitleMatch && b2TitleMatch) return 1;
+
+                    int b1ContentMatchCount = countOccurrences(b1.getContent(), keyword);
+                    int b2ContentMatchCount = countOccurrences(b2.getContent(), keyword);
+                    if (b1ContentMatchCount != b2ContentMatchCount) {
+                        return Integer.compare(b2ContentMatchCount, b1ContentMatchCount);
+                    }
+
+                    return b1.getUpdatedAt().compareTo(b2.getUpdatedAt());
+                })
+                .collect(Collectors.toList());
+
+        // 페이징 적용
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), sortedBubbles.size());
+        List<Bubble> paginatedBubbles = sortedBubbles.subList(start, end);
+
+        PageInfo pageInfo = new PageInfo(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                end < sortedBubbles.size(),
+                (long) sortedBubbles.size(),
+                (sortedBubbles.size() + pageable.getPageSize() - 1) / pageable.getPageSize()
+        );
+
+        List<BubbleResponseDto.ListResultDto> results = paginatedBubbles.stream()
+                .map(bubble -> BubbleResponseDto.ListResultDto.builder()
+                        .bubbleId(bubble.getBubbleId())
+                        .title(bubble.getTitle())
+                        .content(bubble.getContent())
+                        .mainImageUrl(bubble.getMainImg())
+                        .labels(bubble.getLabels().stream()
+                                .map(bl -> bl.getLabel().getName())
+                                .collect(Collectors.toList()))
+                        .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                                .map(Bubble::getBubbleId)
+                                .orElse(null))
+                        .createdAt(bubble.getCreatedAt())
+                        .updatedAt(bubble.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
+    }
+
+    private int countOccurrences(String content, String keyword) {
+        if (content == null || keyword == null || keyword.isEmpty()) return 0;
+        int count = 0;
+        int idx = content.indexOf(keyword);
+        while (idx != -1) {
+            count++;
+            idx = content.indexOf(keyword, idx + keyword.length());
+        }
+        return count;
     }
 
 }
