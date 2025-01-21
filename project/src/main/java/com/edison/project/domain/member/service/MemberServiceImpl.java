@@ -117,16 +117,17 @@ public class MemberServiceImpl implements MemberService{
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        // 최초 1회 설정 제한
-        if (memberKeywordRepository.existsByMember_MemberId(member.getMemberId())) {
-            throw new GeneralException(ErrorStatus.IDENTITY_ALREADY_SET);
-        }
-
         // 존재하지 않는 카테고리 검증
         String category = request.getCategory();
         List<String> validCategories = List.of("CATEGORY1", "CATEGORY2", "CATEGORY3", "CATEGORY4");
         if (!validCategories.contains(category)) {
             throw new GeneralException(ErrorStatus.INVALID_CATEGORY);
+        }
+
+        // 카테고리별로 최초 설정 여부 검증
+        boolean isCategorySet = memberKeywordRepository.existsByMember_MemberIdAndKeyword_Category(member.getMemberId(), category);
+        if (isCategorySet) {
+            throw new GeneralException(ErrorStatus.IDENTITY_ALREADY_SET);
         }
 
         // 존재하지 않는 키워드 검증
@@ -135,7 +136,7 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.INVALID_KEYWORDS);
         }
 
-        // 카테고리와 키워드 맵핑 검증
+        // 카테고리-키워드 맵핑 검증
         if (!keywords.stream().allMatch(keyword -> category.equals(keyword.getCategory()))) {
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
