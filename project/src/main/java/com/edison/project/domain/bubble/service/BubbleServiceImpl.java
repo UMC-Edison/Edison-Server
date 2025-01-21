@@ -16,6 +16,8 @@ import com.edison.project.domain.label.repository.LabelRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +43,9 @@ public class BubbleServiceImpl implements BubbleService {
     private final BubbleLabelRepository bubbleLabelRepository;
     private final LabelRepository labelRepository;
     private final MemberRepository memberRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     @Transactional
@@ -186,6 +191,8 @@ public class BubbleServiceImpl implements BubbleService {
         bubble.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getMainImageUrl(), linkedBubble, bubbleLabels);
 
         bubbleRepository.save(bubble);
+
+        entityManager.flush();
 
         return BubbleResponseDto.ListResultDto.builder()
                 .bubbleId(bubble.getBubbleId())
