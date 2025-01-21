@@ -368,6 +368,25 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> hardDelteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(bubbleId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 권한 확인
+        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        bubbleRepository.delete(bubble);
+        return null;
+    }
+
     private int countOccurrences(String content, String keyword) {
         if (content == null || keyword == null || keyword.isEmpty()) return 0;
         int count = 0;
@@ -378,5 +397,4 @@ public class BubbleServiceImpl implements BubbleService {
         }
         return count;
     }
-
 }
