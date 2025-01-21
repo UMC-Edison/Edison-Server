@@ -1,5 +1,6 @@
 package com.edison.project.domain.bubble.dto;
 
+import com.edison.project.domain.label.dto.LabelResponseDTO;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ public class BubbleResponseDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private List<String> labels;
+        private List<LabelResponseDTO.CreateResultDto> labels;
         private Long linkedBubbleId;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -50,7 +51,7 @@ public class BubbleResponseDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private List<String> labels;
+        private List<LabelResponseDTO.CreateResultDto> labels;
         private Long linkedBubbleId;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;

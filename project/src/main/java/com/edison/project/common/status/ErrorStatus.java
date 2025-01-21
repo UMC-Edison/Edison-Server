@@ -25,7 +25,7 @@ public enum ErrorStatus {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "LOGIN4003", "유효하지 않은 토큰입니다."),
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "LOGIN4004", "토큰이 만료되었습니다. 다시 로그인해 주세요."),
 
-    // 멤버 관려 에러
+    // 멤버 관련 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
     NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
 
@@ -37,8 +37,22 @@ public enum ErrorStatus {
     // 라벨 관련 에러
     LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨을 찾을 수 없습니다."),
     LABEL_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨 이름은 최대 20자까지 가능합니다."),
-    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다.");
+    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다."),
 
+    // 아트보드 관련 에러
+    KEYWORD_IS_NOT_VALID(HttpStatus.BAD_REQUEST, "LETTER4001", "입력값이 존재하지 않습니다."),
+    RESULT_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4002", "검색 결과가 존재하지 않습니다."),
+    READTIME_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4003", "readTime field 관련 오류"),
+    TITLE_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4004", "title field 관련 오류"),
+    WRITER_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4005", "writer field 관련 오류"),
+    CONTENT_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4006", "content field 관련 오류"),
+    TAG_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4007", "tag field 관련 오류"),
+    CATEGORY_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4008", "category field 관련 오류"),
+    KEYWORD_IS_EMPTY(HttpStatus.BAD_REQUEST, "LETTER4009", "keyword field 관련 오류");
+    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다."),
+
+    // 검색 관련 에러
+    INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

@@ -28,7 +28,7 @@ public class LabelRestController {
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> createLabel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody @Valid LabelRequestDTO.CreateDto request) {
+    public ResponseEntity<ApiResponse> createLabel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody @Valid LabelRequestDTO.CreateAndUpdateDto request) {
         LabelResponseDTO.CreateResultDto response = labelCommandService.createLabel(userPrincipal, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
@@ -38,7 +38,7 @@ public class LabelRestController {
     public ResponseEntity<ApiResponse> updateLabel(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @PathVariable Long labelId,
-            @RequestBody @Valid LabelRequestDTO.CreateDto request) {
+            @RequestBody @Valid LabelRequestDTO.CreateAndUpdateDto request) {
         LabelResponseDTO.CreateResultDto response = labelCommandService.updateLabel(userPrincipal, labelId, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }

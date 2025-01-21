@@ -1,6 +1,8 @@
 package com.edison.project.domain.bubble.controller;
 
+import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
@@ -76,6 +78,7 @@ public class BubbleRestController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return bubbleService.getDeletedBubbles(userPrincipal, pageable);
+    }
 
     }
 
@@ -101,4 +104,38 @@ public class BubbleRestController {
         return bubbleService.getRecentBubblesByMember(userPrincipal, pageable);
 
     }
+
+    // 버블 검색
+    @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> searchBubbles(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "false") boolean recent,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        if (keyword == null || keyword.trim().isEmpty()) {
+            throw new GeneralException(ErrorStatus.INVALID_KEYWORD);
+        }
+
+        keyword = keyword.trim();
+
+        Pageable pageable = PageRequest.of(page, size);
+        return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
+    }
+
+    // 버블 수정
+    @PatchMapping("/{bubbleId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> updateBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable Long bubbleId,
+            @RequestBody @Valid BubbleRequestDto.ListDto request
+    ) {
+        BubbleResponseDto.ListResultDto response = bubbleService.updateBubble(userPrincipal, bubbleId, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+
 }
