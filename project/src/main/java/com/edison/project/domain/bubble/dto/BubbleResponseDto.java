@@ -51,7 +51,7 @@ public class BubbleResponseDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private List<String> labels;
+        private List<LabelResponseDTO.CreateResultDto> labels;
         private Long linkedBubbleId;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
