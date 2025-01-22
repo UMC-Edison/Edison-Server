@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 public class MemberResponseDto {
 
@@ -41,5 +42,22 @@ public class MemberResponseDto {
     public static class IdentityTestSaveResultDto {
         private String category;
         private List<Integer> keywords;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IdentityKeywordDto {
+        private Integer keywordId;
+        private String keywordName;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IdentityKeywordsResultDto {
+        private Map<String, List<IdentityKeywordDto>> categories;
     }
 }

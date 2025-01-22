@@ -25,7 +25,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.edison.project.common.status.SuccessStatus._OK;
@@ -186,13 +189,8 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.IDENTITY_ALREADY_SET);
         }
 
-        // 존재하지 않는 키워드 검증
-        List<Keywords> keywords = keywordsRepository.findAllById(request.getKeywords());
-        if (keywords.isEmpty() || keywords.size() != request.getKeywords().size()) {
-            throw new GeneralException(ErrorStatus.INVALID_KEYWORDS);
-        }
-
         // 카테고리-키워드 맵핑 검증
+        List<Keywords> keywords = keywordsRepository.findAllById(request.getKeywords());
         if (!keywords.stream().allMatch(keyword -> category.equals(keyword.getCategory()))) {
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
@@ -212,6 +210,38 @@ public class MemberServiceImpl implements MemberService{
         return MemberResponseDto.IdentityTestSaveResultDto.builder()
                 .category(category)
                 .keywords(request.getKeywords())
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MemberResponseDto.IdentityKeywordsResultDto getIdentityKeywords(CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Long memberId = userPrincipal.getMemberId();
+
+        // 키워드 테이블에서, 저장된 순서대로 모든 카테고리를 가져옴
+        List<Keywords> keywords = keywordsRepository.findAllByOrderByCategoryAsc();
+
+        // 사용자가 설정한 키워드만 필터링 -> 카테고리별로 그룹화
+        Map<String, List<MemberResponseDto.IdentityKeywordDto>> categoryKeywords = keywords.stream()
+                .filter(keyword -> memberKeywordRepository.existsByMember_MemberIdAndKeyword_KeywordId(memberId, keyword.getKeywordId()))
+                .collect(Collectors.groupingBy(
+                        Keywords::getCategory,
+                        LinkedHashMap::new,
+                        Collectors.mapping(
+                                keyword -> MemberResponseDto.IdentityKeywordDto.builder()
+                                        .keywordId(keyword.getKeywordId())
+                                        .keywordName(keyword.getName())
+                                        .build(),
+                                Collectors.toList()
+                        )
+                ));
+
+        return MemberResponseDto.IdentityKeywordsResultDto.builder()
+                .categories(categoryKeywords)
                 .build();
     }
 

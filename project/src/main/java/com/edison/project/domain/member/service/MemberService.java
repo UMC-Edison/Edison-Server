@@ -14,5 +14,5 @@ public interface MemberService {
     ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> refreshAccessToken(String token);
     MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request);
-
+    MemberResponseDto.IdentityKeywordsResultDto getIdentityKeywords(CustomUserPrincipal userPrincipal);
 }
