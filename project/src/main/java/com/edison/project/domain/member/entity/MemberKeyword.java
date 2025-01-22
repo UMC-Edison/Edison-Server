@@ -1,8 +1,8 @@
 package com.edison.project.domain.member.entity;
 
+import com.edison.project.domain.keywords.entity.Keywords;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
@@ -11,6 +11,10 @@ import lombok.Setter;
         @Index(name = "idx_member_keyword_member_id", columnList = "member_id"),
         @Index(name = "idx_member_keyword_keyword_id", columnList = "keyword_id")
 })
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class MemberKeyword {
 
     @Id
@@ -22,6 +26,7 @@ public class MemberKeyword {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(name = "keyword_id", nullable = false)
-    private Integer keywordId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "keyword_id", nullable = false)
+    private Keywords keyword;
 }
