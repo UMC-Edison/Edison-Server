@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.edison.project.domain.artletter.entity.Artletter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -64,10 +65,18 @@ public class ArtletterDTO {
     public static class ListResponseDto {
         private Long artletterId;
         private String title;
+        private String content;
+        private String category;
+        private int readTime;
+        private String writer;
+        private String tags;
         private String thumbnail;
-        private int likes;
-        private int scraps;
-        private boolean isScrap;
+        private int likesCnt;
+        private int scrapsCnt;
+        private boolean isLiked;
+        private boolean isScraped;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
     }
 
 }

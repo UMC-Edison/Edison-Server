@@ -16,7 +16,9 @@ public interface ArtletterService {
 
     ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request);
 
-    Page<Artletter> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, Pageable pageable);
 
-    ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal,  ArtletterDTO.EditorRequestDto editorRequestDto);
+    Page<Artletter> searchArtletters(String keyword, Pageable pageable);
+
+    ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId);
+
 }
