@@ -22,6 +22,10 @@ public enum ErrorStatus {
     // 로그인 관련 에러
     LOGIN_CANCELLED(HttpStatus.BAD_REQUEST, "LOGIN4001", "로그인이 취소되었습니다."),
     LOGIN_REQUIRED(HttpStatus.UNAUTHORIZED, "LOGIN4002", "로그인이 필요합니다."),
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "LOGIN4003", "유효하지 않은 토큰입니다."),
+    ACCESSTOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "LOGIN4004", "access토큰이 만료되었습니다. 재발급해 주세요."),
+    REFRESHTOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "LOGIN4005", "토큰이 만료되었습니다. 다시 로그인해 주세요."),
+    ACCESS_TOKEN_VALID(HttpStatus.BAD_REQUEST, "LOGIN4006", "Access Token이 아직 유효합니다."),
 
     // 멤버 관련 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
@@ -51,6 +55,8 @@ public enum ErrorStatus {
     TAG_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4007", "tag field 관련 오류"),
     CATEGORY_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4008", "category field 관련 오류"),
     KEYWORD_IS_EMPTY(HttpStatus.BAD_REQUEST, "LETTER4009", "keyword field 관련 오류"),
+    LETTERS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4010", "아트레터를 찾을 수 없습니다."),
+
 
     // 검색 관련 에러
     INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다.");

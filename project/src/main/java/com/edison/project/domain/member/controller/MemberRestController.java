@@ -27,6 +27,17 @@ public class MemberRestController {
         return memberService.registerMember(userPrincipal, request);
     }
 
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> logout(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.logout(userPrincipal);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestAttribute("expiredAccessToken") String token) {
+        return memberService.refreshAccessToken(token);
+    }
+
     @PostMapping("/identity")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> saveIdentityTest(

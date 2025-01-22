@@ -30,6 +30,14 @@ public class MemberResponseDto {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class RefreshResultDto{
+        String accessToken;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class IdentityTestSaveResultDto {
         private String category;
         private List<Integer> keywords;

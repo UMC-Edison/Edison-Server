@@ -6,12 +6,16 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
+import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
@@ -25,6 +29,7 @@ import java.util.stream.Collectors;
 public class ArtletterController {
 
     private final ArtletterService artletterService;
+    private final ArtletterRepository artletterRepository;
 
     // POST: 아트레터 등록
     @PostMapping
@@ -151,5 +156,14 @@ public class ArtletterController {
         Page<Artletter> results = artletterService.searchArtletters(keyword, pageable);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
+    }
+
+    @GetMapping("/{letterId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getArtletterInfo(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable("letterId") Long letterId) {
+        ArtletterDTO.ListResponseDto response = artletterService.getArtletter(userPrincipal, letterId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 }
