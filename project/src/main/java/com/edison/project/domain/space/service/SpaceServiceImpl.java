@@ -56,7 +56,7 @@ public class SpaceServiceImpl implements SpaceService {
                     labels.isEmpty() ? "None" : labels
             );
 
-            spaces.add(new Space(spaceContent, 0, 0, new ArrayList<>()));
+            spaces.add(new Space(spaceContent, 0., 0., new ArrayList<>(), bubble.getBubbleId()));
         }
 
         return spaces;
@@ -121,48 +121,21 @@ public class SpaceServiceImpl implements SpaceService {
 
 
     // GPT 요청 프롬프트 생성
-    private String buildPrompt(List<String> contents) {
-        StringBuilder promptBuilder = new StringBuilder();
-
-        // 프롬프트 설명
-        promptBuilder.append("You are tasked with categorizing and positioning content items on a 2D grid. ");
-        promptBuilder.append("Each item should be assigned a unique `(x, y)` coordinate based on its category and relationships. ");
-        promptBuilder.append("Return only valid JSON output, with no additional text, comments, or explanations.\n\n");
-
-        // 규칙 추가
-        promptBuilder.append("### Rules:\n");
-        promptBuilder.append("1. Group similar items and assign `(x, y)` coordinates.\n");
-        promptBuilder.append("2. Items in the same group should have closer coordinates.\n");
-        promptBuilder.append("3. Items in different groups should be spaced farther apart.\n");
-        promptBuilder.append("4. Ensure coordinates are unique and avoid clustering all items at `(0, 0)`.\n");
-        promptBuilder.append("5. Return only a JSON array with objects in the following format:\n\n");
-
-        // 출력 형식 명시
-        promptBuilder.append("```json\n");
-        promptBuilder.append("[\n");
-        promptBuilder.append("  {\n");
-        promptBuilder.append("content: <Content here>");
-        promptBuilder.append("x: <x-coordinate>");
-        promptBuilder.append("y: <y-coordinate>");
-        promptBuilder.append("groups: <groups, only in integer list>");
-
-        // 콘텐츠 추가
-        promptBuilder.append("### Input Content:\n");
-        for (String content : contents) {
-            promptBuilder.append("- ").append(content).append("\n");
-        }
-
-        return promptBuilder.toString();
-    }
-
-
     private String sanitizeResponse(String response) {
         try {
-            // 응답 문자열을 JSON 객체로 파싱
-            ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> responseMap = objectMapper.readValue(response, new TypeReference<Map<String, Object>>() {});
+            if (response == null || response.isBlank()) {
+                throw new RuntimeException("GPT 응답이 비어 있습니다.");
+            }
 
-            // "choices" -> 첫 번째 "message" -> "content" 필드 추출
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> responseMap;
+
+            try {
+                responseMap = objectMapper.readValue(response, new TypeReference<Map<String, Object>>() {});
+            } catch (Exception e) {
+                throw new RuntimeException("GPT 응답이 JSON 형식이 아닙니다: " + response, e);
+            }
+
             List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
             if (choices == null || choices.isEmpty()) {
                 throw new RuntimeException("'choices' 필드가 비어있습니다.");
@@ -174,72 +147,127 @@ public class SpaceServiceImpl implements SpaceService {
             }
 
             String content = (String) message.get("content");
-
-            // 백틱(```) 제거 및 JSON 배열로 파싱 가능하도록 정리
-            if (content.startsWith("```json")) {
-                content = content.replace("```json", "").replace("```", "").trim();
+            if (content == null || content.isBlank()) {
+                throw new RuntimeException("'content' 값이 비어 있습니다.");
             }
 
-            // content가 유효한 JSON 배열인지 확인
-            objectMapper.readTree(content); // JSON 파싱 시도 (유효성 확인용)
+            content = content.replaceAll("```json", "").replaceAll("```", "").trim();
+            objectMapper.readTree(content);
+
             return content;
 
         } catch (Exception e) {
+            System.err.println("GPT 응답 처리 중 오류 발생: " + e.getMessage());
             throw new RuntimeException("응답 정리 중 오류 발생: " + e.getMessage(), e);
         }
     }
 
-
-
     private List<Space> parseGptResponse(String gptResponse, List<Space> spaces) {
         try {
-            // 1. 응답 정리 및 유효성 확인
             String sanitizedResponse = sanitizeResponse(gptResponse);
             System.out.println("Sanitized GPT Response: " + sanitizedResponse);
 
-            // 2. JSON 배열로 파싱
             ObjectMapper objectMapper = new ObjectMapper();
             List<Map<String, Object>> parsedData = objectMapper.readValue(sanitizedResponse, new TypeReference<List<Map<String, Object>>>() {});
 
-            // 3. 각 항목 매핑
+            int index = 0;
             for (Map<String, Object> item : parsedData) {
-                // 필수 필드 검증
-                if (!item.containsKey("content") || !item.containsKey("x") || !item.containsKey("y") || !item.containsKey("groups")) {
+                if (!item.containsKey("content") || !item.containsKey("x") || !item.containsKey("y") || !item.containsKey("groups") || !item.containsKey("id")) {
                     System.out.println("Invalid item detected and skipped: " + item);
                     continue;
                 }
 
-                // 값 추출
                 String content = (String) item.get("content");
+                if (content == null || content.isBlank()) {
+                    System.out.println("Skipping item with blank content: " + item);
+                    continue;
+                }
+
                 double x = ((Number) item.get("x")).doubleValue();
                 double y = ((Number) item.get("y")).doubleValue();
-                List<Integer> groups = (List<Integer>) item.get("groups");
+                Long id = ((Number) item.get("id")).longValue();
 
-                // Space 리스트에 값 매핑
-                spaces.stream()
-                        .filter(space -> space.getContent().equals(content))
-                        .findFirst()
-                        .ifPresent(space -> {
-                            space.setX(x);
-                            space.setY(y);
-                            space.setGroups(groups.stream().map(String::valueOf).toList()); // Integer를 String으로 변환
-                        });
+                List<?> rawGroups = (List<?>) item.get("groups");
+                List<Integer> groups = new ArrayList<>();
+                for (Object group : rawGroups) {
+                    if (group instanceof Number) {
+                        groups.add(((Number) group).intValue());
+                    } else if (group instanceof String) {
+                        try {
+                            groups.add(Integer.parseInt((String) group));
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Invalid group format: " + group, e);
+                        }
+                    } else {
+                        throw new RuntimeException("Invalid group format: " + group);
+                    }
+                }
+
+                if (index < spaces.size()) {
+                    Space space = spaces.get(index);
+                    space.setContent(content);
+                    space.setX(x);
+                    space.setY(y);
+                    space.setId(id);
+                    space.setGroups(groups.stream().map(String::valueOf).toList());
+                    System.out.println("Mapped Space: " + space.getContent());
+                    index++;
+                } else {
+                    System.out.println("No more Space entities to map for item: " + item);
+                }
             }
 
-            // 4. 매핑 결과 확인 로그
             System.out.println("=== 매핑 결과 ===");
             for (Space space : spaces) {
+                System.out.println("ID: " + space.getId());
                 System.out.println("Content: " + space.getContent());
                 System.out.println("x: " + space.getX());
                 System.out.println("y: " + space.getY());
                 System.out.println("Groups: " + space.getGroups());
                 System.out.println("----------------");
             }
+
         } catch (Exception e) {
-            System.out.println("GPT Response: " + gptResponse);
+            System.err.println("GPT Response Parsing Error: " + e.getMessage());
             throw new RuntimeException("GPT 응답 파싱 중 오류 발생: " + e.getMessage(), e);
         }
         return spaces;
     }
+
+    private String buildPrompt(List<String> contents) {
+        StringBuilder promptBuilder = new StringBuilder();
+
+        promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
+        promptBuilder.append("Each item should have the following attributes:\n");
+        promptBuilder.append("- `id`: A unique identifier for the item (integer).\n");
+        promptBuilder.append("- `content`: A string representing the item's content.\n");
+        promptBuilder.append("- `x`: A unique floating-point number for the x-coordinate.\n");
+        promptBuilder.append("- `y`: A unique floating-point number for the y-coordinate.\n");
+        promptBuilder.append("- `groups`: A list of integers representing the item's group IDs.\n\n");
+        promptBuilder.append("### Rules:\n");
+        promptBuilder.append("1. Each item must have a unique `(x, y)` coordinate.\n");
+        promptBuilder.append("2. Items with similar topics should have closer `(x, y)` coordinates.\n");
+        promptBuilder.append("3. Items with different topics should have larger distances between their coordinates.\n");
+        promptBuilder.append("4. Coordinates should include decimal values to express fine-grained similarity.\n");
+        promptBuilder.append("5. Ensure `groups` contains only integers, and avoid any other data types.\n");
+        promptBuilder.append("6. Return only valid JSON output in the following format:\n\n");
+        promptBuilder.append("[\n");
+        promptBuilder.append("  {\n");
+        promptBuilder.append("    \"id\": <unique ID>,\n");
+        promptBuilder.append("    \"content\": \"<Content here>\",\n");
+        promptBuilder.append("    \"x\": <x-coordinate>,\n");
+        promptBuilder.append("    \"y\": <y-coordinate>,\n");
+        promptBuilder.append("    \"groups\": [<group IDs>]\n");
+        promptBuilder.append("  }\n");
+        promptBuilder.append("]\n\n");
+
+        promptBuilder.append("### Input Content:\n");
+        for (String content : contents) {
+            promptBuilder.append("- ").append(content).append("\n");
+        }
+
+        return promptBuilder.toString();
+    }
+
 
 }
