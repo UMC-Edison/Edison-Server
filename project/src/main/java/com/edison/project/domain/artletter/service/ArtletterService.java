@@ -17,5 +17,7 @@ public interface ArtletterService {
 
     ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
 
+    ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
+
     Page<Artletter> searchArtletters(String keyword, Pageable pageable);
 }

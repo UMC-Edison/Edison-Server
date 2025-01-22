@@ -163,6 +163,14 @@ public class ArtletterController {
         ArtletterDTO.LikeResponseDto response = artletterService.likeToggleArtletter(userPrincipal, letterId);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
 
+    // 스크랩 기능
+    @PostMapping("/{letterId}/scrap")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> scrapArtletter(@PathVariable Long letterId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        ArtletterDTO.ScrapResponseDto response = artletterService.scrapToggleArtletter(userPrincipal, letterId);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 }
