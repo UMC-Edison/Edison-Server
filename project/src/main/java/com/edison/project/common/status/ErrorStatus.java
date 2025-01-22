@@ -32,6 +32,9 @@ public enum ErrorStatus {
     NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
     NICKNAME_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4003", "닉네임이 변경되지 않았습니다."),
     PROFILE_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4004", "프로필이 변경되지 않았습니다."),
+    IDENTITY_ALREADY_SET(HttpStatus.BAD_REQUEST, "MEMBER4003", "아이덴티티 키워드는 최초 1회만 설정 가능합니다."),
+    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "MEMBER4004", "존재하지 않는 카테고리입니다."),
+    INVALID_IDENTITY_MAPPING(HttpStatus.BAD_REQUEST, "MEMBER4005", "카테고리와 키워드가 일치하지 않습니다."),
 
     // 버블 관련 애러
     BUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4001", "버블을 찾을 수 없습니다."),

@@ -87,6 +87,10 @@ public class LabelCommandServiceImpl implements LabelCommandService {
     @Override
     @Transactional
     public void deleteLabel(CustomUserPrincipal userPrincipal, Long labelId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
