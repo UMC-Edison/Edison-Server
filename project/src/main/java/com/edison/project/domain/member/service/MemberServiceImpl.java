@@ -86,7 +86,7 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
 
-    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal, MemberResponseDto.ProfileResultDto request) {
+    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.ProfileDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
