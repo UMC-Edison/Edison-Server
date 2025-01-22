@@ -2,10 +2,13 @@ package com.edison.project.global.config;
 
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
+import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.service.CustomOidcUserService;
 import com.edison.project.domain.member.service.MemberServiceImpl;
 import com.edison.project.global.security.CustomAuthenticationEntryPoint;
+import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.security.JwtAuthenticationFilter;
+import com.edison.project.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,16 +17,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
+import java.util.List;
+
+import static com.edison.project.common.status.SuccessStatus._OK;
 
 @Configuration
 @RequiredArgsConstructor
@@ -33,18 +42,16 @@ public class SecurityConfig {
     private final CustomOidcUserService customOidcUserService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final JwtUtil jwtUtil;
   
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/members/register").permitAll()
+                        .requestMatchers("/members/refresh").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         .anyRequest().authenticated()
-                )
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(customAuthenticationEntryPoint) // EntryPoint 등록
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 // OIDC 전용 (구글로그인)
@@ -53,6 +60,9 @@ public class SecurityConfig {
                                 .oidcUserService(customOidcUserService))
                         .successHandler(this::oidcLoginSuccessHandler)
                         .failureHandler(this::oidcLoginFailureHandler)
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customAuthenticationEntryPoint) // EntryPoint 등록
                 );
 
         return http.build();
@@ -76,7 +86,21 @@ public class SecurityConfig {
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
 
-        ResponseEntity<ApiResponse> apiResponse = memberService.generateTokensForOidcUser(email);
+        MemberResponseDto.LoginResultDto dto = memberService.generateTokensForOidcUser(email);
+
+        // SecurityContextHolder에 인증 정보 설정
+        Long userId = jwtUtil.extractUserId(dto.getAccessToken());
+        CustomUserPrincipal customUserPrincipal = new CustomUserPrincipal(userId, email);
+
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                customUserPrincipal,
+                dto.getAccessToken(),
+                List.of(new SimpleGrantedAuthority("USER"))
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+        ResponseEntity<ApiResponse> apiResponse = ApiResponse.onSuccess(_OK, dto);
 
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");

@@ -1,7 +1,5 @@
 package com.edison.project.domain.member.service;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
@@ -14,13 +12,15 @@ import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
-import org.springframework.web.bind.annotation.RequestHeader;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.List;
 
 import static com.edison.project.common.status.SuccessStatus._OK;
 
@@ -35,7 +35,7 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> generateTokensForOidcUser(String email) {
+    public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
 
         if (!memberRepository.existsByEmail(email)){
             Long memberId = createUserIfNotExist(email);
@@ -45,12 +45,10 @@ public class MemberServiceImpl implements MemberService{
             RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
             refreshTokenRepository.save(tokenEntity);
 
-            MemberResponseDto.LoginResultDto dto = MemberResponseDto.LoginResultDto.builder()
+            return MemberResponseDto.LoginResultDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .build();
-
-            return ApiResponse.onSuccess(_OK, dto);
         }
         else{
             // 이미 존재하는 사용자의 경우
@@ -62,12 +60,10 @@ public class MemberServiceImpl implements MemberService{
             RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
             refreshTokenRepository.save(tokenEntity);
 
-            MemberResponseDto.LoginResultDto dto = MemberResponseDto.LoginResultDto.builder()
+             return MemberResponseDto.LoginResultDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .build();
-
-            return ApiResponse.onSuccess(_OK, dto);
         }
 
     }
@@ -112,15 +108,16 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal, String accessToken) {
-        if (userPrincipal == null) {
+    public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
         memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        String token = accessToken.substring(7); // "Bearer " 제거
+        String token = (String) authentication.getCredentials();
         long ttl = jwtUtil.getRemainingTime(token);
 
         // 블랙리스트에 추가
@@ -133,22 +130,22 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> refreshAccessToken(CustomUserPrincipal userPrincipal) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(String token) {
 
-        String email = userPrincipal.getEmail();
+        Long memberId = jwtUtil.extractUserId(token);
+        String email = jwtUtil.extractEmail(token);
 
         RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
 
-        if (!jwtUtil.validateToken(refreshToken.getRefreshToken())){
-            throw new GeneralException(ErrorStatus.INVALID_TOKEN);
-        }
-
         if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
-            throw new GeneralException(ErrorStatus.TOKEN_EXPIRED);
+            throw new GeneralException(ErrorStatus.REFRESHTOKEN_EXPIRED);
         }
 
-        String newAccessToken = jwtUtil.generateAccessToken(userPrincipal.getMemberId(), email);
+        String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
+
+        // 전에 발급받은 access token 블랙리스트에 추가
+        redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
 
         MemberResponseDto.RefreshResultDto response = MemberResponseDto.RefreshResultDto.builder()
                 .accessToken(newAccessToken)
