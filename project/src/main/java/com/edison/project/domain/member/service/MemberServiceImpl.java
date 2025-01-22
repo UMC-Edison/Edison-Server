@@ -186,13 +186,8 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.IDENTITY_ALREADY_SET);
         }
 
-        // 존재하지 않는 키워드 검증
-        List<Keywords> keywords = keywordsRepository.findAllById(request.getKeywords());
-        if (keywords.isEmpty() || keywords.size() != request.getKeywords().size()) {
-            throw new GeneralException(ErrorStatus.INVALID_KEYWORDS);
-        }
-
         // 카테고리-키워드 맵핑 검증
+        List<Keywords> keywords = keywordsRepository.findAllById(request.getKeywords());
         if (!keywords.stream().allMatch(keyword -> category.equals(keyword.getCategory()))) {
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
