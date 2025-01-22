@@ -36,4 +36,12 @@ public class MemberResponseDto {
 
         private String imageUrl;
     }
+  
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RefreshResultDto{
+        String accessToken;
+    }
 }
