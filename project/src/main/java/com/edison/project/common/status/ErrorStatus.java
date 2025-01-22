@@ -27,6 +27,7 @@ public enum ErrorStatus {
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
     NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
     NICKNAME_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4003", "닉네임이 변경되지 않았습니다."),
+    PROFILE_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4004", "프로필이 변경되지 않았습니다."),
 
     // 버블 관련 애러
     BUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4001", "버블을 찾을 수 없습니다."),

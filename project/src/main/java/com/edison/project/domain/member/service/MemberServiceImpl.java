@@ -121,12 +121,27 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.NICKNAME_NOT_CHANGED);
         }
 
-        member.updateProfile(request.getNickname(), request.getImageUrl());
+        if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
+            throw new GeneralException(ErrorStatus.PROFILE_NOT_CHANGED);
+        }
 
-        MemberResponseDto.UpdateProfileResultDto response = MemberResponseDto.UpdateProfileResultDto.builder()
-                .nickname(member.getNickname())
-                .imageUrl(request.getImageUrl())
-                .build();
+        MemberResponseDto.UpdateProfileResultDto response;
+
+        if(request.getImageUrl()==null){
+            member.updateNickname(request.getNickname());
+            response = MemberResponseDto.UpdateProfileResultDto.builder()
+                    .nickname(member.getNickname())
+                    .imageUrl(member.getProfileImg())
+                    .build();
+        }
+        else{
+            member.updateProfile(request.getNickname(), request.getImageUrl());
+
+            response = MemberResponseDto.UpdateProfileResultDto.builder()
+                    .nickname(member.getNickname())
+                    .imageUrl(request.getImageUrl())
+                    .build();
+        }
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
 
