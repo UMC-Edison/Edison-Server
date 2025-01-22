@@ -1,8 +1,10 @@
 package com.edison.project.domain.artletter.service;
 
 import com.edison.project.common.exception.GeneralException;
+import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
+import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
@@ -44,6 +46,10 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     @Override
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
         Artletter artletter = Artletter.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
@@ -58,14 +64,14 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ArtletterDTO.CreateResponseDto.builder()
                 .artletterId(savedArtletter.getLetterId())
                 .title(savedArtletter.getTitle())
-                .likes(artletterLikesRepository.countByArtletter_LetterId(artletter.getLetterId()))
-                .scraps(scrapRepository.countByArtletter_LetterId(artletter.getLetterId()))
-                .isScrap(scrapRepository.existsByArtletter_LetterIdAndMember_MemberId(artletter.getLetterId(), userPrincipal.getMemberId()))
+                .likes(artletterLikesRepository.countByArtletter(artletter))
+                .scraps(scrapRepository.countByArtletter(artletter))
+                .isScrap(scrapRepository.existsByMemberAndArtletter(member, artletter))
                 .build();
     }
 
     @Override
-    public Page<Artletter> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, Pageable pageable) {
+    public Page<Artletter> searchArtletters(String keyword, Pageable pageable) {
         return artletterRepository.searchByKeyword(keyword, pageable);
     }
 
@@ -105,6 +111,52 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .createdAt(artletter.getCreatedAt())
                 .updatedAt(artletter.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+        if (editorRequestDto == null || editorRequestDto.getArtletterIds() == null || editorRequestDto.getArtletterIds().isEmpty()) {
+            throw new GeneralException(ErrorStatus.ARTLETTER_ID_REQUIRED);
+        }
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        List<Long> artletterIds = editorRequestDto.getArtletterIds();
+        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+
+        Set<Long> foundArtletterIds = artletters.stream()
+                .map(Artletter::getLetterId)  // Artletter에서 letterId 추출
+                .collect(Collectors.toSet());
+
+        for (Long artletterId : artletterIds) {
+            if (!foundArtletterIds.contains(artletterId)) {
+                throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND, "요청된 아트레터가 존재하지 않습니다. (ID: " + artletterId + ")");
+            }
+        }
+
+        List<ArtletterDTO.ListResponseDto> artletterList = artletterRepository.findByLetterIdIn(editorRequestDto.getArtletterIds()).stream()
+                .map(artletter -> {
+                    boolean isLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
+                    boolean isScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
+                    int likesCnt = artletterLikesRepository.countByArtletter(artletter);
+                    int scrapsCnt = scrapRepository.countByArtletter(artletter);
+
+                    return ArtletterDTO.ListResponseDto.builder()
+                            .artletterId(artletter.getLetterId())
+                            .title(artletter.getTitle())
+                            .thumbnail(artletter.getThumbnail())
+                            .likesCnt(likesCnt)
+                            .scrapsCnt(scrapsCnt)
+                            .isLiked(isLiked)
+                            .isScraped(isScrapped)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, artletterList);
     }
 
 }

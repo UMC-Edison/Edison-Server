@@ -12,7 +12,7 @@ import java.util.Map;
 
 
 public interface ArtletterService {
-    Page<Artletter> getAllArtletters(CustomUserPrincipal userPrincipal, int page, int size);
+    Page<Artletter> getAllArtletters(int page, int size);
 
     ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request);
 
@@ -20,5 +20,7 @@ public interface ArtletterService {
     Page<Artletter> searchArtletters(String keyword, Pageable pageable);
 
     ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId);
+
+    ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto);
 
 }

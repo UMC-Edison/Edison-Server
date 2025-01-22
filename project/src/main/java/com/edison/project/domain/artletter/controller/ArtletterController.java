@@ -108,11 +108,10 @@ public class ArtletterController {
     // GET: 전체 아트레터 조회
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
-        Page<Artletter> artletters = artletterService.getAllArtletters(userPrincipal, page, size);
+        Page<Artletter> artletters = artletterService.getAllArtletters(page, size);
 
         // 필드(id, title)만 추출
         List<Map<String, Object>> simplifiedResult = artletters.getContent().stream()
@@ -155,7 +154,7 @@ public class ArtletterController {
 
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> results = artletterService.searchArtletters(userPrincipal, keyword, pageable);
+        Page<Artletter> results = artletterService.searchArtletters(keyword, pageable);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
     }
