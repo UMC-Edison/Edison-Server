@@ -186,22 +186,12 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> refreshAccessToken(String token) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshToken) {
 
-        Long memberId = jwtUtil.extractUserId(token);
-        String email = jwtUtil.extractEmail(token);
-
-        RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
-
-        if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
-            throw new GeneralException(ErrorStatus.REFRESHTOKEN_EXPIRED);
-        }
+        Long memberId = jwtUtil.extractUserId(refreshToken);
+        String email = jwtUtil.extractEmail(refreshToken);
 
         String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
-
-        // 전에 발급받은 access token 블랙리스트에 추가
-        redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
 
         MemberResponseDto.RefreshResultDto response = MemberResponseDto.RefreshResultDto.builder()
                 .accessToken(newAccessToken)

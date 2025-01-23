@@ -38,8 +38,8 @@ public class MemberRestController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestAttribute("expiredAccessToken") String token) {
-        return memberService.refreshAccessToken(token);
+    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestAttribute("refreshToken") String refreshToken) {
+        return memberService.refreshAccessToken(refreshToken);
     }
 
     @PostMapping("/identity")
