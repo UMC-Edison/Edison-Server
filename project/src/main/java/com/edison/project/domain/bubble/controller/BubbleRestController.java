@@ -91,6 +91,7 @@ public class BubbleRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
+
     // 7일 내 버블 목록 조회
     @GetMapping("/recent")
     @PreAuthorize("isAuthenticated()")
