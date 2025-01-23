@@ -133,7 +133,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ArtletterDTO.ScrapResponseDto.builder()
                 .artletterId(letterId)
                 .scrapsCnt(scrapCnt)
-                .isscrapped(!alreadyScrapped)
+                .isScrapped(!alreadyScrapped)
                 .build();
     }
 
