@@ -1,0 +1,11 @@
+name: Edison Dev CI/CD
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch: # (2).수동 실행도 가능하도록
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # (3).OS환경
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'develop'
