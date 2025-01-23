@@ -19,8 +19,10 @@ jobs:
 
       - name: Make application.properties  # application.properties 파일 생성
         run: |
-          cd ./project/src/main/resources
-          echo "${{ secrets.APPLICATION_PROPERTIES }}" > ./application.properties
+          echo "spring.datasource.url=${{ secrets.RDS_URL }}" > ./project/src/main/resources/application.properties
+          echo "spring.datasource.username=${{ secrets.RDS_USERNAME }}" >> ./project/src/main/resources/application.properties
+          echo "spring.datasource.password=${{ secrets.RDS_PASSWORD }}" >> ./project/src/main/resources/application.properties
+          echo "spring.jpa.hibernate.ddl-auto=update" >> ./project/src/main/resources/application.properties
         shell: bash
 
       - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
@@ -36,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Edison-Server
-          path: build/libs/*.jar
+          path: project/build/libs/*.jar
 
   deploy:
     needs: build  # build 작업이 성공적으로 완료된 후 실행
