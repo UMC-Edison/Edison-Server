@@ -1,0 +1,92 @@
+name: Edison CI/CD Pipeline
+
+on:
+  push:
+    branches: [ develop ]  # develop 브랜치에 push가 일어날 때 실행
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3  # 저장소 코드 체크아웃
+
+      - name: Set up JDK 17  # Java 개발 킷 설정
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Make application.properties  # application.properties 파일 생성
+        run: |
+          echo "spring.datasource.url=${{ secrets.RDS_URL }}" > ./project/src/main/resources/application.properties
+          echo "spring.datasource.username=${{ secrets.RDS_USERNAME }}" >> ./project/src/main/resources/application.properties
+          echo "spring.datasource.password=${{ secrets.RDS_PASSWORD }}" >> ./project/src/main/resources/application.properties
+          echo "spring.jpa.hibernate.ddl-auto=update" >> ./project/src/main/resources/application.properties
+
+          # Google OAuth2
+          echo "spring.security.oauth2.client.registration.google.client-id=${{ secrets.GOOGLE_CLIENT_ID }}" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.registration.google.client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.registration.google.scope=openid,email" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.registration.google.redirect-uri=http://${{ secrets.EC2_PUBLIC_IP }}:8080/login/oauth2/code/google" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.provider.google.issuer-uri=https://accounts.google.com" >> ./project/src/main/resources/application.properties
+
+          # JWT
+          echo "jwt.secret=${{ secrets.JWT_SECRET }}" >> ./project/src/main/resources/application.properties
+          echo "jwt.access-token-expiration=${{ secrets.JWT_ACCESS_EXPIRATION }}" >> ./project/src/main/resources/application.properties
+          echo "jwt.refresh-token-expiration=${{ secrets.JWT_REFRESH_EXPIRATION }}" >> ./project/src/main/resources/application.properties
+
+          # Redis
+          echo "spring.data.redis.host=${{ secrets.REDIS_HOST }}" >> ./project/src/main/resources/application.properties
+          echo "spring.data.redis.port=${{ secrets.REDIS_PORT }}" >> ./project/src/main/resources/application.properties
+          echo "spring.data.redis.password=${{ secrets.REDIS_PASSWORD }}" >> ./project/src/main/resources/application.properties
+        shell: bash
+
+      - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
+        run: chmod +x project/gradlew
+
+      - name: Build with Gradle  # Gradle을 사용하여 프로젝트 빌드
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build
+          build-root-directory: project
+
+      - name: Upload build artifact  # 빌드된 아티팩트 업로드
+        uses: actions/upload-artifact@v3
+        with:
+          name: Edison-Server
+          path: project/build/libs/*.jar
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: project/build/reports/tests/test/
+
+  deploy:
+    needs: build  # build 작업이 성공적으로 완료된 후 실행
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
+        uses: actions/download-artifact@v3
+        with:
+          name: Edison-Server
+          path: build/libs/
+
+      - name: Deploy to EC2  # EC2에 배포
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          echo "$EC2_SSH_KEY" > edison.pem
+          chmod 600 edison.pem
+          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
+          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/Edison-Server.jar
+          ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
+            pgrep java | xargs -r kill -15  # 기존에 실행 중인 Java 프로세스 종료
+            sleep 10
+            nohup java -jar /home/$EC2_USERNAME/Edison-Server.jar > app.log 2>&1 &  # 새 버전 애플리케이션 실행
+          "
+          rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'

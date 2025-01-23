@@ -41,7 +41,7 @@ public class Artletter extends BaseEntity {
     private ArtletterCategory category;
 
     public enum ArtletterCategory {
-        CATEGORY1, CATEGORY2, CATEGORY3
+        기술, 현대미술, 영화예술
     }
 
     private String thumbnail;

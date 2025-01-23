@@ -6,6 +6,7 @@ plugins {
 
 group = 'com.edison'
 version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '17'
 
 java {
 	toolchain {
@@ -43,8 +44,37 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'com.auth0:java-jwt:4.2.1'
 
+	//로그아웃
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+def querydslDir = "src/main/generated"
+
+sourceSets {
+	main.java.srcDirs += [ querydslDir ]
+}
+
+tasks.withType(JavaCompile) {
+	options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
+}
+
+clean.doLast {
+	file(querydslDir).deleteDir()
+}
+
+clean {
+	delete fileTree(dir: 'src/main/generated', include: '**/*.java')
+}
+tasks.withType(JavaCompile) {
+	options.compilerArgs += [
+			'--add-opens',
+			'java.base/java.lang=ALL-UNNAMED',
+			'--add-opens',
+			'java.base/java.util=ALL-UNNAMED'
+	]
 }
