@@ -23,6 +23,23 @@ jobs:
           echo "spring.datasource.username=${{ secrets.RDS_USERNAME }}" >> ./project/src/main/resources/application.properties
           echo "spring.datasource.password=${{ secrets.RDS_PASSWORD }}" >> ./project/src/main/resources/application.properties
           echo "spring.jpa.hibernate.ddl-auto=update" >> ./project/src/main/resources/application.properties
+
+          # Google OAuth2
+          echo "spring.security.oauth2.client.registration.google.client-id=${{ secrets.GOOGLE_CLIENT_ID }}" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.registration.google.client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.registration.google.scope=openid,email" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.registration.google.redirect-uri=http://${{ secrets.EC2_PUBLIC_IP }}:8080/login/oauth2/code/google" >> ./project/src/main/resources/application.properties
+          echo "spring.security.oauth2.client.provider.google.issuer-uri=https://accounts.google.com" >> ./project/src/main/resources/application.properties
+
+          # JWT
+          echo "jwt.secret=${{ secrets.JWT_SECRET }}" >> ./project/src/main/resources/application.properties
+          echo "jwt.access-token-expiration=${{ secrets.JWT_ACCESS_EXPIRATION }}" >> ./project/src/main/resources/application.properties
+          echo "jwt.refresh-token-expiration=${{ secrets.JWT_REFRESH_EXPIRATION }}" >> ./project/src/main/resources/application.properties
+
+          # Redis
+          echo "spring.data.redis.host=${{ secrets.REDIS_HOST }}" >> ./project/src/main/resources/application.properties
+          echo "spring.data.redis.port=${{ secrets.REDIS_PORT }}" >> ./project/src/main/resources/application.properties
+          echo "spring.data.redis.password=${{ secrets.REDIS_PASSWORD }}" >> ./project/src/main/resources/application.properties
         shell: bash
 
       - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
