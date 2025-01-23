@@ -266,6 +266,24 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
 
+        // 요청된 키워드 ID를 가져옵니다.
+        List<Integer> requestedKeywordIds = request.getKeywords();
+
+        // 데이터베이스에서 해당 카테고리에 속하는 모든 키워드 ID를 조회합니다.
+        List<Integer> validKeywordIds = keywordsRepository.findAllByCategory(request.getCategory()).stream()
+                .map(Keywords::getKeywordId)
+                .collect(Collectors.toList());
+
+        // 요청된 키워드 ID 중에서 존재하지 않는 키워드 ID를 필터링합니다.
+        List<Integer> invalidKeywordIds = requestedKeywordIds.stream()
+                .filter(keywordId -> !validKeywordIds.contains(keywordId))
+                .collect(Collectors.toList());
+
+        // 존재하지 않는 키워드가 있다면 에러를 throw 합니다.
+        if (!invalidKeywordIds.isEmpty()) {
+            throw new GeneralException(ErrorStatus.NOT_EXISTS_KEYWORD);
+        }
+
         List<MemberKeyword> existingMemberKeywords = memberKeywordRepository.findByMemberIdAndKeywordCategory(member.getMemberId(), request.getCategory());
         List<Integer> existingKeywordIds = existingMemberKeywords.stream()
                 .map(memberKeyword -> memberKeyword.getKeyword().getKeywordId())
