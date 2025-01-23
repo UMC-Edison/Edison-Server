@@ -147,11 +147,18 @@ public class ArtletterServiceImpl implements ArtletterService {
                     return ArtletterDTO.ListResponseDto.builder()
                             .artletterId(artletter.getLetterId())
                             .title(artletter.getTitle())
+                            .content(artletter.getContent())
+                            .tags(artletter.getTag())
+                            .writer(artletter.getWriter())
+                            .category(String.valueOf(artletter.getCategory()))
+                            .readTime(artletter.getReadTime())
                             .thumbnail(artletter.getThumbnail())
                             .likesCnt(likesCnt)
                             .scrapsCnt(scrapsCnt)
                             .isLiked(isLiked)
                             .isScraped(isScrapped)
+                            .createdAt(artletter.getCreatedAt())
+                            .updatedAt(artletter.getUpdatedAt())
                             .build();
                 })
                 .collect(Collectors.toList());
