@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
 
+import java.util.Objects;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -94,10 +95,12 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal, MemberResponseDto.ProfileResultDto request) {
+
+    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.ProfileDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
+
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
@@ -119,6 +122,48 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
+    public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        if (request.getNickname()==null || request.getNickname() == "") {
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        if(Objects.equals(member.getNickname(), request.getNickname()) && request.getImageUrl()==null){
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_CHANGED);
+        }
+
+        if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
+            throw new GeneralException(ErrorStatus.PROFILE_NOT_CHANGED);
+        }
+
+        MemberResponseDto.UpdateProfileResultDto response;
+
+        if(request.getImageUrl()==null){
+            member.updateNickname(request.getNickname());
+            response = MemberResponseDto.UpdateProfileResultDto.builder()
+                    .nickname(member.getNickname())
+                    .imageUrl(member.getProfileImg())
+                    .build();
+        }
+        else{
+            member.updateProfile(request.getNickname(), request.getImageUrl());
+
+            response = MemberResponseDto.UpdateProfileResultDto.builder()
+                    .nickname(member.getNickname())
+                    .imageUrl(request.getImageUrl())
+                    .build();
+        }
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+  
     public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -163,6 +208,7 @@ public class MemberServiceImpl implements MemberService{
                 .build();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
     }
 
     @Override
