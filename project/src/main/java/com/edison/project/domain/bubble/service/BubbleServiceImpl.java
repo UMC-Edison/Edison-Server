@@ -74,7 +74,7 @@ public class BubbleServiceImpl implements BubbleService {
 
     @Override
     @Transactional
-    public BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto) {
+    public BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.CreateDto requestDto) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -82,6 +82,11 @@ public class BubbleServiceImpl implements BubbleService {
         // Member 조회
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // ID 중복 확인
+        if (bubbleRepository.existsById(requestDto.getBubbleId())) {
+            throw new GeneralException(ErrorStatus.BUBBLE_ID_ALREADY_EXISTS);
+        }
 
         // linkedBubble 검증
         Bubble linkedBubble = null;
@@ -97,15 +102,18 @@ public class BubbleServiceImpl implements BubbleService {
         Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
         if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
 
-        // 버블 생성 및 저장
-        Bubble savedBubble = bubbleRepository.save(Bubble.builder()
+        // 버블 생성
+        Bubble bubble = Bubble.builder()
+                .bubbleId(requestDto.getBubbleId()) // 전달받은 ID로 생성
                 .member(member)
                 .title(requestDto.getTitle())
                 .content(requestDto.getContent())
                 .mainImg(requestDto.getMainImageUrl())
                 .linkedBubble(linkedBubble)
-                .labels(new HashSet<>()) // 초기화
-                .build());
+                .labels(new HashSet<>())
+                .build();
+
+        Bubble savedBubble = bubbleRepository.save(bubble);
 
         // 라벨과 버블 매핑 후 저장
         Set<BubbleLabel> bubbleLabels = labels.stream()

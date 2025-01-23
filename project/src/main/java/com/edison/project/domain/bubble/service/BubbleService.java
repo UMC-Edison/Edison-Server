@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Pageable;
 
 public interface BubbleService {
-    BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto);
+    BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.CreateDto requestDto);
 
     BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
 

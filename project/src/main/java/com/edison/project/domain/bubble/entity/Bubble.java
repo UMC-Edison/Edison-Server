@@ -46,7 +46,8 @@ public class Bubble extends BaseEntity {
     private Set<BubbleLabel> labels = new HashSet<>();
 
     @Builder
-    public Bubble(Member member, String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> labels) {
+    public Bubble(Long bubbleId, Member member, String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> labels) {
+        this.bubbleId = bubbleId;
         this.member = member;
         this.title = title;
         this.content = content;
