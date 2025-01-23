@@ -23,7 +23,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
     @Override
     @Transactional
-    public LabelResponseDTO.CreateResultDto createLabel(CustomUserPrincipal userPrincipal, LabelRequestDTO.CreateAndUpdateDto request) {
+    public LabelResponseDTO.CreateResultDto createLabel(CustomUserPrincipal userPrincipal, LabelRequestDTO.CreateDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -36,7 +36,13 @@ public class LabelCommandServiceImpl implements LabelCommandService {
             throw new GeneralException(ErrorStatus.LABEL_NAME_TOO_LONG);
         }
 
+        // 중복된 ID가 이미 존재하는지 확인
+        if (labelRepository.existsById(request.getLabelId())) {
+            throw new GeneralException(ErrorStatus.LABEL_ID_ALREADY_EXISTS);
+        }
+
         Label label = Label.builder()
+                .labelId(request.getLabelId())
                 .name(request.getName())
                 .color(request.getColor())
                 .member(member)
@@ -53,7 +59,7 @@ public class LabelCommandServiceImpl implements LabelCommandService {
 
     @Override
     @Transactional
-    public LabelResponseDTO.CreateResultDto updateLabel(CustomUserPrincipal userPrincipal, Long labelId, LabelRequestDTO.CreateAndUpdateDto request) {
+    public LabelResponseDTO.CreateResultDto updateLabel(CustomUserPrincipal userPrincipal, Long labelId, LabelRequestDTO.UpdateDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
