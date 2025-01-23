@@ -33,9 +33,11 @@ public class ArtletterLikes {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
+
     @Builder
     public ArtletterLikes(Member member, Artletter artletter) {
         this.member = member;
         this.artletter = artletter;
     }
+
 }

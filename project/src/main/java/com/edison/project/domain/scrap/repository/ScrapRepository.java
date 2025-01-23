@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 
 
 public interface ScrapRepository extends JpaRepository<Scrap, Long> {
+
     int countByArtletter(Artletter artletter);
     boolean existsByMemberAndArtletter(Member member, Artletter artletter);
 

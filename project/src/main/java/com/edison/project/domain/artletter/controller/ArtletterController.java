@@ -33,7 +33,7 @@ public class ArtletterController {
 
     // POST: 아트레터 등록
     @PostMapping
-    public ResponseEntity<ApiResponse> createArtletter(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<ApiResponse> createArtletter(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody Map<String, Object> request) {
         // 필드 값 추출
         Object readTimeObj = request.get("readTime");
         Object titleObj = request.get("title");
@@ -101,7 +101,7 @@ public class ArtletterController {
         dto.setThumbnail((String) thumbnailObj);
 
         // Service 호출
-        ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(dto);
+        ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(userPrincipal, dto);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
@@ -137,6 +137,7 @@ public class ArtletterController {
     // GET: 키워드 기반 search
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -157,6 +158,17 @@ public class ArtletterController {
 
         return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
     }
+
+
+    @PostMapping("/editor-pick")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getEditorArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestBody ArtletterDTO.EditorRequestDto editorRequestDto) {
+
+        return artletterService.getEditorArtletters(userPrincipal, editorRequestDto);
+    }
+  
 
     // 좋아요 기능
     @PostMapping("/{letterId}/like")
