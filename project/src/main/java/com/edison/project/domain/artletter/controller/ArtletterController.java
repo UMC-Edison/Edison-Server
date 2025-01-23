@@ -161,6 +161,7 @@ public class ArtletterController {
 
 
     @PostMapping("/editor-pick")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getEditorArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestBody ArtletterDTO.EditorRequestDto editorRequestDto) {
@@ -168,6 +169,25 @@ public class ArtletterController {
         return artletterService.getEditorArtletters(userPrincipal, editorRequestDto);
     }
   
+
+    // 좋아요 기능
+    @PostMapping("/{letterId}/like")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> likeArtletter(@PathVariable Long letterId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        ArtletterDTO.LikeResponseDto response = artletterService.likeToggleArtletter(userPrincipal, letterId);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    // 스크랩 기능
+    @PostMapping("/{letterId}/scrap")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> scrapArtletter(@PathVariable Long letterId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        ArtletterDTO.ScrapResponseDto response = artletterService.scrapToggleArtletter(userPrincipal, letterId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+
     @GetMapping("/{letterId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getArtletterInfo(

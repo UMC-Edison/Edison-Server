@@ -7,14 +7,16 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.entity.ArtletterLikes;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.domain.scrap.entity.Scrap;
 import com.edison.project.domain.scrap.repository.ScrapRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -30,10 +31,9 @@ import java.util.stream.Collectors;
 public class ArtletterServiceImpl implements ArtletterService {
 
     private final ArtletterRepository artletterRepository;
+    private final MemberRepository memberRepository;
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
-
-    private final MemberRepository memberRepository;
 
     public Page<Artletter> getAllArtletters(int page, int size) {
 
@@ -67,6 +67,77 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .likes(artletterLikesRepository.countByArtletter(artletter))
                 .scraps(scrapRepository.countByArtletter(artletter))
                 .isScrap(scrapRepository.existsByMemberAndArtletter(member, artletter))
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Artletter artletter = artletterRepository.findById(letterId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
+
+        boolean alreadyLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
+
+        if (alreadyLiked) {
+            // 좋아요 취소
+            artletterLikesRepository.deleteByMemberAndArtletter(member, artletter);
+        } else {
+            // 좋아요
+            ArtletterLikes like = ArtletterLikes.builder()
+                    .member(member)
+                    .artletter(artletter)
+                    .build();
+
+            artletterLikesRepository.save(like);
+        }
+
+        int likeCnt = artletterLikesRepository.countByArtletter(artletter);
+
+        return ArtletterDTO.LikeResponseDto.builder()
+                .artletterId(letterId)
+                .likesCnt(likeCnt)
+                .isLiked(!alreadyLiked)
+                .build();
+    }
+
+    @Override
+    public ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Artletter artletter = artletterRepository.findById(letterId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
+
+        boolean alreadyScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
+
+        if (alreadyScrapped) {
+            scrapRepository.deleteByMemberAndArtletter(member, artletter);
+        } else {
+            Scrap scrap = Scrap.builder()
+                    .member(member)
+                    .artletter(artletter)
+                    .build();
+
+            scrapRepository.save(scrap);
+        }
+
+        int scrapCnt = scrapRepository.countByArtletter(artletter);
+
+        return ArtletterDTO.ScrapResponseDto.builder()
+                .artletterId(letterId)
+                .scrapsCnt(scrapCnt)
+                .isScrapped(!alreadyScrapped)
                 .build();
     }
 

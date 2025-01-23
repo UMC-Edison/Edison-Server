@@ -52,13 +52,13 @@ jobs:
           build-root-directory: project
 
       - name: Upload build artifact  # 빌드된 아티팩트 업로드
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Edison-Server
           path: project/build/libs/*.jar
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-results
           path: project/build/reports/tests/test/
@@ -69,7 +69,7 @@ jobs:
 
     steps:
       - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: Edison-Server
           path: build/libs/

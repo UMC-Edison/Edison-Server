@@ -79,5 +79,24 @@ public class ArtletterDTO {
         private LocalDateTime updatedAt;
     }
 
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LikeResponseDto {
+        private Long artletterId;
+        private int likesCnt;
+        private boolean isLiked;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ScrapResponseDto {
+        private Long artletterId;
+        private int scrapsCnt;
+        private boolean isScrapped;
+    }
 }
 
