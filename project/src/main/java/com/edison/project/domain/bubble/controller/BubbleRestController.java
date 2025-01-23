@@ -91,6 +91,7 @@ public class BubbleRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
+
     // 7일 내 버블 목록 조회
     @GetMapping("/recent")
     @PreAuthorize("isAuthenticated()")
@@ -124,6 +125,17 @@ public class BubbleRestController {
         return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
 
+    // 버블 hard-delete
+    @DeleteMapping("/trashbin/{bubbleId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> hardDeleteBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable Long bubbleId
+    ) {
+        bubbleService.hardDelteBubble(userPrincipal, bubbleId);
+        return ApiResponse.onSuccess(SuccessStatus._OK);
+    }
+
     // 버블 수정
     @PatchMapping("/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
@@ -136,5 +148,5 @@ public class BubbleRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
-
 }
+

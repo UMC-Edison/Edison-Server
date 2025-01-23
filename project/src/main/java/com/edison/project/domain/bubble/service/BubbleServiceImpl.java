@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
@@ -388,6 +389,53 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> hardDelteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(bubbleId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 권한 확인
+        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        // linkedBubble = bubbleId인 모든 버블의 linkedBubble 값을 null로 업데이트
+        bubbleRepository.clearLinkedBubble(bubbleId);
+
+        bubbleRepository.delete(bubble);
+        return null;
+    }
+
+    @Override
+    // @Scheduled(cron = "0 0 0 * * ?") // 매일 새벽 0시에 실행
+    @Scheduled(cron = "0 35 17 * * ?", zone = "Asia/Seoul") // 테스트할 시간
+    @Transactional
+    public void deleteExpiredBubble() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiryDate = now.minusDays(30);
+
+        List<Bubble> expiredBubbles = bubbleRepository.findAllByUpdatedAtBeforeAndIsDeletedTrue(expiryDate);
+
+        if (!expiredBubbles.isEmpty()) {
+            List<Long> bubbleIds = expiredBubbles.stream()
+                            .map(Bubble::getBubbleId)
+                                    .collect(Collectors.toList());
+
+            bubbleIds.forEach(bubbleRepository::clearLinkedBubble);
+
+            bubbleRepository.deleteAll(expiredBubbles);
+            log.info("Deleted {} expired bubbles", expiredBubbles.size());
+        } else {
+            log.info("No expired bubbles found for deletion");
+        }
+
+    }
+
     private int countOccurrences(String content, String keyword) {
         if (content == null || keyword == null || keyword.isEmpty()) return 0;
         int count = 0;
@@ -398,5 +446,4 @@ public class BubbleServiceImpl implements BubbleService {
         }
         return count;
     }
-
 }
