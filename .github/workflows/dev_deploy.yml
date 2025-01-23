@@ -19,7 +19,7 @@ jobs:
 
       - name: Make application.properties  # application.properties 파일 생성
         run: |
-          cd ./src/main/resources
+          cd ./project/src/main/resources
           echo "${{ secrets.APPLICATION_PROPERTIES }}" > ./application.properties
         shell: bash
 
