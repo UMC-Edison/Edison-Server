@@ -20,4 +20,6 @@ public interface ArtletterService {
     ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
 
     Page<Artletter> searchArtletters(String keyword, Pageable pageable);
+
+    ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId);
 }

@@ -6,6 +6,7 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 public class ArtletterController {
 
     private final ArtletterService artletterService;
+    private final ArtletterRepository artletterRepository;
 
     // POST: 아트레터 등록
     @PostMapping
@@ -170,7 +172,16 @@ public class ArtletterController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> scrapArtletter(@PathVariable Long letterId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         ArtletterDTO.ScrapResponseDto response = artletterService.scrapToggleArtletter(userPrincipal, letterId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
 
+
+    @GetMapping("/{letterId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getArtletterInfo(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable("letterId") Long letterId) {
+        ArtletterDTO.ListResponseDto response = artletterService.getArtletter(userPrincipal, letterId);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 }

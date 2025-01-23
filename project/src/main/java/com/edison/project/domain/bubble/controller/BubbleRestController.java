@@ -80,10 +80,13 @@ public class BubbleRestController {
         return bubbleService.getDeletedBubbles(userPrincipal, pageable);
     }
 
+
     // 버블 상세정보 조회
     @GetMapping("/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> getBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @PathVariable Long bubbleId) {
+    public ResponseEntity<ApiResponse> getBubble (
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable Long bubbleId) {
         BubbleResponseDto.ListResultDto response = bubbleService.getBubble(userPrincipal, bubbleId);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
@@ -121,6 +124,17 @@ public class BubbleRestController {
         return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
 
+    // 버블 hard-delete
+    @DeleteMapping("/trashbin/{bubbleId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> hardDeleteBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable Long bubbleId
+    ) {
+        bubbleService.hardDelteBubble(userPrincipal, bubbleId);
+        return ApiResponse.onSuccess(SuccessStatus._OK);
+    }
+
     // 버블 수정
     @PatchMapping("/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
@@ -132,6 +146,5 @@ public class BubbleRestController {
         BubbleResponseDto.ListResultDto response = bubbleService.updateBubble(userPrincipal, bubbleId, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
-
 
 }

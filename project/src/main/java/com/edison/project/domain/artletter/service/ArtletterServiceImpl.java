@@ -14,17 +14,19 @@ import com.edison.project.domain.scrap.entity.Scrap;
 import com.edison.project.domain.scrap.repository.ScrapRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+
 @Service
+@RequiredArgsConstructor
 public class ArtletterServiceImpl implements ArtletterService {
 
     private final ArtletterRepository artletterRepository;
@@ -32,12 +34,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
 
-    public ArtletterServiceImpl(ArtletterRepository artletterRepository, MemberRepository memberRepository, ArtletterLikesRepository artletterLikesRepository, ScrapRepository scrapRepository) {
-        this.artletterRepository = artletterRepository;
-        this.memberRepository = memberRepository;
-        this.artletterLikesRepository = artletterLikesRepository;
-        this.scrapRepository = scrapRepository;
-    }
 
     public Page<Artletter> getAllArtletters(int page, int size) {
         // 페이지 요청 생성
@@ -142,4 +138,38 @@ public class ArtletterServiceImpl implements ArtletterService {
         return artletterRepository.searchByKeyword(keyword, pageable);
     }
 
+    @Override
+    public ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Artletter artletter = artletterRepository.findById(letterId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        boolean isLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
+        int likesCnt = artletterLikesRepository.countByArtletter(artletter);
+        boolean isScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
+        int scrapCnt = scrapRepository.countByArtletter(artletter);
+
+        return ArtletterDTO.ListResponseDto.builder()
+                .artletterId(artletter.getLetterId())
+                .title(artletter.getTitle())
+                .content(artletter.getContent())
+                .tags(artletter.getTag())
+                .writer(artletter.getWriter())
+                .category(String.valueOf(artletter.getCategory()))
+                .readTime(artletter.getReadTime())
+                .thumbnail(artletter.getThumbnail())
+                .likesCnt(likesCnt)
+                .scrapsCnt(scrapCnt)
+                .isLiked(isLiked)
+                .isScraped(isScrapped)
+                .createdAt(artletter.getCreatedAt())
+                .updatedAt(artletter.getUpdatedAt())
+                .build();
+    }
 }
