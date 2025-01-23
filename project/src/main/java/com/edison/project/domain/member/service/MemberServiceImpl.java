@@ -25,10 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.edison.project.common.status.SuccessStatus._OK;
@@ -242,6 +239,57 @@ public class MemberServiceImpl implements MemberService{
 
         return MemberResponseDto.IdentityKeywordsResultDto.builder()
                 .categories(categoryKeywords)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        // 사용자 인증 확인
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // 존재하지 않는 카테고리 검증
+        String category = request.getCategory();
+        List<String> validCategories = List.of("CATEGORY1", "CATEGORY2", "CATEGORY3", "CATEGORY4");
+        if (!validCategories.contains(category)) {
+            throw new GeneralException(ErrorStatus.INVALID_CATEGORY);
+        }
+
+        // 카테고리-키워드 맵핑 검증
+        List<Keywords> keywords = keywordsRepository.findAllById(request.getKeywords());
+        if (!keywords.stream().allMatch(keyword -> category.equals(keyword.getCategory()))) {
+            throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
+        }
+
+        List<MemberKeyword> existingMemberKeywords = memberKeywordRepository.findByMemberIdAndKeywordCategory(member.getMemberId(), request.getCategory());
+        List<Integer> existingKeywordIds = existingMemberKeywords.stream()
+                .map(memberKeyword -> memberKeyword.getKeyword().getKeywordId())
+                .collect(Collectors.toList());
+
+        // 이전 키워드와 비교하여 동일한지 확인
+        if (new HashSet<>(existingKeywordIds).equals(new HashSet<>(request.getKeywords()))) {
+            throw new GeneralException(ErrorStatus.NO_CHANGES_IN_KEYWORDS);
+        }
+
+        memberKeywordRepository.deleteByMember_MemberIdAndKeywordCategory(member.getMemberId(), category);
+
+
+        List<MemberKeyword> memberKeywords = keywords.stream()
+                .map(keyword -> MemberKeyword.builder()
+                        .member(member)
+                        .keyword(keyword)
+                        .build())
+                .collect(Collectors.toList());
+        memberKeywordRepository.saveAll(memberKeywords);
+
+        return MemberResponseDto.IdentityTestSaveResultDto.builder()
+                .category(category)
+                .keywords(request.getKeywords())
                 .build();
     }
 
