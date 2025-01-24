@@ -16,4 +16,6 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
             "WHERE l.member.memberId = :memberId " +
             "GROUP BY l")
     List<Object[]> findLabelInfoByMemberId(@Param("memberId") Long memberId);
+
+    boolean existsByLabelId(Long labelId);
 }

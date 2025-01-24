@@ -3,6 +3,8 @@ package com.edison.project.domain.label.dto;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 public class LabelRequestDTO {
 
@@ -18,6 +20,32 @@ public class LabelRequestDTO {
         @Min(value = 0, message = "컬러는 0 이상의 숫자여야 합니다.")
         @Max(value = 999999999, message = "컬러는 최대 10자리 이하의 숫자여야 합니다.")
         private int color;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LabelSyncRequestDTO {
+
+        @NotNull(message = "(DTO)라벨 ID는 필수입니다.")
+        private Long labelId;
+
+        @NotBlank(message = "(DTO)라벨 이름은 필수입니다.")
+        private String name;
+
+        @Min(value = 0, message = "(DTO)컬러 값은 음수일 수 없습니다.")
+        @Max(value = 999999999, message = "(DTO)컬러 값이 유효하지 않습니다.")
+        private int color;
+
+        @NotNull(message = "(DTO)삭제 여부는 필수입니다.")
+        private Boolean isDeleted;
+
+        private LocalDateTime createdAt;
+
+        private LocalDateTime updatedAt;
+
+        private LocalDateTime deletedAt;
     }
 
 }
