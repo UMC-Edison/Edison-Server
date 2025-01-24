@@ -81,6 +81,7 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
+    @Transactional
     public Long createUserIfNotExist(String email) {
         return memberRepository.findByEmail(email)
                 .map(Member::getMemberId)
@@ -95,7 +96,6 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-
     public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.ProfileDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
@@ -163,7 +163,9 @@ public class MemberServiceImpl implements MemberService{
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
 
     }
-  
+
+    @Override
+    @Transactional
     public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -291,5 +293,30 @@ public class MemberServiceImpl implements MemberService{
                 .build();
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Long memberId = userPrincipal.getMemberId();
+        memberRepository.findById(memberId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // access토큰 블랙리스트에 추가
+        String token = (String) authentication.getCredentials();
+        redisTokenService.addToBlacklist(token,jwtUtil.getRemainingTime(token));
+
+        // refresh토큰 삭제
+        refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
+
+        //member 삭제
+        memberRepository.deleteByMemberId(memberId);
+
+        return ApiResponse.onSuccess(_OK);
+    }
 
 }

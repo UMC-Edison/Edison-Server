@@ -57,4 +57,11 @@ public class MemberRestController {
         MemberResponseDto.IdentityKeywordsResultDto result = memberService.getIdentityKeywords(userPrincipal);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
+
+    @DeleteMapping("/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> cancel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.cancel(userPrincipal);
+    }
+
 }

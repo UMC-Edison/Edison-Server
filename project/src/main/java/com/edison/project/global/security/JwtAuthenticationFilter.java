@@ -3,6 +3,7 @@ package com.edison.project.global.security;
 import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.RefreshToken;
+import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.repository.RefreshTokenRepository;
 import com.edison.project.domain.member.service.RedisTokenService;
 import com.edison.project.global.util.JwtUtil;
@@ -28,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final RedisTokenService redisTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final MemberRepository memberRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -60,12 +62,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void handleAccessTokenRequest(HttpServletRequest request, String token) {
+
         if (jwtUtil.validateToken(token)) {
+            Long userId = jwtUtil.extractUserId(token);
+
             if (redisTokenService.isTokenBlacklisted(token)) {
+                if(!memberRepository.existsByMemberId(userId)){
+                    throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+                }
                 throw new GeneralException(ErrorStatus.ACCESSTOKEN_EXPIRED);
             }
 
-            Long userId = jwtUtil.extractUserId(token);
             String email = jwtUtil.extractEmail(token);
 
             // Refresh Token 검증
