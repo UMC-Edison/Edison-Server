@@ -106,8 +106,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (jwtUtil.isTokenExpired(storedRefreshToken.getRefreshToken())) {
-            // Refresh Token이 만료된 경우 블랙리스트 처리
-            redisTokenService.addToBlacklist(String.valueOf(storedRefreshToken), jwtUtil.getRemainingTime(String.valueOf(storedRefreshToken)));
             throw new GeneralException(ErrorStatus.REFRESHTOKEN_EXPIRED);
         }
 
