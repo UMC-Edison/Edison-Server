@@ -95,18 +95,24 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-
     public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.ProfileDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
+        if(member.getNickname()!=null){
+            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
+        }
+
         if (request.getNickname()==null || request.getNickname() == "") {
             throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        if (request.getNickname().length() > 20) {
+            throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
         }
 
         member = member.registerProfile(request.getNickname());

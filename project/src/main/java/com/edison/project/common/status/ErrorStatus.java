@@ -35,6 +35,8 @@ public enum ErrorStatus {
     IDENTITY_ALREADY_SET(HttpStatus.BAD_REQUEST, "MEMBER4003", "아이덴티티 키워드는 최초 1회만 설정 가능합니다."),
     INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "MEMBER4004", "존재하지 않는 카테고리입니다."),
     INVALID_IDENTITY_MAPPING(HttpStatus.BAD_REQUEST, "MEMBER4005", "카테고리와 키워드가 일치하지 않습니다."),
+    NICKNAME_ALREADY_SET(HttpStatus.BAD_REQUEST, "MEMBER4006", "닉네임은 최초 1회만 설정 가능합니다."),
+    NICKNAME_TOO_LONG(HttpStatus.BAD_REQUEST, "MEMBER4007", "20자이내의 닉네임을 설정해주세요."),
 
     // 버블 관련 애러
     BUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4001", "버블을 찾을 수 없습니다."),
