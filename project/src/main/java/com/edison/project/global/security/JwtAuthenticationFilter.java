@@ -98,6 +98,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void handleRefreshRequest(HttpServletRequest request, String token) {
         String email = jwtUtil.extractEmail(token);
 
+        if(!memberRepository.existsByEmail(email)){
+            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+        }
+
         // Refresh Token 검증
         RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
