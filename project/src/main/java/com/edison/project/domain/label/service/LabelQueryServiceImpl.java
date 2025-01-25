@@ -127,15 +127,6 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 //            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
 //        }
 
-        // Datetime 형식 확인
-        try {
-            if (request.getCreatedAt() != null) LocalDateTime.parse(request.getCreatedAt().toString());
-            if (request.getUpdatedAt() != null) LocalDateTime.parse(request.getUpdatedAt().toString());
-            if (request.getDeletedAt() != null) LocalDateTime.parse(request.getDeletedAt().toString());
-        } catch (DateTimeParseException e) {
-            throw new GeneralException(ErrorStatus.INVALID_DATE_FORMAT, "Invalid date format in request");
-        }
-
         Label label;
 
         if (Boolean.TRUE.equals(request.getIsDeleted())) {
