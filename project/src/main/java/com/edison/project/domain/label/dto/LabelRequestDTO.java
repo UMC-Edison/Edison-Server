@@ -34,13 +34,12 @@ public class LabelRequestDTO {
         @NotBlank(message = "(DTO)라벨 이름은 필수입니다.")
         private String name;
 
-        @Min(value = 0, message = "(DTO)컬러 값은 음수일 수 없습니다.")
-        @Max(value = 999999999, message = "(DTO)컬러 값이 유효하지 않습니다.")
         private int color;
 
         @NotNull(message = "(DTO)삭제 여부는 필수입니다.")
         private Boolean isDeleted;
 
+        @NotNull(message = "(DTO)생성 시점은 필수입니다.")
         private LocalDateTime createdAt;
 
         private LocalDateTime updatedAt;

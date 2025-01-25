@@ -18,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     private final MemberRepository memberRepository;
     private final BubbleLabelRepository bubbleLabelRepository;
 
+    // 라벨 목록 조회
     @Override
     public List<LabelResponseDTO.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
@@ -55,6 +57,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     }
 
+    // 라벨 상세 조회
     @Override
     public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long labelId) {
         if (userPrincipal == null) {
@@ -120,8 +123,17 @@ public class LabelQueryServiceImpl implements LabelQueryService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+//        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
+//            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+//        }
+
+        // Datetime 형식 확인
+        try {
+            if (request.getCreatedAt() != null) LocalDateTime.parse(request.getCreatedAt().toString());
+            if (request.getUpdatedAt() != null) LocalDateTime.parse(request.getUpdatedAt().toString());
+            if (request.getDeletedAt() != null) LocalDateTime.parse(request.getDeletedAt().toString());
+        } catch (DateTimeParseException e) {
+            throw new GeneralException(ErrorStatus.INVALID_DATE_FORMAT, "Invalid date format in request");
         }
 
         Label label;
@@ -135,10 +147,13 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 throw new GeneralException(ErrorStatus._FORBIDDEN);
             }
 
+            label.setDeletedAt(LocalDateTime.now());
+            labelRepository.save(label);
             labelRepository.deleteById(label.getLabelId());
             return LabelResponseDTO.LabelSyncResponseDTO.builder()
                     .labelId(request.getLabelId())
                     .isDeleted(true)
+                    .deletedAt(label.getDeletedAt())
                     .build();
         }
 
@@ -165,6 +180,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                     .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
             label = Label.builder()
+                    .labelId(request.getLabelId())
                     .name(request.getName())
                     .color(request.getColor())
                     .member(member)
