@@ -1,7 +1,6 @@
 package com.edison.project.domain.member.repository;
 
 import com.edison.project.domain.member.entity.MemberKeyword;
-import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,8 +18,7 @@ public interface MemberKeywordRepository extends JpaRepository<MemberKeyword, Lo
 
     boolean existsByMember_MemberIdAndKeyword_KeywordId(Long memberId, Integer keywordId);
 
-    @Query("SELECT mk FROM MemberKeyword mk WHERE mk.member.id = :memberId AND mk.keyword.category = :category")
-    List<MemberKeyword> findByMemberIdAndKeywordCategory(@Param("memberId") Long memberId, @Param("category") String category);
+    List<MemberKeyword> findByMember_MemberIdAndKeywordCategory(Long memberId, String category);
 
     void deleteByMember_MemberIdAndKeywordCategory(Long memberId, String category);
 }

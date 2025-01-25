@@ -17,9 +17,7 @@ import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -329,7 +327,7 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.NOT_EXISTS_KEYWORD);
         }
 
-        List<MemberKeyword> existingMemberKeywords = memberKeywordRepository.findByMemberIdAndKeywordCategory(member.getMemberId(), request.getCategory());
+        List<MemberKeyword> existingMemberKeywords = memberKeywordRepository.findByMember_MemberIdAndKeywordCategory(member.getMemberId(), request.getCategory());
         List<Integer> existingKeywordIds = existingMemberKeywords.stream()
                 .map(memberKeyword -> memberKeyword.getKeyword().getKeywordId())
                 .collect(Collectors.toList());
