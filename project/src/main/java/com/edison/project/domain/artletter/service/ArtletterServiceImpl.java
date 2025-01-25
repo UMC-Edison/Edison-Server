@@ -239,7 +239,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public Page<ArtletterDTO.MyScrapResponseDto> getScrapArtletter(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getScrapArtletter(CustomUserPrincipal userPrincipal, Pageable pageable) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -249,19 +249,30 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         Page<Scrap> scraps = scrapRepository.findByMember(member, pageable);
 
-        return scraps.map(scrap -> {
-            Artletter artletter = scrap.getArtletter();
-            int likesCnt = artletterLikesRepository.countByArtletter(artletter);
-            int scrapsCnt = scrapRepository.countByArtletter(artletter);
-            return ArtletterDTO.MyScrapResponseDto.builder()
-                    .artletterId(artletter.getLetterId())
-                    .title(artletter.getTitle())
-                    .thumbnail(artletter.getThumbnail())
-                    .likesCnt(likesCnt)
-                    .scrapsCnt(scrapsCnt)
-                    .scrappedAt(artletter.getCreatedAt())
-                    .build();
-        });
+        PageInfo pageInfo = new PageInfo(
+                scraps.getNumber(),
+                scraps.getSize(),
+                scraps.hasNext(),
+                scraps.getTotalElements(),
+                scraps.getTotalPages()
+        );
+
+        List<ArtletterDTO.MyScrapResponseDto> artletters = scraps.getContent().stream()
+                .map(scrap -> {
+                    Artletter artletter = scrap.getArtletter();
+                    int likesCnt = artletterLikesRepository.countByArtletter(artletter);
+                    int scrapsCnt = scrapRepository.countByArtletter(artletter);
+                    return ArtletterDTO.MyScrapResponseDto.builder()
+                            .artletterId(artletter.getLetterId())
+                            .title(artletter.getTitle())
+                            .thumbnail(artletter.getThumbnail())
+                            .likesCnt(likesCnt)
+                            .scrapsCnt(scrapsCnt)
+                            .scrappedAt(artletter.getCreatedAt())
+                            .build();
+                }).toList();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
     }
 
 }
