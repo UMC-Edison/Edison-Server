@@ -27,4 +27,6 @@ public interface ArtletterService {
 
     ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto);
 
+    Page<ArtletterDTO.MyScrapResponseDto> getScrapArtletter(CustomUserPrincipal userPrincipal, Pageable pageable);
+
 }
