@@ -17,4 +17,8 @@ public interface MemberKeywordRepository extends JpaRepository<MemberKeyword, Lo
     boolean existsByMember_MemberIdAndKeyword_Category(Long memberId, String category);
 
     boolean existsByMember_MemberIdAndKeyword_KeywordId(Long memberId, Integer keywordId);
+
+    List<MemberKeyword> findByMember_MemberIdAndKeywordCategory(Long memberId, String category);
+
+    void deleteByMember_MemberIdAndKeywordCategory(Long memberId, String category);
 }
