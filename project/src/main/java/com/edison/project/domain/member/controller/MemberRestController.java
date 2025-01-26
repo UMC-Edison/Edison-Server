@@ -64,4 +64,13 @@ public class MemberRestController {
         return memberService.cancel(userPrincipal);
     }
 
+    @PatchMapping("/identity")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> updateIdentityTest(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestBody @Valid MemberRequestDto.IdentityTestSaveDto request) {
+        MemberResponseDto.IdentityTestSaveResultDto result = memberService.updateIdentityTest(userPrincipal, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
+
 }
