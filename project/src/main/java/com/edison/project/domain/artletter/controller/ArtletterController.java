@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -195,5 +196,15 @@ public class ArtletterController {
             @PathVariable("letterId") Long letterId) {
         ArtletterDTO.ListResponseDto response = artletterService.getArtletter(userPrincipal, letterId);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    @GetMapping("/myscrap")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getScrapArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return artletterService.getScrapArtletter(userPrincipal, pageable);
     }
 }

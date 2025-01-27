@@ -98,5 +98,18 @@ public class ArtletterDTO {
         private int scrapsCnt;
         private boolean isScrapped;
     }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class MyScrapResponseDto {
+        private Long artletterId;
+        private String title;
+        private String thumbnail;
+        private int likesCnt;
+        private int scrapsCnt;
+        private LocalDateTime scrappedAt;
+    }
 }
 
