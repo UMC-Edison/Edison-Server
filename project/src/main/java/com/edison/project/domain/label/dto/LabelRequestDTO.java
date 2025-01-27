@@ -10,7 +10,7 @@ public class LabelRequestDTO {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateDto {
+    public static class CreateAndUpdateDto {
 
         @NotBlank(message = "(DTO)라벨 이름은 필수입니다.")
         private String name;

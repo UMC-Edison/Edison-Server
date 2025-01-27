@@ -5,6 +5,7 @@ import com.edison.project.global.common.entity.BaseEntity;
 import com.edison.project.domain.bubble.entity.Bubble;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,5 +57,16 @@ public class Member extends BaseEntity {
                 .bubbles(new ArrayList<>(this.bubbles))
                 .labels(new ArrayList<>(this.labels))
                 .build();
+    }
+
+    @Transactional
+    public void updateProfile(String nickname, String profileImg) {
+        this.nickname = nickname;
+        this.profileImg = profileImg;
+    }
+
+    @Transactional
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
     }
 }

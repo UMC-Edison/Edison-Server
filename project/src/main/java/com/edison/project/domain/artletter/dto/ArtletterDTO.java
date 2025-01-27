@@ -1,0 +1,102 @@
+package com.edison.project.domain.artletter.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import com.edison.project.domain.artletter.entity.Artletter;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class ArtletterDTO {
+    private Long artletterId;
+    private String title;
+    private String thumbnail;
+    private int likes;
+    private int scraps;
+
+    @Data
+    public static class CreateRequestDto {
+        @NotBlank
+        private String title;
+        @NotBlank
+        private String content;
+        @NotNull
+        private Artletter.ArtletterCategory category;
+        @NotBlank
+        private String writer;
+        @NotNull
+        private Integer readTime;
+        private String tag;
+        private String thumbnail;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class EditorRequestDto {
+        private List<Long> artletterIds;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class CreateResponseDto {
+        private Long artletterId;
+        private String title;
+        private int likes;
+        private int scraps;
+        private boolean isScrap;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ListResponseDto {
+        private Long artletterId;
+        private String title;
+        private String content;
+        private String category;
+        private int readTime;
+        private String writer;
+        private String tags;
+        private String thumbnail;
+        private int likesCnt;
+        private int scrapsCnt;
+        private boolean isLiked;
+        private boolean isScraped;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LikeResponseDto {
+        private Long artletterId;
+        private int likesCnt;
+        private boolean isLiked;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ScrapResponseDto {
+        private Long artletterId;
+        private int scrapsCnt;
+        private boolean isScrapped;
+    }
+}
+

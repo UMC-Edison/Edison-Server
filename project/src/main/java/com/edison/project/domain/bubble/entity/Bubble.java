@@ -55,6 +55,17 @@ public class Bubble extends BaseEntity {
         this.labels = labels;
     }
 
+    public void update(String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> bubbleLabels) {
+        this.title = title;
+        this.content = content;
+        this.mainImg = mainImg;
+        this.linkedBubble = linkedBubble;
+
+        // 기존 라벨 초기화 후 새로운 라벨 추가
+        this.labels.clear();
+        this.labels.addAll(bubbleLabels);
+    }
+
     public void setLabels(Set<BubbleLabel> labels) {
         this.labels = labels;
     }
