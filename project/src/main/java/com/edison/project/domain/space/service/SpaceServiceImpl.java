@@ -7,9 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
+import okhttp3.OkHttpClient;
+import java.util.concurrent.TimeUnit;
+
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SpaceServiceImpl implements SpaceService {
@@ -24,50 +28,52 @@ public class SpaceServiceImpl implements SpaceService {
 
     @Override
     public List<Space> processSpaces() {
-        // 1. Bubble 테이블 전체 데이터 조회
+        // 1. Bubble 데이터를 가져옵니다.
         List<Bubble> bubbles = bubbleRepository.findAll();
 
-        // 2. Bubble 데이터를 Space 객체로 변환
-        List<Space> spaces = createSpacesFromBubbles(bubbles);
+        // 2. Bubble 데이터를 content로 변환
+        List<Map<String, Object>> requestData = createRequestData(bubbles);
 
-        // 3. GPT 호출 및 좌표/그룹 계산
-        String gptResponse = callGPTForGrouping(spaces.stream().map(Space::getContent).toList());
-        return parseGptResponse(gptResponse, spaces);
+        // 3. requestData에서 content만 추출
+        List<String> contents = requestData.stream()
+                .map(data -> (String) data.get("content")) // "content" 필드만 추출
+                .collect(Collectors.toList());
+
+        // 4. GPT 호출
+        String gptResponse = callGPTForGrouping(contents);
+
+        // 5. GPT 응답 파싱 및 매핑
+        return parseGptResponse(gptResponse, bubbles);
     }
 
-    // Bubble 데이터를 Space로 변환
-    private List<Space> createSpacesFromBubbles(List<Bubble> bubbles) {
-        List<Space> spaces = new ArrayList<>();
+
+    // Bubble 데이터를 content로 변환
+    private List<Map<String, Object>> createRequestData(List<Bubble> bubbles) {
+        List<Map<String, Object>> requestData = new ArrayList<>();
 
         for (Bubble bubble : bubbles) {
-            // Bubble과 연결된 Label 정보 가져오기
-            List<String> labelNames = bubble.getLabels().stream()
-                    .map(bubbleLabel -> bubbleLabel.getLabel().getName())
-                    .toList();
+            // Bubble의 Labels 병합
+            String labels = bubble.getLabels().stream()
+                    .map(label -> label.getLabel().getName())
+                    .collect(Collectors.joining(", "));
 
-            // Label 이름을 쉼표로 결합
-            String labels = String.join(", ", labelNames);
-
-            // Space content 생성
-            String spaceContent = String.format(
+            // Bubble의 제목, 내용, 라벨을 병합
+            String content = String.format(
                     "Title: %s\nContent: %s\nLabels: %s",
                     bubble.getTitle(),
                     bubble.getContent(),
                     labels.isEmpty() ? "None" : labels
             );
 
-            spaces.add(new Space(spaceContent, 0., 0., new ArrayList<>(), bubble.getBubbleId()));
+            // 요청 데이터 생성
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", bubble.getBubbleId());  // 실제 Bubble ID
+            data.put("content", content);
+
+            requestData.add(data);
         }
 
-        return spaces;
-    }
-
-    private OkHttpClient createHttpClientWithTimeout() {
-        return new OkHttpClient.Builder()
-                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS) // 연결 타임아웃
-                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)   // 쓰기 타임아웃
-                .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)    // 읽기 타임아웃
-                .build();
+        return requestData;
     }
 
 
@@ -95,7 +101,6 @@ public class SpaceServiceImpl implements SpaceService {
         }
 
         // API 요청
-
         OkHttpClient client = createHttpClientWithTimeout();
         RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
         Request request = new Request.Builder()
@@ -118,6 +123,123 @@ public class SpaceServiceImpl implements SpaceService {
             throw new RuntimeException("OpenAI API 호출 중 오류 발생: " + e.getMessage(), e);
         }
     }
+
+    // GPT 응답 파싱 및 Space 매핑
+    private List<Space> parseGptResponse(String gptResponse, List<Bubble> bubbles) {
+        try {
+            String sanitizedResponse = sanitizeResponse(gptResponse);
+            System.out.println("Sanitized GPT Response: " + sanitizedResponse);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<Map<String, Object>> parsedData = objectMapper.readValue(
+                    sanitizedResponse, new TypeReference<List<Map<String, Object>>>() {});
+
+            // 그룹화 결과를 저장할 리스트
+            List<Space> spaces = new ArrayList<>();
+
+            // 그룹화 로직: 같은 그룹끼리 묶음
+            Map<Long, List<Map<String, Object>>> groupedById = parsedData.stream()
+                    .collect(Collectors.groupingBy(item -> ((Number) item.get("id")).longValue()));
+
+            for (Map.Entry<Long, List<Map<String, Object>>> entry : groupedById.entrySet()) {
+                Long id = entry.getKey();
+                List<Map<String, Object>> groupItems = entry.getValue();
+
+                // ID에 맞는 Bubble 찾기
+                Optional<Bubble> optionalBubble = bubbles.stream()
+                        .filter(bubble -> bubble.getBubbleId().equals(id))
+                        .findFirst();
+
+                if (optionalBubble.isEmpty()) {
+                    System.err.println("Warning: Bubble not found for ID: " + id);
+                    continue; // 매칭되지 않는 ID는 스킵
+                }
+
+                Bubble bubble = optionalBubble.get();
+
+                // 그룹 내용을 결합하여 하나의 Space로 생성
+                StringBuilder contentBuilder = new StringBuilder();
+                for (Map<String, Object> groupItem : groupItems) {
+                    String content = (String) groupItem.get("content");
+                    if (content != null && !content.isBlank()) {
+                        contentBuilder.append(content).append("\n");
+                    }
+                }
+
+                // 좌표 및 그룹 설정 (첫 번째 항목 기준)
+                double x = ((Number) groupItems.get(0).get("x")).doubleValue();
+                double y = ((Number) groupItems.get(0).get("y")).doubleValue();
+                List<?> rawGroups = (List<?>) groupItems.get(0).get("groups");
+                List<Integer> groups = rawGroups.stream()
+                        .map(group -> group instanceof Number ? ((Number) group).intValue() : Integer.parseInt(group.toString()))
+                        .collect(Collectors.toList());
+
+                // Space 객체 생성
+                Space space = new Space(
+                        contentBuilder.toString().trim(), // 그룹화된 content
+                        x,
+                        y,
+                        groups.stream().map(String::valueOf).toList(),
+                        bubble.getBubbleId()
+                );
+                spaces.add(space);
+            }
+
+            // 디버그 출력
+            System.out.println("=== 매핑 결과 ===");
+            for (Space space : spaces) {
+                System.out.println("ID: " + space.getId());
+                System.out.println("Content: " + space.getContent());
+                System.out.println("x: " + space.getX());
+                System.out.println("y: " + space.getY());
+                System.out.println("Groups: " + space.getGroups());
+                System.out.println("----------------");
+            }
+
+            return spaces;
+
+        } catch (Exception e) {
+            System.err.println("GPT Response Parsing Error: " + e.getMessage());
+            throw new RuntimeException("GPT 응답 파싱 중 오류 발생: " + e.getMessage(), e);
+        }
+    }
+
+    private String buildPrompt(List<String> contents) {
+        StringBuilder promptBuilder = new StringBuilder();
+
+        promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
+        promptBuilder.append("Each item should have the following attributes:\n");
+        promptBuilder.append("- `id`: A unique identifier for the item (integer).\n");
+        promptBuilder.append("- `content`: A string representing the item's content.\n");
+        promptBuilder.append("- `x`: A unique floating-point number for the x-coordinate.\n");
+        promptBuilder.append("- `y`: A unique floating-point number for the y-coordinate.\n");
+        promptBuilder.append("- `groups`: A list of integers representing the item's group IDs.\n\n");
+        promptBuilder.append("### Rules:\n");
+        promptBuilder.append("1. Each item must have a unique `(x, y)` coordinate.\n");
+        promptBuilder.append("2. Items with similar topics should have closer `(x, y)` coordinates.\n");
+        promptBuilder.append("3. Items with different topics should have larger distances between their coordinates.\n");
+        promptBuilder.append("4. Coordinates should include decimal values to express fine-grained similarity.\n");
+        promptBuilder.append("5. Ensure `groups` contains only integers, and avoid any other data types.\n");
+        promptBuilder.append("6. Return only valid JSON output in the following format:\n\n");
+        promptBuilder.append("[\n");
+        promptBuilder.append("  {\n");
+        promptBuilder.append("    \"id\": <unique ID>,\n");
+        promptBuilder.append("    \"content\": \"<Content here>\",\n");
+        promptBuilder.append("    \"x\": <x-coordinate>,\n");
+        promptBuilder.append("    \"y\": <y-coordinate>,\n");
+        promptBuilder.append("    \"groups\": [<group IDs>]\n");
+        promptBuilder.append("  }\n");
+        promptBuilder.append("]\n\n");
+        promptBuilder.append("Return only valid JSON output without any additional text or explanation.\n");
+
+        promptBuilder.append("### Input Content:\n");
+        for (String content : contents) {
+            promptBuilder.append("- ").append(content).append("\n");
+        }
+
+        return promptBuilder.toString();
+    }
+
 
 
     // GPT 요청 프롬프트 생성
@@ -162,112 +284,13 @@ public class SpaceServiceImpl implements SpaceService {
         }
     }
 
-    private List<Space> parseGptResponse(String gptResponse, List<Space> spaces) {
-        try {
-            String sanitizedResponse = sanitizeResponse(gptResponse);
-            System.out.println("Sanitized GPT Response: " + sanitizedResponse);
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<Map<String, Object>> parsedData = objectMapper.readValue(sanitizedResponse, new TypeReference<List<Map<String, Object>>>() {});
-
-            int index = 0;
-            for (Map<String, Object> item : parsedData) {
-                if (!item.containsKey("content") || !item.containsKey("x") || !item.containsKey("y") || !item.containsKey("groups") || !item.containsKey("id")) {
-                    System.out.println("Invalid item detected and skipped: " + item);
-                    continue;
-                }
-
-                String content = (String) item.get("content");
-                if (content == null || content.isBlank()) {
-                    System.out.println("Skipping item with blank content: " + item);
-                    continue;
-                }
-
-                double x = ((Number) item.get("x")).doubleValue();
-                double y = ((Number) item.get("y")).doubleValue();
-                Long id = ((Number) item.get("id")).longValue();
-
-                List<?> rawGroups = (List<?>) item.get("groups");
-                List<Integer> groups = new ArrayList<>();
-                for (Object group : rawGroups) {
-                    if (group instanceof Number) {
-                        groups.add(((Number) group).intValue());
-                    } else if (group instanceof String) {
-                        try {
-                            groups.add(Integer.parseInt((String) group));
-                        } catch (NumberFormatException e) {
-                            throw new RuntimeException("Invalid group format: " + group, e);
-                        }
-                    } else {
-                        throw new RuntimeException("Invalid group format: " + group);
-                    }
-                }
-
-                if (index < spaces.size()) {
-                    Space space = spaces.get(index);
-                    space.setContent(content);
-                    space.setX(x);
-                    space.setY(y);
-                    space.setId(id);
-                    space.setGroups(groups.stream().map(String::valueOf).toList());
-                    System.out.println("Mapped Space: " + space.getContent());
-                    index++;
-                } else {
-                    System.out.println("No more Space entities to map for item: " + item);
-                }
-            }
-
-            System.out.println("=== 매핑 결과 ===");
-            for (Space space : spaces) {
-                System.out.println("ID: " + space.getId());
-                System.out.println("Content: " + space.getContent());
-                System.out.println("x: " + space.getX());
-                System.out.println("y: " + space.getY());
-                System.out.println("Groups: " + space.getGroups());
-                System.out.println("----------------");
-            }
-
-        } catch (Exception e) {
-            System.err.println("GPT Response Parsing Error: " + e.getMessage());
-            throw new RuntimeException("GPT 응답 파싱 중 오류 발생: " + e.getMessage(), e);
-        }
-        return spaces;
+    private OkHttpClient createHttpClientWithTimeout() {
+        return new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS) // 연결 타임아웃 설정
+                .writeTimeout(30, TimeUnit.SECONDS)   // 쓰기 타임아웃 설정
+                .readTimeout(60, TimeUnit.SECONDS)    // 읽기 타임아웃 설정
+                .build();
     }
-
-    private String buildPrompt(List<String> contents) {
-        StringBuilder promptBuilder = new StringBuilder();
-
-        promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
-        promptBuilder.append("Each item should have the following attributes:\n");
-        promptBuilder.append("- `id`: A unique identifier for the item (integer).\n");
-        promptBuilder.append("- `content`: A string representing the item's content.\n");
-        promptBuilder.append("- `x`: A unique floating-point number for the x-coordinate.\n");
-        promptBuilder.append("- `y`: A unique floating-point number for the y-coordinate.\n");
-        promptBuilder.append("- `groups`: A list of integers representing the item's group IDs.\n\n");
-        promptBuilder.append("### Rules:\n");
-        promptBuilder.append("1. Each item must have a unique `(x, y)` coordinate.\n");
-        promptBuilder.append("2. Items with similar topics should have closer `(x, y)` coordinates.\n");
-        promptBuilder.append("3. Items with different topics should have larger distances between their coordinates.\n");
-        promptBuilder.append("4. Coordinates should include decimal values to express fine-grained similarity.\n");
-        promptBuilder.append("5. Ensure `groups` contains only integers, and avoid any other data types.\n");
-        promptBuilder.append("6. Return only valid JSON output in the following format:\n\n");
-        promptBuilder.append("[\n");
-        promptBuilder.append("  {\n");
-        promptBuilder.append("    \"id\": <unique ID>,\n");
-        promptBuilder.append("    \"content\": \"<Content here>\",\n");
-        promptBuilder.append("    \"x\": <x-coordinate>,\n");
-        promptBuilder.append("    \"y\": <y-coordinate>,\n");
-        promptBuilder.append("    \"groups\": [<group IDs>]\n");
-        promptBuilder.append("  }\n");
-        promptBuilder.append("]\n\n");
-
-        promptBuilder.append("### Input Content:\n");
-        for (String content : contents) {
-            promptBuilder.append("- ").append(content).append("\n");
-        }
-
-        return promptBuilder.toString();
-    }
-
 
 }
+
