@@ -1,11 +1,10 @@
 package com.edison.project.domain.space.service;
 
-import com.edison.project.domain.bubble.entity.Bubble;
-import com.edison.project.domain.space.entity.Space;
-
 import java.util.List;
 
-public interface SpaceService {
-    List<Space> processSpaces();
+import com.edison.project.domain.space.dto.SpaceResponseDto;
+import com.edison.project.global.security.CustomUserPrincipal;
 
+public interface SpaceService {
+    List<SpaceResponseDto> processSpaces(CustomUserPrincipal userPrincipal);
 }

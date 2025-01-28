@@ -1,212 +1,207 @@
 package com.edison.project.domain.space.service;
 
+import com.edison.project.common.exception.GeneralException;
+import com.edison.project.common.status.ErrorStatus;
+import com.edison.project.domain.member.entity.Member;
+import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.domain.space.dto.SpaceResponseDto;
+import com.edison.project.domain.space.entity.MemberSpace;
+import com.edison.project.domain.space.entity.Space;
+import com.edison.project.domain.space.repository.MemberSpaceRepository;
+import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
-import com.edison.project.domain.space.entity.Space;
+
+import com.edison.project.global.security.CustomUserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
-import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
-import okhttp3.OkHttpClient;
-import java.util.concurrent.TimeUnit;
-
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class SpaceServiceImpl implements SpaceService {
+
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final SpaceRepository spaceRepository;
+    private final MemberSpaceRepository memberSpaceRepository;
     private final BubbleRepository bubbleRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final MemberRepository memberRepository;
 
-    public SpaceServiceImpl(BubbleRepository bubbleRepository) {
+    public SpaceServiceImpl(SpaceRepository spaceRepository,
+                            MemberSpaceRepository memberSpaceRepository,
+                            BubbleRepository bubbleRepository, MemberRepository memberRepository) {
+        this.spaceRepository = spaceRepository;
+        this.memberSpaceRepository = memberSpaceRepository;
         this.bubbleRepository = bubbleRepository;
+        this.memberRepository = memberRepository;
     }
 
     @Override
-    public List<Space> processSpaces() {
-        // 1. Bubble 데이터를 가져옵니다.
-        List<Bubble> bubbles = bubbleRepository.findAll();
+    public List<SpaceResponseDto> processSpaces(CustomUserPrincipal userPrincipal) {
+        Long memberId = userPrincipal.getMemberId();
 
-        // 2. Bubble 데이터를 content로 변환
-        List<Map<String, Object>> requestData = createRequestData(bubbles);
+        // ✅ 기존 사용자의 Space 가져오기
+        List<Space> spaces = memberSpaceRepository.findSpacesByMemberId(memberId);
 
-        // 3. requestData에서 content만 추출
-        List<String> contents = requestData.stream()
-                .map(data -> (String) data.get("content")) // "content" 필드만 추출
+        // ✅ 새로운 Bubble 데이터를 가져와 GPT로 변환
+        List<Bubble> bubbles = bubbleRepository.findAll();  // TODO: 사용자의 Bubble만 가져오도록 수정 가능
+        Map<Long, String> requestData = createRequestDataWithId(bubbles);
+
+        String gptResponse = callGPTForGrouping(requestData);
+        List<Space> newSpaces = parseGptResponse(gptResponse, bubbles);
+
+        // ✅ 새로운 Space를 저장하고 MemberSpace와 연결
+        for (Space space : newSpaces) {
+            spaceRepository.save(space);
+
+            MemberSpace memberSpace = new MemberSpace();
+
+            Member member = memberRepository.findById(userPrincipal.getMemberId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+            memberSpace.setMember(member);
+
+            memberSpace.setSpace(space);
+            memberSpaceRepository.save(memberSpace);
+        }
+
+        // ✅ 기존 Space + 새로운 Space 반환
+        spaces.addAll(newSpaces);
+
+        return spaces.stream()
+                .map(space -> new SpaceResponseDto(
+                        space.getId(),
+                        space.getContent(),
+                        space.getX(),
+                        space.getY(),
+                        space.getGroupNames()
+                ))
                 .collect(Collectors.toList());
-
-        // 4. GPT 호출
-        String gptResponse = callGPTForGrouping(contents);
-
-        // 5. GPT 응답 파싱 및 매핑
-        return parseGptResponse(gptResponse, bubbles);
     }
 
-
-    // Bubble 데이터를 content로 변환
-    private List<Map<String, Object>> createRequestData(List<Bubble> bubbles) {
-        List<Map<String, Object>> requestData = new ArrayList<>();
-
+    // ✅ Bubble 데이터를 GPT 요청 형식으로 변환
+    private Map<Long, String> createRequestDataWithId(List<Bubble> bubbles) {
+        Map<Long, String> requestData = new HashMap<>();
         for (Bubble bubble : bubbles) {
-            // Bubble의 Labels 병합
             String labels = bubble.getLabels().stream()
                     .map(label -> label.getLabel().getName())
                     .collect(Collectors.joining(", "));
-
-            // Bubble의 제목, 내용, 라벨을 병합
-            String content = String.format(
-                    "Title: %s\nContent: %s\nLabels: %s",
-                    bubble.getTitle(),
-                    bubble.getContent(),
-                    labels.isEmpty() ? "None" : labels
-            );
-
-            // 요청 데이터 생성
-            Map<String, Object> data = new HashMap<>();
-            data.put("id", bubble.getBubbleId());  // 실제 Bubble ID
-            data.put("content", content);
-
-            requestData.add(data);
+            String content = String.format("Title: %s\nContent: %s\nLabels: %s",
+                    bubble.getTitle(), bubble.getContent(), labels.isEmpty() ? "None" : labels);
+            requestData.put(bubble.getBubbleId(), content);
         }
-
         return requestData;
     }
 
-
-    // GPT API 호출
-    private String callGPTForGrouping(List<String> contents) {
+    // ✅ GPT 호출하여 Space 좌표 변환
+    private String callGPTForGrouping(Map<Long, String> requestData) {
         String openaiApiKey = System.getenv("openai_key");
         if (openaiApiKey == null || openaiApiKey.isEmpty()) {
             throw new RuntimeException("OpenAI API 키가 환경변수에 설정되어 있지 않습니다.");
         }
 
-        if (contents == null || contents.isEmpty()) {
-            throw new IllegalArgumentException("요청 데이터가 비어 있습니다.");
-        }
-
-        // JSON 요청 본문 생성
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> message = Map.of("role", "system", "content", buildPrompt(contents));
+        Map<String, Object> message = Map.of("role", "system", "content", buildPromptWithId(requestData));
         Map<String, Object> requestBody = Map.of("model", "gpt-3.5-turbo", "messages", List.of(message));
-        String jsonBody;
 
         try {
-            jsonBody = objectMapper.writeValueAsString(requestBody);
-        } catch (Exception e) {
-            throw new RuntimeException("JSON 생성 중 오류 발생: " + e.getMessage(), e);
-        }
+            String jsonBody = objectMapper.writeValueAsString(requestBody);
+            OkHttpClient client = createHttpClientWithTimeout();
+            RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
+            Request request = new Request.Builder()
+                    .url(OPENAI_API_URL)
+                    .post(body)
+                    .addHeader("Authorization", "Bearer " + openaiApiKey)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
 
-        // API 요청
-        OkHttpClient client = createHttpClientWithTimeout();
-        RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
-        Request request = new Request.Builder()
-                .url(OPENAI_API_URL)
-                .post(body)
-                .addHeader("Authorization", "Bearer " + openaiApiKey)
-                .addHeader("Content-Type", "application/json")
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                String responseBody = response.body() != null ? response.body().string() : "No response body";
-                System.out.println("Response Code: " + response.code());
-                System.out.println("Response Body: " + responseBody);
-                throw new RuntimeException("OpenAI API 호출 실패: " + response.code() + " - " + responseBody);
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    String responseBody = response.body() != null ? response.body().string() : "No response body";
+                    throw new RuntimeException("OpenAI API 호출 실패: " + response.code() + " - " + responseBody);
+                }
+                return response.body().string();
             }
-
-            return response.body().string();
         } catch (IOException e) {
             throw new RuntimeException("OpenAI API 호출 중 오류 발생: " + e.getMessage(), e);
         }
     }
 
-    // GPT 응답 파싱 및 Space 매핑
     private List<Space> parseGptResponse(String gptResponse, List<Bubble> bubbles) {
         try {
-            String sanitizedResponse = sanitizeResponse(gptResponse);
-            System.out.println("Sanitized GPT Response: " + sanitizedResponse);
-
             ObjectMapper objectMapper = new ObjectMapper();
+
+            // ✅ 1. GPT 응답을 Map으로 변환
+            Map<String, Object> responseMap = objectMapper.readValue(gptResponse, new TypeReference<>() {});
+
+            // ✅ 2. 'choices' 내부 메시지 추출
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+            if (choices == null || choices.isEmpty()) {
+                throw new RuntimeException("'choices' 필드가 비어 있음");
+            }
+
+            // ✅ 3. 'message' 내부 'content' 추출 (이 부분이 실제 JSON 데이터)
+            Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+            if (message == null || !message.containsKey("content")) {
+                throw new RuntimeException("'message' 필드가 없거나 'content'가 없음");
+            }
+
+            // ✅ 4. 'content' 값(문자열 JSON)을 다시 ObjectMapper로 파싱
+            String contentJson = (String) message.get("content");
+            contentJson = contentJson.replaceAll("```json", "").replaceAll("```", "").trim();  // ✅ GPT가 코드 블록 감쌌을 경우 정리
+            System.out.println("Sanitized Content JSON: " + contentJson);  // 디버깅용 출력
+
+            // ✅ 5. 실제 Space 데이터를 List<Map>으로 변환
             List<Map<String, Object>> parsedData = objectMapper.readValue(
-                    sanitizedResponse, new TypeReference<List<Map<String, Object>>>() {});
+                    contentJson, new TypeReference<List<Map<String, Object>>>() {}
+            );
 
-            // 그룹화 결과를 저장할 리스트
+            // ✅ 6. Space 엔티티로 변환
             List<Space> spaces = new ArrayList<>();
-
-            // 그룹화 로직: 같은 그룹끼리 묶음
-            Map<Long, List<Map<String, Object>>> groupedById = parsedData.stream()
-                    .collect(Collectors.groupingBy(item -> ((Number) item.get("id")).longValue()));
-
-            for (Map.Entry<Long, List<Map<String, Object>>> entry : groupedById.entrySet()) {
-                Long id = entry.getKey();
-                List<Map<String, Object>> groupItems = entry.getValue();
-
-                // ID에 맞는 Bubble 찾기
+            for (Map<String, Object> item : parsedData) {
+                Long id = ((Number) item.get("id")).longValue();
                 Optional<Bubble> optionalBubble = bubbles.stream()
                         .filter(bubble -> bubble.getBubbleId().equals(id))
                         .findFirst();
-
-                if (optionalBubble.isEmpty()) {
-                    System.err.println("Warning: Bubble not found for ID: " + id);
-                    continue; // 매칭되지 않는 ID는 스킵
-                }
+                if (optionalBubble.isEmpty()) continue;
 
                 Bubble bubble = optionalBubble.get();
-
-                // 그룹 내용을 결합하여 하나의 Space로 생성
-                StringBuilder contentBuilder = new StringBuilder();
-                for (Map<String, Object> groupItem : groupItems) {
-                    String content = (String) groupItem.get("content");
-                    if (content != null && !content.isBlank()) {
-                        contentBuilder.append(content).append("\n");
-                    }
-                }
-
-                // 좌표 및 그룹 설정 (첫 번째 항목 기준)
-                double x = ((Number) groupItems.get(0).get("x")).doubleValue();
-                double y = ((Number) groupItems.get(0).get("y")).doubleValue();
-                List<?> rawGroups = (List<?>) groupItems.get(0).get("groups");
-                List<Integer> groups = rawGroups.stream()
-                        .map(group -> group instanceof Number ? ((Number) group).intValue() : Integer.parseInt(group.toString()))
+                String content = (String) item.get("content");
+                double x = ((Number) item.get("x")).doubleValue();
+                double y = ((Number) item.get("y")).doubleValue();
+                List<String> groups = ((List<?>) item.get("groups")).stream()
+                        .map(Object::toString)
                         .collect(Collectors.toList());
 
-                // Space 객체 생성
-                Space space = new Space(
-                        contentBuilder.toString().trim(), // 그룹화된 content
-                        x,
-                        y,
-                        groups.stream().map(String::valueOf).toList(),
-                        bubble.getBubbleId()
-                );
-                spaces.add(space);
+                spaces.add(new Space(content, x, y, groups, bubble.getBubbleId()));
             }
-
-            // 디버그 출력
-            System.out.println("=== 매핑 결과 ===");
-            for (Space space : spaces) {
-                System.out.println("ID: " + space.getId());
-                System.out.println("Content: " + space.getContent());
-                System.out.println("x: " + space.getX());
-                System.out.println("y: " + space.getY());
-                System.out.println("Groups: " + space.getGroups());
-                System.out.println("----------------");
-            }
-
             return spaces;
 
         } catch (Exception e) {
-            System.err.println("GPT Response Parsing Error: " + e.getMessage());
             throw new RuntimeException("GPT 응답 파싱 중 오류 발생: " + e.getMessage(), e);
         }
     }
 
-    private String buildPrompt(List<String> contents) {
-        StringBuilder promptBuilder = new StringBuilder();
 
+    // ✅ GPT 응답 데이터 정리
+    private String sanitizeResponse(String response) {
+        try {
+            if (response == null || response.isBlank()) throw new RuntimeException("GPT 응답이 비어 있습니다.");
+            objectMapper.readTree(response);
+            return response.trim();
+        } catch (IOException e) {
+            throw new RuntimeException("GPT 응답 처리 중 오류 발생: " + e.getMessage(), e);
+        }
+    }
+
+    // ✅ GPT 요청 프롬프트 생성
+    private String buildPromptWithId(Map<Long, String> requestData) {
+        StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
         promptBuilder.append("Each item should have the following attributes:\n");
         promptBuilder.append("- `id`: A unique identifier for the item (integer).\n");
@@ -218,70 +213,16 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("1. Each item must have a unique `(x, y)` coordinate.\n");
         promptBuilder.append("2. Items with similar topics should have closer `(x, y)` coordinates.\n");
         promptBuilder.append("3. Items with different topics should have larger distances between their coordinates.\n");
-        promptBuilder.append("4. Coordinates should include decimal values to express fine-grained similarity.\n");
+        promptBuilder.append("4. The spread or distance for groups is up to you to decide.\n");
         promptBuilder.append("5. Ensure `groups` contains only integers, and avoid any other data types.\n");
         promptBuilder.append("6. Return only valid JSON output in the following format:\n\n");
-        promptBuilder.append("[\n");
-        promptBuilder.append("  {\n");
-        promptBuilder.append("    \"id\": <unique ID>,\n");
-        promptBuilder.append("    \"content\": \"<Content here>\",\n");
-        promptBuilder.append("    \"x\": <x-coordinate>,\n");
-        promptBuilder.append("    \"y\": <y-coordinate>,\n");
-        promptBuilder.append("    \"groups\": [<group IDs>]\n");
-        promptBuilder.append("  }\n");
-        promptBuilder.append("]\n\n");
-        promptBuilder.append("Return only valid JSON output without any additional text or explanation.\n");
 
-        promptBuilder.append("### Input Content:\n");
-        for (String content : contents) {
-            promptBuilder.append("- ").append(content).append("\n");
+        for (Map.Entry<Long, String> entry : requestData.entrySet()) {
+            promptBuilder.append("- ID: ").append(entry.getKey()).append("\n");
+            promptBuilder.append(entry.getValue()).append("\n");
         }
 
         return promptBuilder.toString();
-    }
-
-
-
-    // GPT 요청 프롬프트 생성
-    private String sanitizeResponse(String response) {
-        try {
-            if (response == null || response.isBlank()) {
-                throw new RuntimeException("GPT 응답이 비어 있습니다.");
-            }
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> responseMap;
-
-            try {
-                responseMap = objectMapper.readValue(response, new TypeReference<Map<String, Object>>() {});
-            } catch (Exception e) {
-                throw new RuntimeException("GPT 응답이 JSON 형식이 아닙니다: " + response, e);
-            }
-
-            List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
-            if (choices == null || choices.isEmpty()) {
-                throw new RuntimeException("'choices' 필드가 비어있습니다.");
-            }
-
-            Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-            if (message == null || !message.containsKey("content")) {
-                throw new RuntimeException("'message' 필드에 'content'가 없습니다.");
-            }
-
-            String content = (String) message.get("content");
-            if (content == null || content.isBlank()) {
-                throw new RuntimeException("'content' 값이 비어 있습니다.");
-            }
-
-            content = content.replaceAll("```json", "").replaceAll("```", "").trim();
-            objectMapper.readTree(content);
-
-            return content;
-
-        } catch (Exception e) {
-            System.err.println("GPT 응답 처리 중 오류 발생: " + e.getMessage());
-            throw new RuntimeException("응답 정리 중 오류 발생: " + e.getMessage(), e);
-        }
     }
 
     private OkHttpClient createHttpClientWithTimeout() {
@@ -291,6 +232,4 @@ public class SpaceServiceImpl implements SpaceService {
                 .readTimeout(60, TimeUnit.SECONDS)    // 읽기 타임아웃 설정
                 .build();
     }
-
 }
-

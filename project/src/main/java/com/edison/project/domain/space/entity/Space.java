@@ -1,59 +1,56 @@
 package com.edison.project.domain.space.entity;
+
+import jakarta.persistence.*;
 import java.util.List;
 
+@Entity
+@Table(name = "spaces")
 public class Space {
-    private Long id; // Bubble의 ID
-    private String content; // Space 내용
-    private double x;       // x 좌표
-    private double y;       // y 좌표
-    private List<String> groups; // 속한 그룹
 
-    public Space(String content, double x, double y, List<String> groups, Long id) {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String content;
+    private double x;
+    private double y;
+
+    @ElementCollection
+    @CollectionTable(name = "space_groups", joinColumns = @JoinColumn(name = "space_id"))
+    @Column(name = "`group_names`")  // ✅ 예약어 문제 해결
+    private List<String> groupNames;  // ✅ 필드명 변경
+
+    public Space() {}
+
+    public Space(String content, double x, double y, List<String> groupNames, Long bubbleId) {
         this.content = content;
         this.x = x;
         this.y = y;
-        this.groups = groups;
-        this.id = id;
+        this.groupNames = groupNames;
     }
 
-    // Getter와 Setter
+    // ✅ Getter & Setter 수정
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getContent() {
         return content;
     }
 
-    public void setContent(String content) {
-        this.content = content;
-    }
-
     public double getX() {
         return x;
-    }
-
-    public void setX(double x) {
-        this.x = x;
     }
 
     public double getY() {
         return y;
     }
 
-    public void setY(double y) {
-        this.y = y;
+    public List<String> getGroupNames() { // ✅ 변경된 필드명 반영
+        return groupNames;
     }
 
-    public List<String> getGroups() {
-        return groups;
-    }
-
-    public void setGroups(List<String> groups) {
-        this.groups = groups;
+    public void setGroupNames(List<String> groupNames) { // ✅ Setter도 수정
+        this.groupNames = groupNames;
     }
 }
