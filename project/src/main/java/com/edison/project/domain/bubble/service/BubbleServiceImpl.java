@@ -524,7 +524,6 @@ public class BubbleServiceImpl implements BubbleService {
         bubble.setDeletedAt(request.getDeletedAt());
 
         bubbleRepository.save(bubble);
-        bubbleLabelRepository.saveAll(bubbleLabels);
         return bubble;
     }
 
