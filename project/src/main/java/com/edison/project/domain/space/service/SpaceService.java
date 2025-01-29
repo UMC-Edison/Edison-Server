@@ -1,10 +1,10 @@
 package com.edison.project.domain.space.service;
 
-import java.util.List;
-
-import com.edison.project.domain.space.dto.SpaceResponseDto;
+import com.edison.project.common.response.ApiResponse;
 import com.edison.project.global.security.CustomUserPrincipal;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 
 public interface SpaceService {
-    List<SpaceResponseDto> processSpaces(CustomUserPrincipal userPrincipal);
+    ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable);
 }
