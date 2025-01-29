@@ -552,6 +552,6 @@ public class BubbleServiceImpl implements BubbleService {
 
         savedBubble.getLabels().addAll(bubbleLabels);
 
-        return newBubble;
+        return savedBubble;
     }
 }
