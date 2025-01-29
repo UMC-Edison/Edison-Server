@@ -1,10 +1,12 @@
 package com.edison.project.domain.bubble.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -37,5 +39,26 @@ public class BubbleRequestDto {
     @AllArgsConstructor
     public static class RestoreDto {
         private Long bubbleId;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SyncDto {
+        @NotNull(message = "(DTO)버블 ID는 필수입니다.")
+        private Long BubbleId;
+
+        private String title;
+        private String content;
+        private String mainImageUrl;
+        private Set<Long> labelIds;
+        private Long linkedBubbleId;
+
+        @NotNull(message = "(DTO)삭제 여부는 필수입니다.")
+        private boolean isDeleted;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+        private LocalDateTime deletedAt;
     }
 }

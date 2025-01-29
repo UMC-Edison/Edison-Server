@@ -32,4 +32,6 @@ public interface BubbleService {
     ResponseEntity<ApiResponse> hardDelteBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
 
     void deleteExpiredBubble();
+
+    BubbleResponseDto.SyncResultDto syncBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.SyncDto requestDto);
 }
