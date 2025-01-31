@@ -2,6 +2,8 @@ package com.edison.project.domain.keywords.service;
 
 import com.edison.project.domain.keywords.dto.KeywordsResponseDto;
 
+import java.util.List;
+
 public interface KeywordsService {
-    KeywordsResponseDto.IdentityKeywordsResultDto getKeywordsByCategory(String category);
+    List<KeywordsResponseDto.IdentityKeywordDto> getKeywordsByCategory(String category);
 }

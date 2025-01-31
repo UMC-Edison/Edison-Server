@@ -18,7 +18,7 @@ public class KeywordsServiceImpl implements KeywordsService {
     private final KeywordsRepository keywordsRepository;
 
     @Override
-    public KeywordsResponseDto.IdentityKeywordsResultDto getKeywordsByCategory(String category) {
+    public List<KeywordsResponseDto.IdentityKeywordDto> getKeywordsByCategory(String category) {
 
         // 데이터베이스에서 해당 카테고리가 존재하는지 확인
         boolean categoryExists = keywordsRepository.existsByCategory(category);
@@ -29,17 +29,13 @@ public class KeywordsServiceImpl implements KeywordsService {
         // 카테고리에 해당하는 키워드 가져오기
         List<Keywords> keywords = keywordsRepository.findAllByCategory(category);
 
-        // DTO 변환 (카테고리 없이 리스트만 반환)
-        List<KeywordsResponseDto.IdentityKeywordDto> keywordDtos = keywords.stream()
+        // DTO 변환 (리스트 형태로 반환)
+        return keywords.stream()
                 .map(keyword -> KeywordsResponseDto.IdentityKeywordDto.builder()
                         .keywordId(keyword.getKeywordId())
                         .keywordName(keyword.getName())
                         .build())
                 .collect(Collectors.toList());
-
-        return KeywordsResponseDto.IdentityKeywordsResultDto.builder()
-                .result(keywordDtos)
-                .build();
     }
 
 }
