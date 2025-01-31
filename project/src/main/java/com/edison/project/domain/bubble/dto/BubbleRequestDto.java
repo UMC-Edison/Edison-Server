@@ -1,5 +1,6 @@
 package com.edison.project.domain.bubble.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -56,9 +57,14 @@ public class BubbleRequestDto {
         private Long linkedBubbleId;
 
         @NotNull(message = "(DTO)삭제 여부는 필수입니다.")
+        @JsonProperty("isDeleted")
         private boolean isDeleted;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private LocalDateTime deletedAt;
+
+        public boolean isDeleted() {
+            return isDeleted;
+        }
     }
 }

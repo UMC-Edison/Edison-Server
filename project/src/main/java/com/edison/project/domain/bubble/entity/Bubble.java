@@ -1,6 +1,5 @@
 package com.edison.project.domain.bubble.entity;
 
-import com.edison.project.global.common.entity.BaseEntity;
 import com.edison.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,7 +16,7 @@ import java.util.Set;
         @Index(name = "idx_bubble_member_id", columnList = "member_id"),
         @Index(name = "idx_bubble_title", columnList = "title")})
 
-public class Bubble extends BaseEntity {
+public class Bubble {
 
     @Id
     // @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,6 +38,16 @@ public class Bubble extends BaseEntity {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    protected LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    protected LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at", nullable = true)
+    protected LocalDateTime deletedAt;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "linked_bubble")
@@ -82,6 +91,10 @@ public class Bubble extends BaseEntity {
 
     public void setDeleted(boolean deleted) {
         this.isDeleted = deleted;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
     }
 
 }

@@ -523,7 +523,10 @@ public class BubbleServiceImpl implements BubbleService {
         bubble.setUpdatedAt(request.getUpdatedAt());
         bubble.setDeletedAt(request.getDeletedAt());
 
-        bubbleRepository.save(bubble);
+        System.out.println("Request isDeleted: " + request.isDeleted());
+        System.out.println("Before Update Bubble isDeleted: " + bubble.isDeleted());
+
+        bubbleRepository.saveAndFlush(bubble);
         return bubble;
     }
 
