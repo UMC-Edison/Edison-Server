@@ -217,6 +217,12 @@ public class MemberServiceImpl implements MemberService{
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
+        // 존재하지 않는 카테고리 검증
+        List<String> validCategories = keywordsRepository.findDistinctCategories();
+        String category = request.getCategory();
+        if (!validCategories.contains(category)) {
+            throw new GeneralException(ErrorStatus.INVALID_CATEGORY);
+        }
 
         // 카테고리별로 최초 설정 여부 검증
         boolean isCategorySet = memberKeywordRepository.existsByMember_MemberIdAndKeyword_Category(member.getMemberId(), category);
