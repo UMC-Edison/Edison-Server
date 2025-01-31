@@ -1,7 +1,7 @@
 package com.edison.project.domain.keywords.service;
 
-import com.edison.project.domain.member.dto.MemberResponseDto;
+import com.edison.project.domain.keywords.dto.KeywordsResponseDto;
 
 public interface KeywordsService {
-    MemberResponseDto.IdentityKeywordsResultDto getKeywordsByCategory(String category);
+    KeywordsResponseDto.IdentityKeywordsResultDto getKeywordsByCategory(String category);
 }
