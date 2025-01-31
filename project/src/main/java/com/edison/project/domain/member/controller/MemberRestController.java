@@ -58,6 +58,12 @@ public class MemberRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
+    @DeleteMapping("/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> cancel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.cancel(userPrincipal);
+    }
+
     @PatchMapping("/identity")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> updateIdentityTest(
@@ -66,4 +72,5 @@ public class MemberRestController {
         MemberResponseDto.IdentityTestSaveResultDto result = memberService.updateIdentityTest(userPrincipal, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
+
 }
