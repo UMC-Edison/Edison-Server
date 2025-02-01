@@ -1,7 +1,6 @@
 package com.edison.project.domain.member.controller;
 
 import com.edison.project.common.response.ApiResponse;
-import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.dto.MemberRequestDto;
 import com.edison.project.domain.member.dto.MemberResponseDto;
