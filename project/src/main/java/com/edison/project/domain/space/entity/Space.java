@@ -26,17 +26,23 @@ public class Space {
     @Column(name = "group_names")  // ✅ 예약어 문제 해결 (`groups` → `group_names`)
     private List<String> groupNames;
 
+    @Column(nullable = false) // member_id 추가
+    private Long memberId;
+
+    // ✅ 기본 생성자 (JPA 필수)
     public Space() {}
 
-    public Space(String content, double x, double y, List<String> groupNames, Bubble bubble) {
+    // ✅ memberId와 Bubble 포함한 생성자
+    public Space(String content, double x, double y, List<String> groupNames, Bubble bubble, Long memberId) {
         this.content = content;
         this.x = x;
         this.y = y;
         this.groupNames = groupNames;
         this.bubble = bubble; // ✅ `bubble_id` 설정
+        this.memberId = memberId;
     }
 
-    // ✅ Getter & Setter 수정
+    // ✅ Getter & Setter
     public Long getId() {
         return id;
     }
@@ -45,12 +51,24 @@ public class Space {
         return content;
     }
 
+    public void setContent(String content) {
+        this.content = content;
+    }
+
     public double getX() {
         return x;
     }
 
+    public void setX(double x) {
+        this.x = x;
+    }
+
     public double getY() {
         return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
     }
 
     public Bubble getBubble() { // ✅ Bubble 관련 Getter 추가
@@ -65,7 +83,15 @@ public class Space {
         return groupNames;
     }
 
-    public void setGroupNames(List<String> groupNames) { // ✅ Setter도 수정
+    public void setGroupNames(List<String> groupNames) { // ✅ Setter 추가
         this.groupNames = groupNames;
+    }
+
+    public Long getMemberId() {
+        return memberId;
+    }
+
+    public void setMemberId(Long memberId) {
+        this.memberId = memberId;
     }
 }

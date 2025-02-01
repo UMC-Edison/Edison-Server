@@ -93,7 +93,7 @@ public class SpaceServiceImpl implements SpaceService {
         String gptResponse = callGPTForGrouping(requestData);
         System.out.println("🛠 GPT 응답: " + gptResponse);
 
-        List<Space> newSpaces = parseGptResponse(gptResponse, bubbles);
+        List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
         System.out.println("✅ 변환된 Space 개수: " + newSpaces.size());
 
         // ✅ 새로운 Space를 저장하고 MemberSpace와 연결
@@ -196,9 +196,11 @@ public class SpaceServiceImpl implements SpaceService {
         }
     }
 
-    private List<Space> parseGptResponse(String gptResponse, List<Bubble> bubbles) {
+    private List<Space> parseGptResponse(String gptResponse, List<Bubble> bubbles, Long memberId) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
+
+            System.out.println("🔍 Raw GPT Response (Before Parsing): " + gptResponse);
 
             // ✅ 1. GPT 응답을 Map으로 변환
             Map<String, Object> responseMap = objectMapper.readValue(gptResponse, new TypeReference<Map<String, Object>>() {});
@@ -250,7 +252,7 @@ public class SpaceServiceImpl implements SpaceService {
                         .map(Object::toString)
                         .collect(Collectors.toList());
 
-                spaces.add(new Space(content, x, y, groups, bubble));
+                spaces.add(new Space(content, x, y, groups, bubble, memberId));
             }
             return spaces;
 
@@ -267,17 +269,21 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
         promptBuilder.append("Each item should have the following attributes:\n");
         promptBuilder.append("- id: A unique identifier for the item (integer).\n");
-        promptBuilder.append("- content: A string representing the item's content.\n");
+        promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
         promptBuilder.append("- x: A unique floating-point number for the x-coordinate.\n");
         promptBuilder.append("- y: A unique floating-point number for the y-coordinate.\n");
         promptBuilder.append("- groups: A list of integers representing the item's group IDs.\n\n");
+
         promptBuilder.append("### Rules:\n");
         promptBuilder.append("1. Each item must have a unique (x, y) coordinate.\n");
-        promptBuilder.append("2. Items with similar topics should have closer (x, y) coordinates.\n");
-        promptBuilder.append("3. Items with different topics should have larger distances between their coordinates.\n");
-        promptBuilder.append("4. The spread or distance for groups is up to you to decide.\n");
-        promptBuilder.append("5. Ensure groups contains only integers, and avoid any other data types.\n");
-        promptBuilder.append("6. Return only valid JSON output in the following format:\n\n");
+        promptBuilder.append("2. Items with similar topics should be clustered like a firework explosion, forming visually distinct groups.\n");
+        promptBuilder.append("3. Groups should be separated from each other while maintaining internal coherence.\n");
+        promptBuilder.append("4. The spread or distance for groups is up to you to decide, but they should appear like bursts from a central point.\n");
+        promptBuilder.append("5. Ensure groups contain only integers, and avoid any other data types.\n");
+        promptBuilder.append("6. X and Y coordinates do not need to follow a uniform increase; they can be randomly distributed while maintaining the clustering structure.\n");
+        promptBuilder.append("7. Return only valid JSON output in the following format:\n\n");
+        promptBuilder.append("8. Clusters can be separate, but items with similar themes should be placed near each other, even if they belong to different clusters.\n");
+        promptBuilder.append("9. Content should be reduced to its **core meaning**: extract only **one or two essential words** that best describe it.\n");
 
         for (Map.Entry<Long, String> entry : requestData.entrySet()) {
             promptBuilder.append("- ID: ").append(entry.getKey()).append("\n");
