@@ -118,10 +118,26 @@ public class SpaceServiceImpl implements SpaceService {
 
     @Transactional
     public void saveOrUpdateSpaceWithMemberSpace(Space newSpace) {
+        // 🔍 기존 Space 조회
         List<Space> existingSpaces = spaceRepository.findByBubble_BubbleIdAndMemberId(
-                newSpace.getBubble().getBubbleId(), newSpace.getMemberId());
+                newSpace.getBubble().getBubbleId(), newSpace.getMemberId()
+        );
 
-        if (existingSpaces.isEmpty()) {
+        Optional<Space> existingSpace = existingSpaces.stream().findFirst(); // ✅ 첫 번째 항목 가져오기
+
+        if (existingSpace.isPresent()) {
+            // ✅ 기존 Space 업데이트
+            Space spaceToUpdate = existingSpace.get();
+            spaceToUpdate.setX(newSpace.getX());
+            spaceToUpdate.setY(newSpace.getY());
+            spaceToUpdate.setContent(newSpace.getContent());
+            spaceRepository.save(spaceToUpdate); // UPDATE 수행
+
+            System.out.println("🔄 기존 Space 업데이트 완료! ID: " + spaceToUpdate.getId());
+
+            // ✅ MemberSpace 업데이트 (기존 연결 유지)
+            updateMemberSpace(newSpace.getMemberId(), spaceToUpdate);
+        } else {
             // ✅ 새로운 Space 저장
             spaceRepository.save(newSpace);
             spaceRepository.flush();
@@ -129,30 +145,12 @@ public class SpaceServiceImpl implements SpaceService {
 
             // ✅ MemberSpace 추가
             saveMemberSpace(newSpace.getMemberId(), newSpace);
-        } else {
-            // ✅ 여러 개의 Space가 존재할 경우, 가장 오래된 데이터만 남기고 나머지는 삭제
-            Space spaceToUpdate = existingSpaces.get(0); // 첫 번째 요소 사용
-            for (int i = 1; i < existingSpaces.size(); i++) {
-                spaceRepository.delete(existingSpaces.get(i)); // 나머지 삭제
-            }
-
-            // ✅ 기존 Space 업데이트
-            spaceToUpdate.setX(newSpace.getX());
-            spaceToUpdate.setY(newSpace.getY());
-            spaceToUpdate.setGroupNames(newSpace.getGroupNames());
-            spaceToUpdate.setContent(newSpace.getContent());
-            spaceRepository.save(spaceToUpdate);
-            spaceRepository.flush();
-            System.out.println("🔄 기존 Space 업데이트 완료! ID: " + spaceToUpdate.getId());
-
-            // ✅ MemberSpace 업데이트 (기존 연결 유지)
-            updateMemberSpace(newSpace.getMemberId(), spaceToUpdate);
         }
     }
 
 
-    // ✅ MemberSpace 저장
-    private void saveMemberSpace(Long memberId, Space space) {
+    @Transactional
+    public void saveMemberSpace(Long memberId, Space space) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
@@ -160,19 +158,23 @@ public class SpaceServiceImpl implements SpaceService {
         memberSpace.setMember(member);
         memberSpace.setSpace(space);
         memberSpaceRepository.save(memberSpace);
-        memberSpaceRepository.flush();
-        System.out.println("🔗 MemberSpace 연결됨: " + memberId + " -> " + space.getId());
+        memberSpaceRepository.flush(); // 즉시 반영
+
+        System.out.println("🔗 MemberSpace 저장 완료: Member ID " + memberId + " -> Space ID " + space.getId());
     }
 
-    // ✅ MemberSpace 업데이트
-    private void updateMemberSpace(Long memberId, Space space) {
-        Optional<MemberSpace> existingMemberSpace = memberSpaceRepository.findByMember_MemberIdAndSpace_Id(memberId, space.getId());
+    @Transactional
+    public void updateMemberSpace(Long memberId, Space space) {
+        Optional<MemberSpace> optionalMemberSpace = memberSpaceRepository.findByMember_MemberIdAndSpace_Id(memberId, space.getId());
 
-        if (existingMemberSpace.isEmpty()) {
-            saveMemberSpace(memberId, space);
+        if (optionalMemberSpace.isPresent()) {
+            System.out.println("✅ MemberSpace는 이미 존재함: Member ID " + memberId + " -> Space ID " + space.getId());
+            return; // 이미 연결이 존재하므로 추가 처리 필요 없음
         }
-    }
 
+        // 새로운 MemberSpace 저장
+        saveMemberSpace(memberId, space);
+    }
 
 
     // ✅ Bubble 데이터를 GPT 요청 형식으로 변환
