@@ -2,6 +2,7 @@ package com.edison.project.domain.label.service;
 
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.domain.bubble.entity.Bubble;
+import com.edison.project.domain.label.dto.LabelRequestDTO;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
@@ -11,10 +12,13 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +29,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     private final MemberRepository memberRepository;
     private final BubbleLabelRepository bubbleLabelRepository;
 
+    // 라벨 목록 조회
     @Override
     public List<LabelResponseDTO.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
@@ -52,6 +57,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     }
 
+    // 라벨 상세 조회
     @Override
     public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long labelId) {
         if (userPrincipal == null) {
@@ -109,6 +115,83 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .updatedAt(bubble.getUpdatedAt())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public LabelResponseDTO.LabelSyncResponseDTO syncLabel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, LabelRequestDTO.LabelSyncRequestDTO request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Label label;
+
+        if (Boolean.TRUE.equals(request.getIsDeleted())) {
+            // 라벨 삭제(hard delete)
+            label = labelRepository.findById(request.getLabelId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+
+            if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+                throw new GeneralException(ErrorStatus._FORBIDDEN);
+            }
+
+            label.setDeletedAt(request.getDeletedAt());
+            labelRepository.save(label);
+            labelRepository.deleteById(label.getLabelId());
+
+            return LabelResponseDTO.LabelSyncResponseDTO.builder()
+                    .labelId(request.getLabelId())
+                    .isDeleted(true)
+                    .deletedAt(label.getDeletedAt())
+                    .build();
+        }
+
+        // 라벨 업데이트 로직
+        if (labelRepository.existsById(request.getLabelId())) {
+            label = labelRepository.findById(request.getLabelId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+
+            if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+                throw new GeneralException(ErrorStatus._FORBIDDEN);
+            }
+
+            label.setName(request.getName());
+            label.setColor(request.getColor());
+            label.setCreatedAt(request.getCreatedAt());
+            label.setUpdatedAt(request.getUpdatedAt());
+
+            labelRepository.save(label);
+        }
+
+        // 라벨 생성 로직
+        else {
+            Member member = memberRepository.findById(userPrincipal.getMemberId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+            label = Label.builder()
+                    .labelId(request.getLabelId())
+                    .name(request.getName())
+                    .color(request.getColor())
+                    .member(member)
+                    .createdAt(request.getCreatedAt())
+                    .updatedAt(request.getUpdatedAt())
+                    .deletedAt(request.getDeletedAt())
+                    .build();
+
+            labelRepository.save(label);
+        }
+
+        return LabelResponseDTO.LabelSyncResponseDTO.builder()
+                .labelId(label.getLabelId())
+                .name(label.getName())
+                .color(label.getColor())
+                .isDeleted(false)
+                .createdAt(label.getCreatedAt())
+                .updatedAt(label.getUpdatedAt())
+                .deletedAt(label.getDeletedAt())
+                .build();
+
+    }
+
 
 
 }

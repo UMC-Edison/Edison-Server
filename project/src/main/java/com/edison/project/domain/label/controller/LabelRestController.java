@@ -8,7 +8,6 @@ import com.edison.project.domain.label.service.LabelCommandService;
 import com.edison.project.domain.label.service.LabelQueryService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -68,6 +67,15 @@ public class LabelRestController {
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         LabelResponseDTO.DetailResultDto details = labelQueryService.getLabelDetailInfoList(userPrincipal, labelId);
         return ApiResponse.onSuccess(SuccessStatus._OK, details);
+    }
+
+    @PostMapping("/sync")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> syncLabel(
+            @RequestBody @Valid LabelRequestDTO.LabelSyncRequestDTO request,
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        LabelResponseDTO.LabelSyncResponseDTO response = labelQueryService.syncLabel(userPrincipal, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
 }
