@@ -30,9 +30,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import okhttp3.*;
-import java.util.*;
-
 @Service
 @Transactional
 public class SpaceServiceImpl implements SpaceService {
@@ -96,17 +93,18 @@ public class SpaceServiceImpl implements SpaceService {
         List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
         System.out.println("✅ 변환된 Space 개수: " + newSpaces.size());
 
-        // ✅ 새로운 Space를 저장하고 MemberSpace와 연결
+        // ✅ 새로운 Space를 저장하고 MemberSpace도 업데이트
         for (Space space : newSpaces) {
-            saveSpaceAndMemberSpace(space, memberId);
+            saveOrUpdateSpaceWithMemberSpace(space);
         }
+
 
         // ✅ 기존 Space + 새로운 Space 반환
         spaces.addAll(newSpaces);
 
         List<SpaceResponseDto> spaceDtos = spaces.stream()
                 .map(space -> new SpaceResponseDto(
-                        space.getId(),
+                        space.getBubble(),    // ✅ Bubble 객체 전달
                         space.getContent(),
                         space.getX(),
                         space.getY(),
@@ -114,16 +112,47 @@ public class SpaceServiceImpl implements SpaceService {
                 ))
                 .collect(Collectors.toList());
 
+
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, spaceDtos);
     }
 
-    // ✅ Space와 MemberSpace 저장 및 즉시 반영
     @Transactional
-    public void saveSpaceAndMemberSpace(Space space, Long memberId) {
-        spaceRepository.save(space);
-        spaceRepository.flush(); // ✅ 즉시 반영
-        System.out.println("💾 저장된 Space ID: " + space.getId());
+    public void saveOrUpdateSpaceWithMemberSpace(Space newSpace) {
+        List<Space> existingSpaces = spaceRepository.findByBubble_BubbleIdAndMemberId(
+                newSpace.getBubble().getBubbleId(), newSpace.getMemberId());
 
+        if (existingSpaces.isEmpty()) {
+            // ✅ 새로운 Space 저장
+            spaceRepository.save(newSpace);
+            spaceRepository.flush();
+            System.out.println("🆕 새로운 Space 추가! ID: " + newSpace.getId());
+
+            // ✅ MemberSpace 추가
+            saveMemberSpace(newSpace.getMemberId(), newSpace);
+        } else {
+            // ✅ 여러 개의 Space가 존재할 경우, 가장 오래된 데이터만 남기고 나머지는 삭제
+            Space spaceToUpdate = existingSpaces.get(0); // 첫 번째 요소 사용
+            for (int i = 1; i < existingSpaces.size(); i++) {
+                spaceRepository.delete(existingSpaces.get(i)); // 나머지 삭제
+            }
+
+            // ✅ 기존 Space 업데이트
+            spaceToUpdate.setX(newSpace.getX());
+            spaceToUpdate.setY(newSpace.getY());
+            spaceToUpdate.setGroupNames(newSpace.getGroupNames());
+            spaceToUpdate.setContent(newSpace.getContent());
+            spaceRepository.save(spaceToUpdate);
+            spaceRepository.flush();
+            System.out.println("🔄 기존 Space 업데이트 완료! ID: " + spaceToUpdate.getId());
+
+            // ✅ MemberSpace 업데이트 (기존 연결 유지)
+            updateMemberSpace(newSpace.getMemberId(), spaceToUpdate);
+        }
+    }
+
+
+    // ✅ MemberSpace 저장
+    private void saveMemberSpace(Long memberId, Space space) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
@@ -131,9 +160,20 @@ public class SpaceServiceImpl implements SpaceService {
         memberSpace.setMember(member);
         memberSpace.setSpace(space);
         memberSpaceRepository.save(memberSpace);
-        memberSpaceRepository.flush(); // ✅ 즉시 반영
-        System.out.println("🔗 MemberSpace 연결됨: " + memberSpace.getMember().getMemberId() + " -> " + memberSpace.getSpace().getId());
+        memberSpaceRepository.flush();
+        System.out.println("🔗 MemberSpace 연결됨: " + memberId + " -> " + space.getId());
     }
+
+    // ✅ MemberSpace 업데이트
+    private void updateMemberSpace(Long memberId, Space space) {
+        Optional<MemberSpace> existingMemberSpace = memberSpaceRepository.findByMember_MemberIdAndSpace_Id(memberId, space.getId());
+
+        if (existingMemberSpace.isEmpty()) {
+            saveMemberSpace(memberId, space);
+        }
+    }
+
+
 
     // ✅ Bubble 데이터를 GPT 요청 형식으로 변환
     private Map<Long, String> createRequestDataWithId(List<Bubble> bubbles) {
@@ -223,10 +263,14 @@ public class SpaceServiceImpl implements SpaceService {
             // ✅ JSON이 ```json ... ``` 형태일 경우 제거
             contentJson = contentJson.replaceAll("```json", "").replaceAll("```", "").trim();
 
-            // ✅ 5. 문자열을 다시 Map으로 변환
+            // ✅ 5. 문자열을 Map으로 변환
             Map<String, Object> parsedContent = objectMapper.readValue(contentJson, new TypeReference<Map<String, Object>>() {});
 
-            // ✅ 6. "items" 필드 확인 및 리스트 변환
+            // ✅ 6. "items" 필드 확인 후 리스트로 변환
+            if (!parsedContent.containsKey("items")) {
+                throw new RuntimeException("'items' 필드가 존재하지 않습니다.");
+            }
+
             List<Map<String, Object>> parsedData = (List<Map<String, Object>>) parsedContent.get("items");
             if (parsedData == null || parsedData.isEmpty()) {
                 throw new RuntimeException("'items' 필드가 비어 있음");
@@ -262,11 +306,24 @@ public class SpaceServiceImpl implements SpaceService {
     }
 
 
+    private String extractKeywords(String content) {
+        if (content == null || content.isEmpty()) return "N/A";
+
+        // 공백으로 단어 분리
+        String[] words = content.split("\\s+");
+
+        // 1~2개 핵심 키워드만 추출
+        int keywordCount = Math.min(words.length, 2);
+        return String.join(" ", Arrays.copyOfRange(words, 0, keywordCount));
+    }
+
+
 
     // ✅ GPT 요청 프롬프트 생성
     private String buildPromptWithId(Map<Long, String> requestData) {
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
+        promptBuilder.append("Ensure that ALL provided bubbles are assigned unique coordinates.");
         promptBuilder.append("Each item should have the following attributes:\n");
         promptBuilder.append("- id: A unique identifier for the item (integer).\n");
         promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
@@ -293,13 +350,7 @@ public class SpaceServiceImpl implements SpaceService {
         return promptBuilder.toString();
     }
 
-    private OkHttpClient createHttpClientWithTimeout() {
-        return new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS) // 연결 타임아웃 설정
-                .writeTimeout(30, TimeUnit.SECONDS)   // 쓰기 타임아웃 설정
-                .readTimeout(60, TimeUnit.SECONDS)    // 읽기 타임아웃 설정
-                .build();
-    }
+
 }
 
 

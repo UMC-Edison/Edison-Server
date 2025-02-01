@@ -1,7 +1,12 @@
 package com.edison.project.domain.space.dto;
 
+import com.edison.project.domain.bubble.entity.Bubble;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.ArrayList;
 import java.util.List;
 
+@JsonIgnoreProperties ({"hibernateLazyInitializer", "handler"})
 public class SpaceResponseDto {
     private Long id;
     private String content;
@@ -10,12 +15,12 @@ public class SpaceResponseDto {
     private List<String> groups;
 
     // 올바른 생성자 추가
-    public SpaceResponseDto(Long id, String content, double x, double y, List<String> groups) {
-        this.id = id;
+    public SpaceResponseDto(Bubble bubble, String content, double x, double y, List<String> groups) {
+        this.id = bubble.getBubbleId();
         this.content = content;
         this.x = x;
         this.y = y;
-        this.groups = groups;
+        this.groups = new ArrayList<>(groups);;
     }
 
     // 기본 생성자 (필요시 추가)
