@@ -123,10 +123,6 @@ public class LabelQueryServiceImpl implements LabelQueryService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-//        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
-//            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
-//        }
-
         Label label;
 
         if (Boolean.TRUE.equals(request.getIsDeleted())) {
@@ -138,9 +134,10 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 throw new GeneralException(ErrorStatus._FORBIDDEN);
             }
 
-            label.setDeletedAt(LocalDateTime.now());
+            label.setDeletedAt(request.getDeletedAt());
             labelRepository.save(label);
             labelRepository.deleteById(label.getLabelId());
+
             return LabelResponseDTO.LabelSyncResponseDTO.builder()
                     .labelId(request.getLabelId())
                     .isDeleted(true)
@@ -175,11 +172,11 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                     .name(request.getName())
                     .color(request.getColor())
                     .member(member)
+                    .createdAt(request.getCreatedAt())
+                    .updatedAt(request.getUpdatedAt())
+                    .deletedAt(request.getDeletedAt())
                     .build();
 
-            labelRepository.save(label);
-            label.setCreatedAt(request.getCreatedAt());
-            label.setUpdatedAt(request.getUpdatedAt());
             labelRepository.save(label);
         }
 
