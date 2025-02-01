@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
@@ -436,6 +437,64 @@ public class BubbleServiceImpl implements BubbleService {
 
     }
 
+    @Override
+    @Transactional
+    public BubbleResponseDto.SyncResultDto syncBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.SyncDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // linkedBubble 검증
+        Bubble linkedBubble = null;
+        if (request.getLinkedBubbleId() != null) {
+            linkedBubble = bubbleRepository.findById(request.getLinkedBubbleId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+        }
+
+        // 라벨 검증
+        Set<Long> labelIds = Optional.ofNullable(request.getLabelIds()).orElse(Collections.emptySet());
+        if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
+
+        Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
+        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
+
+        Bubble bubble;
+
+        // 기존 Bubble 수정 또는 새로운 Bubble 생성
+        if (bubbleRepository.existsById(request.getBubbleId())) {
+            bubble = updateExistingBubble(request, member, linkedBubble, labels);
+        } else {
+            bubble = createNewBubble(request, member, linkedBubble, labels);
+        }
+
+        // 결과 반환
+        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+                        .labelId(bl.getLabel().getLabelId())
+                        .name(bl.getLabel().getName())
+                        .color(bl.getLabel().getColor())
+                        .build())
+                .collect(Collectors.toList());
+
+        return BubbleResponseDto.SyncResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(labelDtos)
+                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                        .map(Bubble::getBubbleId)
+                        .orElse(null))
+                .isDeleted(bubble.isDeleted())
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .deletedAt(bubble.getDeletedAt())
+                .build();
+    }
+
     private int countOccurrences(String content, String keyword) {
         if (content == null || keyword == null || keyword.isEmpty()) return 0;
         int count = 0;
@@ -445,5 +504,57 @@ public class BubbleServiceImpl implements BubbleService {
             idx = content.indexOf(keyword, idx + keyword.length());
         }
         return count;
+    }
+
+    private Bubble updateExistingBubble(BubbleRequestDto.SyncDto request, Member member, Bubble linkedBubble, Set<Label> labels) {
+        Bubble bubble = bubbleRepository.findById(request.getBubbleId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        if(!bubble.getMember().getMemberId().equals(member.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        Set<BubbleLabel> bubbleLabels = labels.stream()
+                .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
+                .collect(Collectors.toSet());
+
+        bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), linkedBubble, bubbleLabels);
+        bubble.setDeleted(request.isDeleted());
+        bubble.setUpdatedAt(request.getUpdatedAt());
+        bubble.setDeletedAt(request.getDeletedAt());
+
+        System.out.println("Request isDeleted: " + request.isDeleted());
+        System.out.println("Before Update Bubble isDeleted: " + bubble.isDeleted());
+
+        bubbleRepository.saveAndFlush(bubble);
+        return bubble;
+    }
+
+    private Bubble createNewBubble(BubbleRequestDto.SyncDto request, Member member, Bubble linkedBubble, Set<Label> labels) {
+        Bubble newBubble = Bubble.builder()
+                .bubbleId(request.getBubbleId())
+                .title(request.getTitle())
+                .content(request.getContent())
+                .mainImg(request.getMainImageUrl())
+                .linkedBubble(linkedBubble)
+                .member(member)
+                .labels(new HashSet<>())
+                .isDeleted(request.isDeleted())
+                .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
+                .deletedAt(request.getDeletedAt())
+                .build();
+
+        Bubble savedBubble = bubbleRepository.save(newBubble);
+
+        Set<BubbleLabel> bubbleLabels = labels.stream()
+                .map(label -> BubbleLabel.builder().bubble(savedBubble).label(label).build())
+                .collect(Collectors.toSet());
+
+        bubbleLabelRepository.saveAll(bubbleLabels);
+
+        savedBubble.getLabels().addAll(bubbleLabels);
+
+        return savedBubble;
     }
 }

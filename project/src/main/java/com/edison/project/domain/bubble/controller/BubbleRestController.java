@@ -148,5 +148,15 @@ public class BubbleRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
+    // 버블 SYNC
+    @PostMapping("/sync")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> syncBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestBody @Valid BubbleRequestDto.SyncDto request) {
+        BubbleResponseDto.SyncResultDto response = bubbleService.syncBubble(userPrincipal, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
 }
 
