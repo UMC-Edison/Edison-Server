@@ -57,4 +57,21 @@ public class BubbleResponseDto {
         private LocalDateTime updatedAt;
         private Integer remainDay;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SyncResultDto {
+        private Long bubbleId;
+        private String title;
+        private String content;
+        private String mainImageUrl;
+        private List<LabelResponseDTO.CreateResultDto> labels;
+        private Long linkedBubbleId;
+        private Boolean isDeleted;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+        private LocalDateTime deletedAt;
+    }
 }

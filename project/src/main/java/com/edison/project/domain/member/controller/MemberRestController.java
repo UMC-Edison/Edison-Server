@@ -1,7 +1,6 @@
 package com.edison.project.domain.member.controller;
 
 import com.edison.project.common.response.ApiResponse;
-import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.dto.MemberRequestDto;
 import com.edison.project.domain.member.dto.MemberResponseDto;
@@ -57,4 +56,20 @@ public class MemberRestController {
         MemberResponseDto.IdentityKeywordsResultDto result = memberService.getIdentityKeywords(userPrincipal);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
+
+    @DeleteMapping("/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> cancel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.cancel(userPrincipal);
+    }
+
+    @PatchMapping("/identity")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> updateIdentityTest(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestBody @Valid MemberRequestDto.IdentityTestSaveDto request) {
+        MemberResponseDto.IdentityTestSaveResultDto result = memberService.updateIdentityTest(userPrincipal, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
+
 }

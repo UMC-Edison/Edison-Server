@@ -238,4 +238,41 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ApiResponse.onSuccess(SuccessStatus._OK, artletterList);
     }
 
+    @Override
+    public ResponseEntity<ApiResponse> getScrapArtletter(CustomUserPrincipal userPrincipal, Pageable pageable) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Page<Scrap> scraps = scrapRepository.findByMember(member, pageable);
+
+        PageInfo pageInfo = new PageInfo(
+                scraps.getNumber(),
+                scraps.getSize(),
+                scraps.hasNext(),
+                scraps.getTotalElements(),
+                scraps.getTotalPages()
+        );
+
+        List<ArtletterDTO.MyScrapResponseDto> artletters = scraps.getContent().stream()
+                .map(scrap -> {
+                    Artletter artletter = scrap.getArtletter();
+                    int likesCnt = artletterLikesRepository.countByArtletter(artletter);
+                    int scrapsCnt = scrapRepository.countByArtletter(artletter);
+                    return ArtletterDTO.MyScrapResponseDto.builder()
+                            .artletterId(artletter.getLetterId())
+                            .title(artletter.getTitle())
+                            .thumbnail(artletter.getThumbnail())
+                            .likesCnt(likesCnt)
+                            .scrapsCnt(scrapsCnt)
+                            .scrappedAt(artletter.getCreatedAt())
+                            .build();
+                }).toList();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
+    }
+
 }
