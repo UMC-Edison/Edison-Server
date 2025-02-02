@@ -96,12 +96,19 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
+        if(member.getNickname()!=null){
+            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
+        }
+
         if (request.getNickname()==null || request.getNickname() == "") {
             throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        if (request.getNickname().length() > 20) {
+            throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
         }
 
         member = member.registerProfile(request.getNickname());
@@ -183,22 +190,12 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> refreshAccessToken(String token) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshToken) {
 
-        Long memberId = jwtUtil.extractUserId(token);
-        String email = jwtUtil.extractEmail(token);
-
-        RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
-
-        if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
-            throw new GeneralException(ErrorStatus.REFRESHTOKEN_EXPIRED);
-        }
+        Long memberId = jwtUtil.extractUserId(refreshToken);
+        String email = jwtUtil.extractEmail(refreshToken);
 
         String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
-
-        // 전에 발급받은 access token 블랙리스트에 추가
-        redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
 
         MemberResponseDto.RefreshResultDto response = MemberResponseDto.RefreshResultDto.builder()
                 .accessToken(newAccessToken)

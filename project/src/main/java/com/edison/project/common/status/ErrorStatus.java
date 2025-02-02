@@ -32,6 +32,8 @@ public enum ErrorStatus {
     NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
     NICKNAME_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4003", "닉네임이 변경되지 않았습니다."),
     PROFILE_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4004", "프로필이 변경되지 않았습니다."),
+    NICKNAME_ALREADY_SET(HttpStatus.BAD_REQUEST, "MEMBER4005", "닉네임은 최초 1회만 설정 가능합니다."),
+    NICKNAME_TOO_LONG(HttpStatus.BAD_REQUEST, "MEMBER4006", "20자이내의 닉네임을 설정해주세요."),
 
     // 아이덴티티 테스트 관련 에러
     IDENTITY_ALREADY_SET(HttpStatus.BAD_REQUEST, "IDENTITY4001", "아이덴티티 키워드는 최초 1회만 설정 가능합니다."),

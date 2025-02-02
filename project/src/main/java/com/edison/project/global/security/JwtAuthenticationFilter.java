@@ -96,6 +96,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void handleRefreshRequest(HttpServletRequest request, String token) {
+        String refreshToken = request.getHeader("Refresh-Token");
+
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED); // Refresh Token이 없을 때 예외 처리
+        }
+
         String email = jwtUtil.extractEmail(token);
 
         if(!memberRepository.existsByEmail(email)){
@@ -103,21 +109,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // Refresh Token 검증
-        RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
+        RefreshToken storedRefreshToken = refreshTokenRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
 
-        if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
-            // Refresh Token이 만료된 경우 Access Token 블랙리스트 처리
-            redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
+        if(!jwtUtil.isTokenExpired(token)){
+            throw new GeneralException(ErrorStatus.ACCESS_TOKEN_VALID);
+        }
+
+        if (jwtUtil.isTokenExpired(storedRefreshToken.getRefreshToken())) {
             throw new GeneralException(ErrorStatus.REFRESHTOKEN_EXPIRED);
         }
 
-        if (jwtUtil.isTokenExpired(token)) {
-            // Access Token이 만료되었어도 진행
-            request.setAttribute("expiredAccessToken", token);
+        if (!storedRefreshToken.getRefreshToken().equals(refreshToken)) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN); // Refresh Token이 저장된 것과 다를 때 예외 처리
         }
-        else{
-            throw new GeneralException(ErrorStatus.ACCESS_TOKEN_VALID);
-        }
+
+        request.setAttribute("refreshToken", refreshToken);
+
     }
 }
