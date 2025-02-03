@@ -451,7 +451,7 @@ public class BubbleServiceImpl implements BubbleService {
         Bubble linkedBubble = null;
         if (request.getLinkedBubbleId() != null) {
             linkedBubble = bubbleRepository.findById(request.getLinkedBubbleId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.LINKEDBUBBLE_NOT_FOUND));
         }
 
         // 라벨 검증
@@ -465,34 +465,55 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 기존 Bubble 수정 또는 새로운 Bubble 생성
         if (bubbleRepository.existsById(request.getBubbleId())) {
-            bubble = updateExistingBubble(request, member, linkedBubble, labels);
+            if (request.isTrashed()) {
+                bubble = hardDeleteBubble(request, member);
+            } else {
+                bubble = updateExistingBubble(request, member, linkedBubble, labels);
+            }
         } else {
             bubble = createNewBubble(request, member, linkedBubble, labels);
         }
 
-        // 결과 반환
-        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
-                        .labelId(bl.getLabel().getLabelId())
-                        .name(bl.getLabel().getName())
-                        .color(bl.getLabel().getColor())
-                        .build())
-                .collect(Collectors.toList());
+        if (!request.isTrashed()) {
+            // 결과 반환
+            List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
+                    .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+                            .labelId(bl.getLabel().getLabelId())
+                            .name(bl.getLabel().getName())
+                            .color(bl.getLabel().getColor())
+                            .build())
+                    .collect(Collectors.toList());
 
-        return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
-                .title(bubble.getTitle())
-                .content(bubble.getContent())
-                .mainImageUrl(bubble.getMainImg())
-                .labels(labelDtos)
-                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                        .map(Bubble::getBubbleId)
-                        .orElse(null))
-                .isDeleted(bubble.isDeleted())
-                .createdAt(bubble.getCreatedAt())
-                .updatedAt(bubble.getUpdatedAt())
-                .deletedAt(bubble.getDeletedAt())
-                .build();
+            return BubbleResponseDto.SyncResultDto.builder()
+                    .bubbleId(bubble.getBubbleId())
+                    .title(bubble.getTitle())
+                    .content(bubble.getContent())
+                    .mainImageUrl(bubble.getMainImg())
+                    .labels(labelDtos)
+                    .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                            .map(Bubble::getBubbleId)
+                            .orElse(null))
+                    .isDeleted(bubble.isDeleted())
+                    .isTrashed(request.isTrashed())
+                    .createdAt(bubble.getCreatedAt())
+                    .updatedAt(bubble.getUpdatedAt())
+                    .deletedAt(bubble.getDeletedAt())
+                    .build();
+        } else {
+            return BubbleResponseDto.SyncResultDto.builder()
+                    .bubbleId(request.getBubbleId())
+                    .title(null)
+                    .content(null)
+                    .mainImageUrl(null)
+                    .labels(null)
+                    .linkedBubbleId(null)
+                    .isDeleted(null)
+                    .isTrashed(request.isTrashed())
+                    .createdAt(null)
+                    .updatedAt(null)
+                    .deletedAt(null)
+                    .build();
+        }
     }
 
     private int countOccurrences(String content, String keyword) {
@@ -528,6 +549,23 @@ public class BubbleServiceImpl implements BubbleService {
 
         bubbleRepository.saveAndFlush(bubble);
         return bubble;
+    }
+
+    private Bubble hardDeleteBubble(BubbleRequestDto.SyncDto request, Member member) {
+
+        Bubble bubble = bubbleRepository.findById(request.getBubbleId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 권한 확인
+        if (!bubble.getMember().getMemberId().equals(member.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        // linkedBubble = bubbleId인 모든 버블의 linkedBubble 값을 null로 업데이트
+        bubbleRepository.clearLinkedBubble(request.getBubbleId());
+
+        bubbleRepository.delete(bubble);
+        return null;
     }
 
     private Bubble createNewBubble(BubbleRequestDto.SyncDto request, Member member, Bubble linkedBubble, Set<Label> labels) {

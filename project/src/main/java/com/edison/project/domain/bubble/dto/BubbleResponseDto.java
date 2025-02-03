@@ -70,6 +70,7 @@ public class BubbleResponseDto {
         private List<LabelResponseDTO.CreateResultDto> labels;
         private Long linkedBubbleId;
         private Boolean isDeleted;
+        private Boolean isTrashed;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private LocalDateTime deletedAt;
