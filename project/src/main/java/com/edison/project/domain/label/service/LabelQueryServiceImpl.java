@@ -140,7 +140,11 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
             return LabelResponseDTO.LabelSyncResponseDTO.builder()
                     .labelId(request.getLabelId())
+                    .name(request.getName())
+                    .color(request.getColor())
                     .isDeleted(true)
+                    .createdAt(request.getCreatedAt())
+                    .updatedAt(request.getUpdatedAt())
                     .deletedAt(label.getDeletedAt())
                     .build();
         }
