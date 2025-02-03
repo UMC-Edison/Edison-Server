@@ -59,12 +59,18 @@ public class BubbleRequestDto {
         @NotNull(message = "(DTO)삭제 여부는 필수입니다.")
         @JsonProperty("isDeleted")
         private boolean isDeleted;
+
+        @JsonProperty("isTrashed")
+        private boolean isTrashed;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private LocalDateTime deletedAt;
 
         public boolean isDeleted() {
             return isDeleted;
+        }
+        public boolean isTrashed() {
+            return isTrashed;
         }
     }
 }

@@ -74,6 +74,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .build();
     }
 
+    /*
     @Override
     @Transactional
     public BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto) {
@@ -122,7 +123,7 @@ public class BubbleServiceImpl implements BubbleService {
 
     @Override
     @Transactional
-    public BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+    public BubbleResponseDto.TrashedResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -135,12 +136,12 @@ public class BubbleServiceImpl implements BubbleService {
         if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
         }
 
-        bubble.setDeleted(true);
+        bubble.setTrashed(true);
         bubbleRepository.save(bubble);
 
         return BubbleResponseDto.DeleteResultDto.builder()
                 .bubbleId(bubble.getBubbleId())
-                .isDeleted(bubble.isDeleted())
+                .isDeleted(bubble.isTrashed())
                 .build();
     }
 
@@ -161,12 +162,12 @@ public class BubbleServiceImpl implements BubbleService {
             throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
-        bubble.setDeleted(false);
+        bubble.setTrashed(false);
         bubbleRepository.save(bubble);
 
         return BubbleResponseDto.RestoreResultDto.builder()
                 .bubbleId(bubble.getBubbleId())
-                .isRestored(!bubble.isDeleted())
+                .isRestored(!bubble.isTrashed())
                 .build();
     }
 
@@ -213,6 +214,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         return convertToBubbleResponseDto(bubble);
     }
+    */
 
     @Override
     @Transactional
@@ -221,7 +223,7 @@ public class BubbleServiceImpl implements BubbleService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(userPrincipal.getMemberId(), pageable);
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
@@ -244,14 +246,14 @@ public class BubbleServiceImpl implements BubbleService {
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedTrue(userPrincipal.getMemberId(), pageable);
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
         // Bubble 데이터 변환
         // Bubble -> DeletedListResultDto 변환
-        List<BubbleResponseDto.DeletedListResultDto> bubbles = bubblePage.getContent().stream()
+        List<BubbleResponseDto.TrashedListResultDto> bubbles = bubblePage.getContent().stream()
                 .map(bubble -> {
                     LocalDateTime updatedAt = bubble.getUpdatedAt();
                     LocalDateTime now = LocalDateTime.now();
@@ -266,7 +268,7 @@ public class BubbleServiceImpl implements BubbleService {
                                     .build())
                             .collect(Collectors.toList());
 
-                    return BubbleResponseDto.DeletedListResultDto.builder()
+                    return BubbleResponseDto.TrashedListResultDto.builder()
                             .bubbleId(bubble.getBubbleId())
                             .title(bubble.getTitle())
                             .content(bubble.getContent())
@@ -319,7 +321,7 @@ public class BubbleServiceImpl implements BubbleService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsTrashedFalse(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         // 조회 권한 확인
         if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
@@ -397,7 +399,7 @@ public class BubbleServiceImpl implements BubbleService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(bubbleId)
+        Bubble bubble = bubbleRepository.findByBubbleIdAndIsTrashedTrue(bubbleId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         // 권한 확인
@@ -420,7 +422,7 @@ public class BubbleServiceImpl implements BubbleService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiryDate = now.minusDays(30);
 
-        List<Bubble> expiredBubbles = bubbleRepository.findAllByUpdatedAtBeforeAndIsDeletedTrue(expiryDate);
+        List<Bubble> expiredBubbles = bubbleRepository.findAllByUpdatedAtBeforeAndIsTrashedTrue(expiryDate);
 
         if (!expiredBubbles.isEmpty()) {
             List<Long> bubbleIds = expiredBubbles.stream()
@@ -451,7 +453,7 @@ public class BubbleServiceImpl implements BubbleService {
         Bubble linkedBubble = null;
         if (request.getLinkedBubbleId() != null) {
             linkedBubble = bubbleRepository.findById(request.getLinkedBubbleId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.LINKEDBUBBLE_NOT_FOUND));
         }
 
         // 라벨 검증
@@ -463,36 +465,53 @@ public class BubbleServiceImpl implements BubbleService {
 
         Bubble bubble;
 
-        // 기존 Bubble 수정 또는 새로운 Bubble 생성
-        if (bubbleRepository.existsById(request.getBubbleId())) {
-            bubble = updateExistingBubble(request, member, linkedBubble, labels);
+
+        if (request.isDeleted()) {
+            bubble = bubbleRepository.existsById(request.getBubbleId()) ? hardDeleteBubble(request, member) : null;
         } else {
-            bubble = createNewBubble(request, member, linkedBubble, labels);
+            bubble =  bubbleRepository.existsById(request.getBubbleId()) ? updateExistingBubble(request, member, linkedBubble, labels) : createNewBubble(request, member, linkedBubble, labels);
         }
 
-        // 결과 반환
-        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
-                        .labelId(bl.getLabel().getLabelId())
-                        .name(bl.getLabel().getName())
-                        .color(bl.getLabel().getColor())
-                        .build())
-                .collect(Collectors.toList());
+        if (!request.isDeleted()) {
+            // 결과 반환
+            List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
+                    .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+                            .labelId(bl.getLabel().getLabelId())
+                            .name(bl.getLabel().getName())
+                            .color(bl.getLabel().getColor())
+                            .build())
+                    .collect(Collectors.toList());
 
-        return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
-                .title(bubble.getTitle())
-                .content(bubble.getContent())
-                .mainImageUrl(bubble.getMainImg())
-                .labels(labelDtos)
-                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                        .map(Bubble::getBubbleId)
-                        .orElse(null))
-                .isDeleted(bubble.isDeleted())
-                .createdAt(bubble.getCreatedAt())
-                .updatedAt(bubble.getUpdatedAt())
-                .deletedAt(bubble.getDeletedAt())
-                .build();
+            return BubbleResponseDto.SyncResultDto.builder()
+                    .bubbleId(bubble.getBubbleId())
+                    .title(bubble.getTitle())
+                    .content(bubble.getContent())
+                    .mainImageUrl(bubble.getMainImg())
+                    .labels(labelDtos)
+                    .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
+                            .map(Bubble::getBubbleId)
+                            .orElse(null))
+                    .isDeleted(request.isDeleted())
+                    .isTrashed(bubble.isTrashed())
+                    .createdAt(bubble.getCreatedAt())
+                    .updatedAt(bubble.getUpdatedAt())
+                    .deletedAt(bubble.getDeletedAt())
+                    .build();
+        } else {
+            return BubbleResponseDto.SyncResultDto.builder()
+                    .bubbleId(request.getBubbleId())
+                    .title(null)
+                    .content(null)
+                    .mainImageUrl(null)
+                    .labels(null)
+                    .linkedBubbleId(null)
+                    .isDeleted(request.isDeleted())
+                    .isTrashed(null)
+                    .createdAt(null)
+                    .updatedAt(null)
+                    .deletedAt(null)
+                    .build();
+        }
     }
 
     private int countOccurrences(String content, String keyword) {
@@ -519,15 +538,29 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toSet());
 
         bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), linkedBubble, bubbleLabels);
-        bubble.setDeleted(request.isDeleted());
+        bubble.setTrashed(request.isTrashed());
         bubble.setUpdatedAt(request.getUpdatedAt());
         bubble.setDeletedAt(request.getDeletedAt());
 
-        System.out.println("Request isDeleted: " + request.isDeleted());
-        System.out.println("Before Update Bubble isDeleted: " + bubble.isDeleted());
-
         bubbleRepository.saveAndFlush(bubble);
         return bubble;
+    }
+
+    private Bubble hardDeleteBubble(BubbleRequestDto.SyncDto request, Member member) {
+
+        Bubble bubble = bubbleRepository.findById(request.getBubbleId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 권한 확인
+        if (!bubble.getMember().getMemberId().equals(member.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+
+        // linkedBubble = bubbleId인 모든 버블의 linkedBubble 값을 null로 업데이트
+        bubbleRepository.clearLinkedBubble(request.getBubbleId());
+
+        bubbleRepository.delete(bubble);
+        return null;
     }
 
     private Bubble createNewBubble(BubbleRequestDto.SyncDto request, Member member, Bubble linkedBubble, Set<Label> labels) {
@@ -539,7 +572,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .linkedBubble(linkedBubble)
                 .member(member)
                 .labels(new HashSet<>())
-                .isDeleted(request.isDeleted())
+                .isTrashed(request.isTrashed())
                 .createdAt(request.getCreatedAt())
                 .updatedAt(request.getUpdatedAt())
                 .deletedAt(request.getDeletedAt())

@@ -36,8 +36,8 @@ public class Bubble {
     @Column(name = "main_img", length = 2083)
     private String mainImg;
 
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    @Column(name = "is_trashed", nullable = false)  //휴지통에 있는 지(soft_delete)
+    private boolean isTrashed = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     protected LocalDateTime createdAt;
@@ -48,7 +48,6 @@ public class Bubble {
     @Column(name = "deleted_at", nullable = true)
     protected LocalDateTime deletedAt;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "linked_bubble")
     private Bubble linkedBubble;
@@ -58,7 +57,7 @@ public class Bubble {
 
     @Builder
     public Bubble(Member member, Long bubbleId, String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> labels,
-                  boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+                  boolean isTrashed, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
         this.bubbleId = bubbleId;
         this.member = member;
         this.title = title;
@@ -68,7 +67,7 @@ public class Bubble {
         // 기존 라벨 초기화 후 새로운 라벨 추가
         this.labels.clear();
         this.labels.addAll(labels);
-        this.isDeleted = isDeleted;
+        this.isTrashed = isTrashed;
         this.setCreatedAt(createdAt);
         this.setUpdatedAt(updatedAt);
         this.setDeletedAt(deletedAt);
@@ -89,12 +88,12 @@ public class Bubble {
         this.labels = labels;
     }
 
-    public void setDeleted(boolean deleted) {
-        this.isDeleted = deleted;
+    public void setTrashed (boolean trashed) {
+        this.isTrashed = trashed;
     }
 
-    public boolean isDeleted() {
-        return isDeleted;
+    public boolean isTrashed() {
+        return isTrashed;
     }
 
 }
