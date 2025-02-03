@@ -463,15 +463,11 @@ public class BubbleServiceImpl implements BubbleService {
 
         Bubble bubble;
 
-        // 기존 Bubble 수정 또는 새로운 Bubble 생성
-        if (bubbleRepository.existsById(request.getBubbleId())) {
-            if (request.isTrashed()) {
-                bubble = hardDeleteBubble(request, member);
-            } else {
-                bubble = updateExistingBubble(request, member, linkedBubble, labels);
-            }
+
+        if (request.isTrashed()) {
+            bubble = bubbleRepository.existsById(request.getBubbleId()) ? hardDeleteBubble(request, member) : null;
         } else {
-            bubble = createNewBubble(request, member, linkedBubble, labels);
+            bubble =  bubbleRepository.existsById(request.getBubbleId()) ? updateExistingBubble(request, member, linkedBubble, labels) : createNewBubble(request, member, linkedBubble, labels);
         }
 
         if (!request.isTrashed()) {
