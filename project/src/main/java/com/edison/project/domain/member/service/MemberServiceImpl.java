@@ -308,6 +308,7 @@ public class MemberServiceImpl implements MemberService{
         return ApiResponse.onSuccess(_OK);
     }
 
+    @Transactional
     public MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
