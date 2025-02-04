@@ -142,6 +142,10 @@ public class BubbleServiceImpl implements BubbleService {
                             .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
                                     .map(Bubble::getBubbleId)
                                     .orElse(null))
+                            .backlinkIds(bubble.getBacklinks().stream()
+                                    .map(BubbleBacklink::getBacklinkBubble)
+                                    .map(Bubble::getBubbleId)
+                                    .collect(Collectors.toSet()))
                             .createdAt(bubble.getCreatedAt())
                             .updatedAt(updatedAt)
                             .remainDay((int) Math.max(remainDays, 0)) // 남은 일수 계산
