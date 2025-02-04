@@ -55,6 +55,7 @@ public class BubbleRequestDto {
         private String mainImageUrl;
         private Set<Long> labelIds;
         private Long linkedBubbleId;
+        private Set<Long> backlinkIds;
 
         @NotNull(message = "(DTO)삭제 여부는 필수입니다.")
         @JsonProperty("isDeleted")

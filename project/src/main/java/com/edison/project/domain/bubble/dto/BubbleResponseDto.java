@@ -69,6 +69,7 @@ public class BubbleResponseDto {
         private String mainImageUrl;
         private List<LabelResponseDTO.CreateResultDto> labels;
         private Long linkedBubbleId;
+        private Set<Long> backlinkIds;
         private Boolean isDeleted;
         private Boolean isTrashed;
         private LocalDateTime createdAt;
