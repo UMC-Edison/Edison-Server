@@ -126,9 +126,21 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         Label label;
 
         if (Boolean.TRUE.equals(request.getIsDeleted())) {
+            // 존재하지 않는 라벨 ID의 삭제 요청 -> 에러 대신 요청값 그대로 반환
+            if (!labelRepository.existsById(request.getLabelId())) {
+                return LabelResponseDTO.LabelSyncResponseDTO.builder()
+                        .labelId(request.getLabelId())
+                        .name(request.getName())
+                        .color(request.getColor())
+                        .isDeleted(true)
+                        .createdAt(request.getCreatedAt())
+                        .updatedAt(request.getUpdatedAt())
+                        .deletedAt(request.getDeletedAt())
+                        .build();
+            }
+
             // 라벨 삭제(hard delete)
-            label = labelRepository.findById(request.getLabelId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+            label = labelRepository.findById(request.getLabelId()).get();
 
             if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
                 throw new GeneralException(ErrorStatus._FORBIDDEN);
