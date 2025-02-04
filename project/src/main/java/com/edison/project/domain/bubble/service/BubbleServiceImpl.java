@@ -52,7 +52,7 @@ public class BubbleServiceImpl implements BubbleService {
     private EntityManager entityManager;
 
     // Bubble -> BubbleResponseDto 변환 메서드 (공통 로직)
-    private BubbleResponseDto.ListResultDto convertToBubbleResponseDto(Bubble bubble) {
+    private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
         List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
                 .map(bl -> LabelResponseDTO.CreateResultDto.builder()
                         .labelId(bl.getLabel().getLabelId())
@@ -61,7 +61,7 @@ public class BubbleServiceImpl implements BubbleService {
                         .build())
                 .collect(Collectors.toList());
 
-        return BubbleResponseDto.ListResultDto.builder()
+        return BubbleResponseDto.SyncResultDto.builder()
                 .bubbleId(bubble.getBubbleId())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
@@ -70,152 +70,16 @@ public class BubbleServiceImpl implements BubbleService {
                 .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
                         .map(Bubble::getBubbleId)
                         .orElse(null))
+                .backlinkIds(bubble.getBacklinks().stream()
+                        .map(BubbleBacklink::getBacklinkBubble)
+                        .map(Bubble::getBubbleId)
+                        .collect(Collectors.toSet()))
+                .isTrashed(bubble.isTrashed())
                 .createdAt(bubble.getCreatedAt())
                 .updatedAt(bubble.getUpdatedAt())
+                .deletedAt(bubble.getDeletedAt())
                 .build();
     }
-
-    /*
-    @Override
-    @Transactional
-    public BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        // Member 조회
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        // linkedBubble 검증
-        Bubble linkedBubble = null;
-        if (requestDto.getLinkedBubbleId() != null) {
-            linkedBubble = bubbleRepository.findById(requestDto.getLinkedBubbleId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-        }
-
-        // 라벨 검증
-        Set<Long> labelIds = Optional.ofNullable(requestDto.getLabelIds()).orElse(Collections.emptySet());
-        if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
-
-        Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
-        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
-
-        // 버블 생성 및 저장
-        Bubble savedBubble = bubbleRepository.save(Bubble.builder()
-                .member(member)
-                .title(requestDto.getTitle())
-                .content(requestDto.getContent())
-                .mainImg(requestDto.getMainImageUrl())
-                .linkedBubble(linkedBubble)
-                .labels(new HashSet<>()) // 초기화
-                .build());
-
-        // 라벨과 버블 매핑 후 저장
-        Set<BubbleLabel> bubbleLabels = labels.stream()
-                .map(label -> BubbleLabel.builder().bubble(savedBubble).label(label).build())
-                .collect(Collectors.toSet());
-
-        bubbleLabelRepository.saveAll(bubbleLabels);
-        savedBubble.getLabels().addAll(bubbleLabels);
-
-        return convertToBubbleResponseDto(savedBubble);
-    }
-
-    @Override
-    @Transactional
-    public BubbleResponseDto.TrashedResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        // Bubble 조회
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedFalse(bubbleId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        // 삭제 권한 확인
-        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-        }
-
-        bubble.setTrashed(true);
-        bubbleRepository.save(bubble);
-
-        return BubbleResponseDto.DeleteResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
-                .isDeleted(bubble.isTrashed())
-                .build();
-    }
-
-    // 버블 복원
-    @Override
-    @Transactional
-    public BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        // Bubble 조회
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsDeletedTrue(bubbleId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        // 복원 권한 확인
-        if(!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
-
-        bubble.setTrashed(false);
-        bubbleRepository.save(bubble);
-
-        return BubbleResponseDto.RestoreResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
-                .isRestored(!bubble.isTrashed())
-                .build();
-    }
-
-    @Override
-    @Transactional
-    public BubbleResponseDto.ListResultDto updateBubble(CustomUserPrincipal userPrincipal, Long bubbleId, BubbleRequestDto.ListDto requestDto) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        Bubble bubble = bubbleRepository.findById(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        // 수정 권한 확인
-        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
-
-        // linkedBubble 검증
-        Bubble linkedBubble = null;
-        if (requestDto.getLinkedBubbleId() != null) {
-            linkedBubble = bubbleRepository.findById(requestDto.getLinkedBubbleId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-        }
-
-        // 라벨 검증
-        Set<Long> labelIds = Optional.ofNullable(requestDto.getLabelIds()).orElse(Collections.emptySet());
-        if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
-
-        Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
-        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
-
-        Set<BubbleLabel> bubbleLabels = labels.stream()
-                .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
-                .collect(Collectors.toSet());
-
-        bubble.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getMainImageUrl(), linkedBubble, bubbleLabels);
-
-        bubbleRepository.save(bubble);
-
-        entityManager.flush();
-
-        return convertToBubbleResponseDto(bubble);
-    }
-    */
 
     @Override
     @Transactional
@@ -230,7 +94,7 @@ public class BubbleServiceImpl implements BubbleService {
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
         // Bubble 데이터 변환
-        List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
+        List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
@@ -300,7 +164,7 @@ public class BubbleServiceImpl implements BubbleService {
         Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
 
         // DTO로 변환
-        List<BubbleResponseDto.ListResultDto> bubbles = bubblePage.getContent().stream()
+        List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
@@ -317,7 +181,7 @@ public class BubbleServiceImpl implements BubbleService {
 
 
     @Override
-    public BubbleResponseDto.ListResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -386,33 +250,11 @@ public class BubbleServiceImpl implements BubbleService {
                 (sortedBubbles.size() + pageable.getPageSize() - 1) / pageable.getPageSize()
         );
 
-        List<BubbleResponseDto.ListResultDto> results = paginatedBubbles.stream()
+        List<BubbleResponseDto.SyncResultDto> results = paginatedBubbles.stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> hardDelteBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsTrashedTrue(bubbleId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        // 권한 확인
-        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
-
-        // linkedBubble = bubbleId인 모든 버블의 linkedBubble 값을 null로 업데이트
-        bubbleRepository.clearLinkedBubble(bubbleId);
-
-        bubbleRepository.delete(bubble);
-        return null;
     }
 
     @Override
