@@ -55,6 +55,12 @@ public class Bubble {
     @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<BubbleLabel> labels = new HashSet<>();
 
+    @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<BubbleBacklink> backlinks = new HashSet<>();
+
+    @OneToMany(mappedBy = "backlinkBubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<BubbleBacklink> referencingBubbles = new HashSet<>();
+
     @Builder
     public Bubble(Member member, Long bubbleId, String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> labels,
                   boolean isTrashed, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
