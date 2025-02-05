@@ -17,4 +17,5 @@ public interface MemberService {
     MemberResponseDto.IdentityKeywordsResultDto getIdentityKeywords(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal);
     MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request);
+    ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal);
 }

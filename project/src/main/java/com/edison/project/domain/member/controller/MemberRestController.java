@@ -72,4 +72,12 @@ public class MemberRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getMember(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.getMember(userPrincipal);
+    }
+
+
 }

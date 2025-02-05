@@ -73,4 +73,18 @@ public class MemberResponseDto {
     public static class IdentityKeywordsResultDto {
         private Map<String, List<IdentityKeywordDto>> categories;
     }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MemberResultDto {
+
+        private String email;
+
+        @NotBlank(message = "닉네임은 필수입니다.")
+        private String nickname;
+
+        private String profileImg;
+    }
 }

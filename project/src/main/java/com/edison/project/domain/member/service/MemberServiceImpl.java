@@ -96,6 +96,7 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
+
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
@@ -190,10 +191,10 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshToken) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshtoken) {
 
-        Long memberId = jwtUtil.extractUserId(refreshToken);
-        String email = jwtUtil.extractEmail(refreshToken);
+        Long memberId = jwtUtil.extractUserId(refreshtoken);
+        String email = jwtUtil.extractEmail(refreshtoken);
 
         String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
 
@@ -377,5 +378,21 @@ public class MemberServiceImpl implements MemberService{
                 .build();
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        MemberResponseDto.MemberResultDto response = MemberResponseDto.MemberResultDto.builder()
+                .email(userPrincipal.getEmail())
+                .nickname(member.getNickname())
+                .profileImg(member.getProfileImg())
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
 
 }
