@@ -65,7 +65,7 @@ public class SpaceServiceImpl implements SpaceService {
 
         // ✅ 사용자의 삭제되지 않은 Bubble 페이징 처리
         Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE); // 최대 개수 가져오기
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(memberId, unlimitedPageable);
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(memberId, unlimitedPageable);
         // 페이징 처리 삭제, 가져올 수 있는 최대 개수만큼 반환하는 코드 추가
 
         // ✅ Page 정보 설정
@@ -324,6 +324,8 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("8. Similar items across different clusters should still be positioned near each other where possible.\n");
         promptBuilder.append("9. Extract the **core meaning** of each content item, reducing it to **1 or 2 essential words**.\n");
         promptBuilder.append("10. The output must be strictly in JSON format as shown below:\n\n");
+        promptBuilder.append("- groups: A list of **integer group IDs** representing the item's cluster (must not be empty).\n\n");
+
 
         for (Map.Entry<Long, String> entry : requestData.entrySet()) {
             promptBuilder.append("- ID: ").append(entry.getKey()).append("\n");

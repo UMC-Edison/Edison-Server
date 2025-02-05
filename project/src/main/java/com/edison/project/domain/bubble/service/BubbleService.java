@@ -11,13 +11,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.data.domain.Pageable;
 
 public interface BubbleService {
-    BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto);
+    //BubbleResponseDto.ListResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.ListDto requestDto);
 
-    BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
+    //BubbleResponseDto.DeleteResultDto deleteBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
 
-    BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
+    //BubbleResponseDto.RestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
 
-    BubbleResponseDto.ListResultDto updateBubble(CustomUserPrincipal userPrincipal, Long bubbleId, BubbleRequestDto.ListDto requestDto);
+    //BubbleResponseDto.ListResultDto updateBubble(CustomUserPrincipal userPrincipal, Long bubbleId, BubbleRequestDto.ListDto requestDto);
 
     ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable);
 
@@ -32,4 +32,6 @@ public interface BubbleService {
     ResponseEntity<ApiResponse> hardDelteBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
 
     void deleteExpiredBubble();
+
+    BubbleResponseDto.SyncResultDto syncBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.SyncDto requestDto);
 }

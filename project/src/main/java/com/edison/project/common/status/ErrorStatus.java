@@ -32,21 +32,26 @@ public enum ErrorStatus {
     NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
     NICKNAME_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4003", "닉네임이 변경되지 않았습니다."),
     PROFILE_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4004", "프로필이 변경되지 않았습니다."),
-    IDENTITY_ALREADY_SET(HttpStatus.BAD_REQUEST, "MEMBER4003", "아이덴티티 키워드는 최초 1회만 설정 가능합니다."),
-    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "MEMBER4004", "존재하지 않는 카테고리입니다."),
-    INVALID_IDENTITY_MAPPING(HttpStatus.BAD_REQUEST, "MEMBER4005", "카테고리와 키워드가 일치하지 않습니다."),
-    NO_CHANGES_IN_KEYWORDS(HttpStatus.BAD_REQUEST, "MEMBER4006", "선택된 키워드에 변경사항이 없습니다."),
-    NOT_EXISTS_KEYWORD(HttpStatus.BAD_REQUEST, "MEMBER4007", "존재하지 않는 키워드입니다."),
+    NICKNAME_ALREADY_SET(HttpStatus.BAD_REQUEST, "MEMBER4005", "닉네임은 최초 1회만 설정 가능합니다."),
+    NICKNAME_TOO_LONG(HttpStatus.BAD_REQUEST, "MEMBER4006", "20자이내의 닉네임을 설정해주세요."),
+
+    // 아이덴티티 테스트 관련 에러
+    IDENTITY_ALREADY_SET(HttpStatus.BAD_REQUEST, "IDENTITY4001", "아이덴티티 키워드는 최초 1회만 설정 가능합니다."),
+    INVALID_CATEGORY(HttpStatus.BAD_REQUEST, "IDENTITY4002", "존재하지 않는 카테고리입니다."),
+    INVALID_IDENTITY_MAPPING(HttpStatus.BAD_REQUEST, "IDENTITY4003", "카테고리와 키워드가 일치하지 않습니다."),
+    NO_CHANGES_IN_KEYWORDS(HttpStatus.BAD_REQUEST, "IDENTITY4004", "선택된 키워드에 변경사항이 없습니다."),
+    NOT_EXISTS_KEYWORD(HttpStatus.BAD_REQUEST, "IDENTITY4005", "존재하지 않는 키워드입니다."),
 
     // 버블 관련 애러
     BUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4001", "버블을 찾을 수 없습니다."),
-
+    LINKEDBUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4002", "링크버블을 찾을 수 없습니다."),
     LABELS_TOO_MANY(HttpStatus.BAD_REQUEST, "BUBBLE_LABEL4001", "라벨 개수는 최대 3개까지 가능합니다."),
 
     // 라벨 관련 에러
     LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨을 찾을 수 없습니다."),
     LABEL_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨 이름은 최대 20자까지 가능합니다."),
     INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다."),
+    INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, "LABEL4004", "유효하지 않은 시간 형식입니다."),
 
     // 아트보드 관련 에러
     KEYWORD_IS_NOT_VALID(HttpStatus.BAD_REQUEST, "LETTER4001", "입력값이 존재하지 않습니다."),

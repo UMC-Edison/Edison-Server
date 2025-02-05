@@ -18,15 +18,13 @@ import java.util.Optional;
 public interface BubbleRepository extends JpaRepository<Bubble, Long> {
 
     // 삭제되지 않은 Bubble만 조회
-    Optional<Bubble> findByBubbleIdAndIsDeletedFalse(Long bubbleId);
+    Optional<Bubble> findByBubbleIdAndIsTrashedFalse(Long bubbleId);
 
     // 휴지통에 있는 Bubble만 조회
-    Optional<Bubble> findByBubbleIdAndIsDeletedTrue(Long bubbleId);
+    Optional<Bubble> findByBubbleIdAndIsTrashedTrue(Long bubbleId);
 
-    @Query("SELECT b FROM Bubble b WHERE b.member.memberId = :memberId AND b.isDeleted = false")
-    Page<Bubble> findByMember_MemberIdAndIsDeletedFalse(Long memberId, Pageable pageable);
-
-    Page<Bubble> findByMember_MemberIdAndIsDeletedTrue(Long memberId, Pageable pageable);
+    Page<Bubble> findByMember_MemberIdAndIsTrashedFalse(Long memberId, Pageable pageable);
+    Page<Bubble> findByMember_MemberIdAndIsTrashedTrue(Long memberId, Pageable pageable);
 
     // 7일 이내 버블 목록
     @Query("SELECT b from Bubble b where b.member.memberId = :memberId AND b.isDeleted = false AND b.updatedAt >= :startDate")
@@ -40,12 +38,12 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     @Query("SELECT b FROM Bubble b " +
             "WHERE (b.title LIKE %:keyword% OR b.content LIKE %:keyword% " +
             "OR EXISTS (SELECT 1 FROM BubbleLabel bl WHERE bl.bubble = b AND bl.label.name LIKE %:keyword%)) " +
-            "AND b.isDeleted = false")
+            "AND b.isTrashed = false")
     List<Bubble> searchBubblesByKeyword(@Param("keyword") String keyword);
 
     // 30일 지난 휴지통 버블 목록
-    @Query("SELECT b from Bubble b where b.updatedAt < :expiryDate and b.isDeleted = true")
-    List<Bubble> findAllByUpdatedAtBeforeAndIsDeletedTrue(@Param("expiryDate") LocalDateTime expiryDate);
+    @Query("SELECT b from Bubble b where b.updatedAt < :expiryDate and b.isTrashed = true")
+    List<Bubble> findAllByUpdatedAtBeforeAndIsTrashedTrue(@Param("expiryDate") LocalDateTime expiryDate);
 
     @Modifying
     @Transactional
