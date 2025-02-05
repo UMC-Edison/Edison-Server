@@ -15,6 +15,7 @@ import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -63,7 +64,9 @@ public class SpaceServiceImpl implements SpaceService {
         System.out.println("📌 기존 사용자의 Space 개수: " + spaces.size());
 
         // ✅ 사용자의 삭제되지 않은 Bubble 페이징 처리
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(memberId, pageable);
+        Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE); // 최대 개수 가져오기
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsDeletedFalse(memberId, unlimitedPageable);
+        // 페이징 처리 삭제, 가져올 수 있는 최대 개수만큼 반환하는 코드 추가
 
         // ✅ Page 정보 설정
         PageInfo pageInfo = new PageInfo(
@@ -324,25 +327,27 @@ public class SpaceServiceImpl implements SpaceService {
     // ✅ GPT 요청 프롬프트 생성
     private String buildPromptWithId(Map<Long, String> requestData) {
         StringBuilder promptBuilder = new StringBuilder();
+
         promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
-        promptBuilder.append("Ensure that ALL provided bubbles are assigned unique coordinates.");
+        promptBuilder.append("Ensure that ALL provided bubbles are assigned unique coordinates, distributed evenly across four quadrants centered at (0,0).\n");
         promptBuilder.append("Each item should have the following attributes:\n");
         promptBuilder.append("- id: A unique identifier for the item (integer).\n");
         promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
-        promptBuilder.append("- x: A unique floating-point number for the x-coordinate.\n");
-        promptBuilder.append("- y: A unique floating-point number for the y-coordinate.\n");
+        promptBuilder.append("- x: A unique floating-point number for the x-coordinate (spread across four quadrants).\n");
+        promptBuilder.append("- y: A unique floating-point number for the y-coordinate (spread across four quadrants).\n");
         promptBuilder.append("- groups: A list of integers representing the item's group IDs.\n\n");
 
         promptBuilder.append("### Rules:\n");
-        promptBuilder.append("1. Each item must have a unique (x, y) coordinate.\n");
-        promptBuilder.append("2. Items with similar topics should be clustered like a firework explosion, forming visually distinct groups.\n");
-        promptBuilder.append("3. Groups should be separated from each other while maintaining internal coherence.\n");
-        promptBuilder.append("4. The spread or distance for groups is up to you to decide, but they should appear like bursts from a central point.\n");
-        promptBuilder.append("5. Ensure groups contain only integers, and avoid any other data types.\n");
-        promptBuilder.append("6. X and Y coordinates do not need to follow a uniform increase; they can be randomly distributed while maintaining the clustering structure.\n");
-        promptBuilder.append("7. Return only valid JSON output in the following format:\n\n");
-        promptBuilder.append("8. Clusters can be separate, but items with similar themes should be placed near each other, even if they belong to different clusters.\n");
-        promptBuilder.append("9. Content should be reduced to its **core meaning**: extract only **one or two essential words** that best describe it.\n");
+        promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum spacing of 0.5.\n");
+        promptBuilder.append("2. Items with similar topics should form visually distinct clusters, appearing as bursts from a central point.\n");
+        promptBuilder.append("3. Clusters should be well-separated from each other but internally cohesive.\n");
+        promptBuilder.append("4. Each cluster should contain **5 to 8 items**, and **no cluster should have more than 10 items**.\n");
+        promptBuilder.append("5. The number of clusters should be minimized, ideally around **1/4 of the total number of items**.\n");
+        promptBuilder.append("6. Items that do not naturally fit into a cluster should remain ungrouped, keeping their original coordinates.\n");
+        promptBuilder.append("7. X and Y coordinates should be distributed across all four quadrants for better visualization.\n");
+        promptBuilder.append("8. Similar items across different clusters should still be positioned near each other where possible.\n");
+        promptBuilder.append("9. Extract the **core meaning** of each content item, reducing it to **1 or 2 essential words**.\n");
+        promptBuilder.append("10. The output must be strictly in JSON format as shown below:\n\n");
 
         for (Map.Entry<Long, String> entry : requestData.entrySet()) {
             promptBuilder.append("- ID: ").append(entry.getKey()).append("\n");
