@@ -1,16 +1,12 @@
 package com.edison.project.domain.space.service;
 
-import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
-import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
-import com.edison.project.domain.space.entity.MemberSpace;
 import com.edison.project.domain.space.entity.Space;
-import com.edison.project.domain.space.repository.MemberSpaceRepository;
 import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
@@ -38,16 +34,13 @@ public class SpaceServiceImpl implements SpaceService {
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
     private final SpaceRepository spaceRepository;
-    private final MemberSpaceRepository memberSpaceRepository;
     private final BubbleRepository bubbleRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MemberRepository memberRepository;
 
     public SpaceServiceImpl(SpaceRepository spaceRepository,
-                            MemberSpaceRepository memberSpaceRepository,
                             BubbleRepository bubbleRepository, MemberRepository memberRepository) {
         this.spaceRepository = spaceRepository;
-        this.memberSpaceRepository = memberSpaceRepository;
         this.bubbleRepository = bubbleRepository;
         this.memberRepository = memberRepository;
     }
@@ -60,7 +53,7 @@ public class SpaceServiceImpl implements SpaceService {
         System.out.println("🔍 [Process Spaces] 실행 - 사용자 ID: " + memberId);
 
         // ✅ 기존 사용자의 Space 가져오기
-        List<Space> spaces = memberSpaceRepository.findSpacesByMemberId(memberId);
+        List<Space> spaces = spaceRepository.findByMemberId(memberId);
         System.out.println("📌 기존 사용자의 Space 개수: " + spaces.size());
 
         // ✅ 사용자의 삭제되지 않은 Bubble 페이징 처리
@@ -96,9 +89,9 @@ public class SpaceServiceImpl implements SpaceService {
         List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
         System.out.println("✅ 변환된 Space 개수: " + newSpaces.size());
 
-        // ✅ 새로운 Space를 저장하고 MemberSpace도 업데이트
+        // ✅ 새로운 Space 업데이트
         for (Space space : newSpaces) {
-            saveOrUpdateSpaceWithMemberSpace(space);
+            saveOrUpdateSpace(space);
         }
 
 
@@ -120,64 +113,27 @@ public class SpaceServiceImpl implements SpaceService {
     }
 
     @Transactional
-    public void saveOrUpdateSpaceWithMemberSpace(Space newSpace) {
-        // 🔍 기존 Space 조회
+    public void saveOrUpdateSpace(Space newSpace) {
         List<Space> existingSpaces = spaceRepository.findByBubble_BubbleIdAndMemberId(
                 newSpace.getBubble().getBubbleId(), newSpace.getMemberId()
         );
 
-        Optional<Space> existingSpace = existingSpaces.stream().findFirst(); // ✅ 첫 번째 항목 가져오기
+        Optional<Space> existingSpace = existingSpaces.stream().findFirst();
 
         if (existingSpace.isPresent()) {
-            // ✅ 기존 Space 업데이트
             Space spaceToUpdate = existingSpace.get();
             spaceToUpdate.setX(newSpace.getX());
             spaceToUpdate.setY(newSpace.getY());
             spaceToUpdate.setContent(newSpace.getContent());
-            spaceRepository.save(spaceToUpdate); // UPDATE 수행
-
+            spaceRepository.save(spaceToUpdate);
             System.out.println("🔄 기존 Space 업데이트 완료! ID: " + spaceToUpdate.getId());
-
-            // ✅ MemberSpace 업데이트 (기존 연결 유지)
-            updateMemberSpace(newSpace.getMemberId(), spaceToUpdate);
         } else {
-            // ✅ 새로운 Space 저장
             spaceRepository.save(newSpace);
             spaceRepository.flush();
             System.out.println("🆕 새로운 Space 추가! ID: " + newSpace.getId());
-
-            // ✅ MemberSpace 추가
-            saveMemberSpace(newSpace.getMemberId(), newSpace);
         }
     }
 
-
-    @Transactional
-    public void saveMemberSpace(Long memberId, Space space) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        MemberSpace memberSpace = new MemberSpace();
-        memberSpace.setMember(member);
-        memberSpace.setSpace(space);
-        memberSpaceRepository.save(memberSpace);
-        memberSpaceRepository.flush(); // 즉시 반영
-
-        System.out.println("🔗 MemberSpace 저장 완료: Member ID " + memberId + " -> Space ID " + space.getId());
-    }
-
-    @Transactional
-    public void updateMemberSpace(Long memberId, Space space) {
-        Optional<MemberSpace> optionalMemberSpace = memberSpaceRepository.findByMember_MemberIdAndSpace_Id(memberId, space.getId());
-
-        if (optionalMemberSpace.isPresent()) {
-            System.out.println("✅ MemberSpace는 이미 존재함: Member ID " + memberId + " -> Space ID " + space.getId());
-            return; // 이미 연결이 존재하므로 추가 처리 필요 없음
-        }
-
-        // 새로운 MemberSpace 저장
-        saveMemberSpace(memberId, space);
-    }
 
 
     // ✅ Bubble 데이터를 GPT 요청 형식으로 변환
@@ -287,9 +243,19 @@ public class SpaceServiceImpl implements SpaceService {
                 String content = (String) item.get("content");
                 double x = ((Number) item.get("x")).doubleValue();
                 double y = ((Number) item.get("y")).doubleValue();
-                List<String> groups = ((List<?>) item.get("groups")).stream()
+
+                List<String> groups = item.containsKey("groups") && item.get("groups") != null
+                        ? ((List<?>) item.get("groups")).stream()
                         .map(Object::toString)
-                        .collect(Collectors.toList());
+                        .collect(Collectors.toList())
+                        : new ArrayList<>(); // ✅ 빈 리스트 할당
+
+                // ✅ 여기서 추가적으로 체크: 만약 groups가 비어 있다면 "UNASSIGNED" 추가
+                if (groups.isEmpty()) {
+                    groups.add("UNASSIGNED");
+                }
+
+
 
                 spaces.add(new Space(content, x, y, groups, bubble, memberId));
             }
@@ -316,16 +282,16 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("### Rules:\n");
         promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum spacing of 0.5.\n");
         promptBuilder.append("2. Items with similar topics should form visually distinct clusters, appearing as bursts from a central point.\n");
-        promptBuilder.append("3. Groups = Clusters, should be well-separated from each other but internally cohesive.\n");
-        promptBuilder.append("4. Each cluster should contain **5 to 8 items**, and **no cluster should have more than 10 items**.\n");
-        promptBuilder.append("5. The number of clusters should be minimized, ideally around **1/4 of the total number of items**.\n");
+        promptBuilder.append("3. Clusters should be well-separated from each other but internally cohesive.\n");
+        promptBuilder.append("4. Each group should contain **5 to 8 items**, and **no group should have more than 10 items**.\n");
+        promptBuilder.append("5. The number of group should be minimized, ideally around **1/4 of the total number of items**.\n");
         promptBuilder.append("6. Items that do not naturally fit into a cluster should remain ungrouped, keeping their original coordinates.\n");
         promptBuilder.append("7. X and Y coordinates should be distributed across all four quadrants for better visualization.\n");
         promptBuilder.append("8. Similar items across different clusters should still be positioned near each other where possible.\n");
         promptBuilder.append("9. Extract the **core meaning** of each content item, reducing it to **1 or 2 essential words**.\n");
-        promptBuilder.append("10. The output must be strictly in JSON format as shown below:\n\n");
-        promptBuilder.append("- groups: A list of **integer group IDs** representing the item's cluster (must not be empty).\n\n");
-
+        promptBuilder.append("10. Each item **MUST belong to at least one group**. If an item does not fit into any existing group, create a new unique group ID for it.\n");
+        promptBuilder.append("11. The output must strictly include the `groups` field for all items, even if they belong to a single group.\n");
+        promptBuilder.append("12. The output must be strictly in JSON format as shown below:\n\n");
 
         for (Map.Entry<Long, String> entry : requestData.entrySet()) {
             promptBuilder.append("- ID: ").append(entry.getKey()).append("\n");

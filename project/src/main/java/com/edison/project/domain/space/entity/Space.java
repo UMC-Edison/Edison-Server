@@ -22,7 +22,7 @@ public class Space {
     private Bubble bubble;
 
     @ElementCollection
-    @CollectionTable(name = "space_groups", joinColumns = @JoinColumn(name = "space_id"))
+    // @CollectionTable(name = "space_groups", joinColumns = @JoinColumn(name = "space_id"))
     @Column(name = "group_names")  // ✅ 예약어 문제 해결 (`groups` → `group_names`)
     private List<String> groupNames;
 
