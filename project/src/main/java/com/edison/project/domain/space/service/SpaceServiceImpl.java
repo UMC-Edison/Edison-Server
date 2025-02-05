@@ -230,16 +230,6 @@ public class SpaceServiceImpl implements SpaceService {
             throw new RuntimeException("OpenAI API 호출 중 오류 발생: " + e.getMessage(), e);
         }
     }
-    // ✅ GPT 응답 데이터 정리
-    private String sanitizeResponse(String response) {
-        try {
-            if (response == null || response.isBlank()) throw new RuntimeException("GPT 응답이 비어 있습니다.");
-            objectMapper.readTree(response);
-            return response.trim();
-        } catch (IOException e) {
-            throw new RuntimeException("GPT 응답 처리 중 오류 발생: " + e.getMessage(), e);
-        }
-    }
 
     private List<Space> parseGptResponse(String gptResponse, List<Bubble> bubbles, Long memberId) {
         try {
@@ -310,20 +300,6 @@ public class SpaceServiceImpl implements SpaceService {
         }
     }
 
-
-    private String extractKeywords(String content) {
-        if (content == null || content.isEmpty()) return "N/A";
-
-        // 공백으로 단어 분리
-        String[] words = content.split("\\s+");
-
-        // 1~2개 핵심 키워드만 추출
-        int keywordCount = Math.min(words.length, 2);
-        return String.join(" ", Arrays.copyOfRange(words, 0, keywordCount));
-    }
-
-
-
     // ✅ GPT 요청 프롬프트 생성
     private String buildPromptWithId(Map<Long, String> requestData) {
         StringBuilder promptBuilder = new StringBuilder();
@@ -340,7 +316,7 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("### Rules:\n");
         promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum spacing of 0.5.\n");
         promptBuilder.append("2. Items with similar topics should form visually distinct clusters, appearing as bursts from a central point.\n");
-        promptBuilder.append("3. Clusters should be well-separated from each other but internally cohesive.\n");
+        promptBuilder.append("3. Groups = Clusters, should be well-separated from each other but internally cohesive.\n");
         promptBuilder.append("4. Each cluster should contain **5 to 8 items**, and **no cluster should have more than 10 items**.\n");
         promptBuilder.append("5. The number of clusters should be minimized, ideally around **1/4 of the total number of items**.\n");
         promptBuilder.append("6. Items that do not naturally fit into a cluster should remain ungrouped, keeping their original coordinates.\n");
