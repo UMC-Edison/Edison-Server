@@ -112,7 +112,6 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
                 .labels(labelDtos) // 라벨 정보 리스트
-                .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
                 .backlinkIds(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
                         .map(Bubble::getBubbleId)

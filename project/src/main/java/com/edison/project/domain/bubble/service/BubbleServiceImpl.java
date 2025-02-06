@@ -67,9 +67,6 @@ public class BubbleServiceImpl implements BubbleService {
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
                 .labels(labelDtos)
-                .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                        .map(Bubble::getBubbleId)
-                        .orElse(null))
                 .backlinkIds(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
                         .map(Bubble::getBubbleId)
@@ -139,9 +136,6 @@ public class BubbleServiceImpl implements BubbleService {
                             .content(bubble.getContent())
                             .mainImageUrl(bubble.getMainImg())
                             .labels(labelDtos) // 라벨 정보 추가
-                            .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                                    .map(Bubble::getBubbleId)
-                                    .orElse(null))
                             .backlinkIds(bubble.getBacklinks().stream()
                                     .map(BubbleBacklink::getBacklinkBubble)
                                     .map(Bubble::getBubbleId)
@@ -276,8 +270,6 @@ public class BubbleServiceImpl implements BubbleService {
                             .map(Bubble::getBubbleId)
                                     .collect(Collectors.toList());
 
-            bubbleIds.forEach(bubbleRepository::clearLinkedBubble);
-
             bubbleRepository.deleteAll(expiredBubbles);
             log.info("Deleted {} expired bubbles", expiredBubbles.size());
         } else {
@@ -327,7 +319,7 @@ public class BubbleServiceImpl implements BubbleService {
                     hardDeleteBubble(request, member) : null;
         } else {
             bubble =  bubbleRepository.existsById(request.getBubbleId()) ?
-                    updateExistingBubble(request, member, linkedBubble, backlinks, labels)
+                    updateExistingBubble(request, member, backlinks, labels)
                     : createNewBubble(request, member, linkedBubble, backlinks, labels);
         }
 
@@ -347,9 +339,6 @@ public class BubbleServiceImpl implements BubbleService {
                     .content(bubble.getContent())
                     .mainImageUrl(bubble.getMainImg())
                     .labels(labelDtos)
-                    .linkedBubbleId(Optional.ofNullable(bubble.getLinkedBubble())
-                            .map(Bubble::getBubbleId)
-                            .orElse(null))
                     .backlinkIds(bubble.getBacklinks().stream()
                             .map(BubbleBacklink::getBacklinkBubble)
                             .map(Bubble::getBubbleId)
@@ -367,7 +356,6 @@ public class BubbleServiceImpl implements BubbleService {
                     .content(null)
                     .mainImageUrl(null)
                     .labels(null)
-                    .linkedBubbleId(null)
                     .backlinkIds(null)
                     .isDeleted(request.isDeleted())
                     .isTrashed(null)
@@ -389,7 +377,7 @@ public class BubbleServiceImpl implements BubbleService {
         return count;
     }
 
-    private Bubble updateExistingBubble(BubbleRequestDto.SyncDto request, Member member, Bubble linkedBubble, Set<Bubble> backlinks, Set<Label> labels) {
+    private Bubble updateExistingBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
         Bubble bubble = bubbleRepository.findById(request.getBubbleId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
@@ -401,7 +389,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
                 .collect(Collectors.toSet());
 
-        bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), linkedBubble, bubbleLabels);
+        bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), bubbleLabels);
 
         bubble.getBacklinks().clear();
         Set<BubbleBacklink> newbacklinks = backlinks.stream()
@@ -430,9 +418,6 @@ public class BubbleServiceImpl implements BubbleService {
             throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
 
-        // linkedBubble = bubbleId인 모든 버블의 linkedBubble 값을 null로 업데이트
-        bubbleRepository.clearLinkedBubble(request.getBubbleId());
-
         bubbleRepository.delete(bubble);
         return null;
     }
@@ -443,7 +428,6 @@ public class BubbleServiceImpl implements BubbleService {
                 .title(request.getTitle())
                 .content(request.getContent())
                 .mainImg(request.getMainImageUrl())
-                .linkedBubble(linkedBubble)
                 .member(member)
                 .labels(new HashSet<>())
                 .isTrashed(request.isTrashed())
