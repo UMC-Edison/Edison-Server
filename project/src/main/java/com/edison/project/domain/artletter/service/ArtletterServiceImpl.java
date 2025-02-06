@@ -276,9 +276,16 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
+    public List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds) {
+        return artletterRepository.findByLetterIdIn(artletterIds).stream()
+                .map(artletter -> new ArtletterDTO.recommendCategoryDto(artletter.getLetterId(), artletter.getCategory()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds) {
         return artletterRepository.findByLetterIdIn(artletterIds).stream()
-                .map(artletter -> new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(), artletter.getKeyword()))
+                .map(artletter -> new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(),artletter.getKeyword()))
                 .collect(Collectors.toList());
     }
 

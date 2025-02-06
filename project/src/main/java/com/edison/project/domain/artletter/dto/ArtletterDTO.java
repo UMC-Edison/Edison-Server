@@ -119,6 +119,15 @@ public class ArtletterDTO {
     @NoArgsConstructor
     public static class recommendKeywordDto {
         private Long artletterId;
+        private String keyword;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class recommendCategoryDto {
+        private Long artletterId;
         private ArtletterCategory category;
     }
 }

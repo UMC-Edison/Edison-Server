@@ -32,4 +32,6 @@ public interface ArtletterService {
 
     List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds);
 
+    List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds);
+
 }
