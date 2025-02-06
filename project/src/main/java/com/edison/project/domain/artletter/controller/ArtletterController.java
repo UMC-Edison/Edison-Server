@@ -6,6 +6,7 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -86,7 +87,7 @@ public class ArtletterController {
             return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category는 null일 수 없습니다.");
         }
         try {
-            Artletter.ArtletterCategory category = Artletter.ArtletterCategory.valueOf((String) categoryObj);
+            ArtletterCategory category = ArtletterCategory.valueOf((String) categoryObj);
         } catch (IllegalArgumentException e) {
             return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category 값이 유효하지 않습니다.");
         }
@@ -98,7 +99,7 @@ public class ArtletterController {
         dto.setWriter((String) writerObj);
         dto.setContent((String) contentObj);
         dto.setTag((String) tagObj);
-        dto.setCategory(Artletter.ArtletterCategory.valueOf((String) categoryObj));
+        dto.setCategory(ArtletterCategory.valueOf((String) categoryObj));
         dto.setThumbnail((String) thumbnailObj);
 
         // Service 호출

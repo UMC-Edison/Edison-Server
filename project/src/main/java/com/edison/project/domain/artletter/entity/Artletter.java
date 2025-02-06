@@ -40,10 +40,6 @@ public class Artletter extends BaseEntity {
     @Column(name = "category", nullable = false)
     private ArtletterCategory category;
 
-    public enum ArtletterCategory {
-        기술, 현대미술, 영화예술
-    }
-
     private String thumbnail;
 
     // Builder 패턴 적용
