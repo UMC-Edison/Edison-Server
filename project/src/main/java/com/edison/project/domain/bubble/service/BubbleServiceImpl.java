@@ -295,6 +295,9 @@ public class BubbleServiceImpl implements BubbleService {
             if (backlinks.size() != request.getBacklinkIds().size()) {
                 throw new GeneralException(ErrorStatus.BACKLINK_NOT_FOUND);
             }
+            if (!backlinks.stream().allMatch(backlink-> backlink.getMember().equals(member))) {
+                throw new GeneralException(ErrorStatus.BACKLINK_FORBIDDEN);
+            }
         }
 
         // 라벨 검증
@@ -303,6 +306,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
         if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
+        if (!labels.stream().allMatch(label -> label.getMember().equals(member))) throw new GeneralException(ErrorStatus.LABELS_FORBIDDEN);
 
         Bubble bubble;
 
