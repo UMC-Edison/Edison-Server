@@ -288,13 +288,6 @@ public class BubbleServiceImpl implements BubbleService {
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        // linkedBubble 검증
-        Bubble linkedBubble = null;
-        if (request.getLinkedBubbleId() != null) {
-            linkedBubble = bubbleRepository.findById(request.getLinkedBubbleId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.LINKEDBUBBLE_NOT_FOUND));
-        }
-
         // backlink 검증
         Set<Bubble> backlinks = new HashSet<>();
         if (request.getBacklinkIds() != null) {
@@ -320,7 +313,7 @@ public class BubbleServiceImpl implements BubbleService {
         } else {
             bubble =  bubbleRepository.existsById(request.getBubbleId()) ?
                     updateExistingBubble(request, member, backlinks, labels)
-                    : createNewBubble(request, member, linkedBubble, backlinks, labels);
+                    : createNewBubble(request, member, backlinks, labels);
         }
 
         if (!request.isDeleted()) {
@@ -422,7 +415,7 @@ public class BubbleServiceImpl implements BubbleService {
         return null;
     }
 
-    private Bubble createNewBubble(BubbleRequestDto.SyncDto request, Member member, Bubble linkedBubble, Set<Bubble> backlinks, Set<Label> labels) {
+    private Bubble createNewBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
         Bubble newBubble = Bubble.builder()
                 .bubbleId(request.getBubbleId())
                 .title(request.getTitle())
