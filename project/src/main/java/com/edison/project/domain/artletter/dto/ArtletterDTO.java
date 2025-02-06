@@ -112,5 +112,14 @@ public class ArtletterDTO {
         private int scrapsCnt;
         private LocalDateTime scrappedAt;
     }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class recommendKeywordDto {
+        private Long artletterId;
+        private ArtletterCategory category;
+    }
 }
 

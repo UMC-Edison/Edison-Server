@@ -208,4 +208,12 @@ public class ArtletterController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return artletterService.getScrapArtletter(userPrincipal, pageable);
     }
+
+    @GetMapping("/recommend-bar/category")
+    public ResponseEntity<ApiResponse> getRecommendKeywords(
+            @RequestParam List<Long> artletterIds
+    ) {
+        List<ArtletterDTO.recommendKeywordDto> response = artletterService.getRecommendKeyword(artletterIds);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
 }

@@ -275,4 +275,11 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
     }
 
+    @Override
+    public List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds) {
+        return artletterRepository.findByLetterIdIn(artletterIds).stream()
+                .map(artletter -> new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(), artletter.getKeyword()))
+                .collect(Collectors.toList());
+    }
+
 }

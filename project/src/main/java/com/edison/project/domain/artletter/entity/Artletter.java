@@ -54,4 +54,8 @@ public class Artletter extends BaseEntity {
         this.category = category;
         this.thumbnail = thumbnail;
     }
+
+    public ArtletterCategory getKeyword() {
+        return this.category;
+    }
 }
