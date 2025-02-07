@@ -76,6 +76,7 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
+    @Transactional
     public Long createUserIfNotExist(String email) {
         return memberRepository.findByEmail(email)
                 .map(Member::getMemberId)
@@ -90,7 +91,6 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-
     public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.ProfileDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
@@ -100,8 +100,16 @@ public class MemberServiceImpl implements MemberService{
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
+        if(member.getNickname()!=null){
+            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
+        }
+
         if (request.getNickname()==null || request.getNickname() == "") {
             throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        if (request.getNickname().length() > 20) {
+            throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
         }
 
         member = member.registerProfile(request.getNickname());
@@ -158,7 +166,9 @@ public class MemberServiceImpl implements MemberService{
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
 
     }
-  
+
+    @Override
+    @Transactional
     public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -181,22 +191,12 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> refreshAccessToken(String token) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshtoken) {
 
-        Long memberId = jwtUtil.extractUserId(token);
-        String email = jwtUtil.extractEmail(token);
-
-        RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
-
-        if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
-            throw new GeneralException(ErrorStatus.REFRESHTOKEN_EXPIRED);
-        }
+        Long memberId = jwtUtil.extractUserId(refreshtoken);
+        String email = jwtUtil.extractEmail(refreshtoken);
 
         String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
-
-        // 전에 발급받은 access token 블랙리스트에 추가
-        redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
 
         MemberResponseDto.RefreshResultDto response = MemberResponseDto.RefreshResultDto.builder()
                 .accessToken(newAccessToken)
@@ -218,8 +218,8 @@ public class MemberServiceImpl implements MemberService{
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         // 존재하지 않는 카테고리 검증
+        List<String> validCategories = keywordsRepository.findDistinctCategories();
         String category = request.getCategory();
-        List<String> validCategories = List.of("CATEGORY1", "CATEGORY2", "CATEGORY3", "CATEGORY4");
         if (!validCategories.contains(category)) {
             throw new GeneralException(ErrorStatus.INVALID_CATEGORY);
         }
@@ -235,9 +235,6 @@ public class MemberServiceImpl implements MemberService{
         if (!keywords.stream().allMatch(keyword -> category.equals(keyword.getCategory()))) {
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
-
-        // 기존 키워드 삭제 (동일 카테고리에 한해 삭제)
-        //memberKeywordRepository.deleteByMember_MemberIdAndKeyword_Category(member.getMemberId(), category);
 
         // 새로운 키워드 저장
         List<MemberKeyword> memberKeywords = keywords.stream()
@@ -288,6 +285,32 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
+    public ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Long memberId = userPrincipal.getMemberId();
+        memberRepository.findById(memberId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // access토큰 블랙리스트에 추가
+        String token = (String) authentication.getCredentials();
+        redisTokenService.addToBlacklist(token,jwtUtil.getRemainingTime(token));
+
+        // refresh토큰 삭제
+        refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
+
+        //member 삭제
+        memberRepository.deleteByMemberId(memberId);
+
+        return ApiResponse.onSuccess(_OK);
+    }
+
+    @Transactional
+    @Override
     public MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
@@ -355,5 +378,21 @@ public class MemberServiceImpl implements MemberService{
                 .build();
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        MemberResponseDto.MemberResultDto response = MemberResponseDto.MemberResultDto.builder()
+                .email(userPrincipal.getEmail())
+                .nickname(member.getNickname())
+                .profileImg(member.getProfileImg())
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
 
 }

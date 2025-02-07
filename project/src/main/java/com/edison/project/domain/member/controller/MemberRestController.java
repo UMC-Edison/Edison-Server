@@ -1,7 +1,6 @@
 package com.edison.project.domain.member.controller;
 
 import com.edison.project.common.response.ApiResponse;
-import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.dto.MemberRequestDto;
 import com.edison.project.domain.member.dto.MemberResponseDto;
@@ -38,8 +37,8 @@ public class MemberRestController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestAttribute("expiredAccessToken") String token) {
-        return memberService.refreshAccessToken(token);
+    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestAttribute("refreshToken") String refreshToken) {
+        return memberService.refreshAccessToken(refreshToken);
     }
 
     @PostMapping("/identity")
@@ -58,6 +57,12 @@ public class MemberRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
+    @DeleteMapping("/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> cancel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.cancel(userPrincipal);
+    }
+
     @PatchMapping("/identity")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> updateIdentityTest(
@@ -66,4 +71,13 @@ public class MemberRestController {
         MemberResponseDto.IdentityTestSaveResultDto result = memberService.updateIdentityTest(userPrincipal, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getMember(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.getMember(userPrincipal);
+    }
+
+
 }

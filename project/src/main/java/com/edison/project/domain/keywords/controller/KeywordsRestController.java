@@ -2,11 +2,13 @@ package com.edison.project.domain.keywords.controller;
 
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.SuccessStatus;
+import com.edison.project.domain.keywords.dto.KeywordsResponseDto;
 import com.edison.project.domain.keywords.service.KeywordsService;
-import com.edison.project.domain.member.dto.MemberResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/identity/")
@@ -17,7 +19,7 @@ public class KeywordsRestController {
 
     @GetMapping("/{category}")
     public ResponseEntity<ApiResponse> getKeywordsByCategory( @PathVariable String category) {
-        MemberResponseDto.IdentityKeywordsResultDto result = keywordsService.getKeywordsByCategory(category);
+        List<KeywordsResponseDto.IdentityKeywordDto> result = keywordsService.getKeywordsByCategory(category);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
