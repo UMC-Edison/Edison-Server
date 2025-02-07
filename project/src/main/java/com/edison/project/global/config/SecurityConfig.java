@@ -49,6 +49,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/.well-known/acme-challenge/**").permitAll() // 서버 인증서 관련 경로 추가
                         .requestMatchers("/members/refresh").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         .anyRequest().authenticated()
