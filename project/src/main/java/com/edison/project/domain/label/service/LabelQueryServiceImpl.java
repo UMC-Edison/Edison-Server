@@ -2,6 +2,7 @@ package com.edison.project.domain.label.service;
 
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.domain.bubble.entity.Bubble;
+import com.edison.project.domain.bubble.entity.BubbleBacklink;
 import com.edison.project.domain.label.dto.LabelRequestDTO;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
 import com.edison.project.domain.label.entity.Label;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -79,7 +81,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
         List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(labelId);
 
-        List<BubbleResponseDto.ListResultDto> bubbleDetails = bubbles.stream()
+        List<BubbleResponseDto.SyncResultDto> bubbleDetails = bubbles.stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
@@ -95,7 +97,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         }
 
     // Bubble -> BubbleResponseDto 변환 함수 (중복 제거)
-    private BubbleResponseDto.ListResultDto convertToBubbleResponseDto(Bubble bubble) {
+    private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
         List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
                 .map(bl -> LabelResponseDTO.CreateResultDto.builder()
                         .labelId(bl.getLabel().getLabelId())
@@ -104,15 +106,20 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                         .build())
                 .collect(Collectors.toList());
 
-        return BubbleResponseDto.ListResultDto.builder()
+        return BubbleResponseDto.SyncResultDto.builder()
                 .bubbleId(bubble.getBubbleId())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
                 .labels(labelDtos) // 라벨 정보 리스트
-                .linkedBubbleId(bubble.getLinkedBubble() != null ? bubble.getLinkedBubble().getBubbleId() : null)
+                .backlinkIds(bubble.getBacklinks().stream()
+                        .map(BubbleBacklink::getBacklinkBubble)
+                        .map(Bubble::getBubbleId)
+                        .collect(Collectors.toSet()))
+                .isTrashed(bubble.isTrashed())
                 .createdAt(bubble.getCreatedAt())
                 .updatedAt(bubble.getUpdatedAt())
+                .deletedAt(bubble.getDeletedAt())
                 .build();
     }
 

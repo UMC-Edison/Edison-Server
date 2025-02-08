@@ -45,13 +45,16 @@ public enum ErrorStatus {
     // 버블 관련 애러
     BUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4001", "버블을 찾을 수 없습니다."),
     LINKEDBUBBLE_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4002", "링크버블을 찾을 수 없습니다."),
+    BACKLINK_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4003", "백링크 버블을 찾을 수 없습니다."),
     LABELS_TOO_MANY(HttpStatus.BAD_REQUEST, "BUBBLE_LABEL4001", "라벨 개수는 최대 3개까지 가능합니다."),
+    BACKLINK_FORBIDDEN(HttpStatus.FORBIDDEN, "BUBBLE4005", "권한이 없는 백링크 버블입니다."),
 
     // 라벨 관련 에러
     LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨을 찾을 수 없습니다."),
     LABEL_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨 이름은 최대 20자까지 가능합니다."),
     INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다."),
     INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, "LABEL4004", "유효하지 않은 시간 형식입니다."),
+    LABELS_FORBIDDEN(HttpStatus.FORBIDDEN, "LABEL4005", "권한이 없는 라벨입니다."),
 
     // 아트보드 관련 에러
     KEYWORD_IS_NOT_VALID(HttpStatus.BAD_REQUEST, "LETTER4001", "입력값이 존재하지 않습니다."),
