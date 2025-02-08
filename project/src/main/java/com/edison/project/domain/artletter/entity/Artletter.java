@@ -36,13 +36,12 @@ public class Artletter extends BaseEntity {
     @Column(name = "tag", length = 100)
     private String tag;
 
+    @Column(name = "keyword", length = 100)
+    private String keyword;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
     private ArtletterCategory category;
-
-    public enum ArtletterCategory {
-        기술, 현대미술, 영화예술
-    }
 
     private String thumbnail;
 
@@ -57,5 +56,9 @@ public class Artletter extends BaseEntity {
         this.tag = tag;
         this.category = category;
         this.thumbnail = thumbnail;
+    }
+
+    public ArtletterCategory getCategory() {
+        return this.category;
     }
 }

@@ -6,6 +6,7 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -86,7 +87,7 @@ public class ArtletterController {
             return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category는 null일 수 없습니다.");
         }
         try {
-            Artletter.ArtletterCategory category = Artletter.ArtletterCategory.valueOf((String) categoryObj);
+            ArtletterCategory category = ArtletterCategory.valueOf((String) categoryObj);
         } catch (IllegalArgumentException e) {
             return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category 값이 유효하지 않습니다.");
         }
@@ -98,7 +99,7 @@ public class ArtletterController {
         dto.setWriter((String) writerObj);
         dto.setContent((String) contentObj);
         dto.setTag((String) tagObj);
-        dto.setCategory(Artletter.ArtletterCategory.valueOf((String) categoryObj));
+        dto.setCategory(ArtletterCategory.valueOf((String) categoryObj));
         dto.setThumbnail((String) thumbnailObj);
 
         // Service 호출
@@ -206,5 +207,21 @@ public class ArtletterController {
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return artletterService.getScrapArtletter(userPrincipal, pageable);
+    }
+
+    @GetMapping("/recommend-bar/category")
+    public ResponseEntity<ApiResponse> getRecommendCategory(
+            @RequestParam List<Long> artletterIds
+    ) {
+        List<ArtletterDTO.recommendCategoryDto> response = artletterService.getRecommendCategory(artletterIds);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    @GetMapping("/recommend-bar/keyword")
+    public ResponseEntity<ApiResponse> getRecommendKeywords(
+            @RequestParam List<Long> artletterIds
+    ) {
+        List<ArtletterDTO.recommendKeywordDto> response = artletterService.getRecommendKeyword(artletterIds);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 }

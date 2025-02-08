@@ -1,5 +1,6 @@
 package com.edison.project.domain.artletter.dto;
 
+import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -29,7 +30,7 @@ public class ArtletterDTO {
         @NotBlank
         private String content;
         @NotNull
-        private Artletter.ArtletterCategory category;
+        private ArtletterCategory category;
         @NotBlank
         private String writer;
         @NotNull
@@ -66,7 +67,7 @@ public class ArtletterDTO {
         private Long artletterId;
         private String title;
         private String content;
-        private String category;
+        private ArtletterCategory category;
         private int readTime;
         private String writer;
         private String tags;
@@ -110,6 +111,24 @@ public class ArtletterDTO {
         private int likesCnt;
         private int scrapsCnt;
         private LocalDateTime scrappedAt;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class recommendKeywordDto {
+        private Long artletterId;
+        private String keyword;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class recommendCategoryDto {
+        private Long artletterId;
+        private ArtletterCategory category;
     }
 }
 

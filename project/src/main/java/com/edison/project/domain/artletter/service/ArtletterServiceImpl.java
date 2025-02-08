@@ -173,7 +173,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .content(artletter.getContent())
                 .tags(artletter.getTag())
                 .writer(artletter.getWriter())
-                .category(String.valueOf(artletter.getCategory()))
+                .category(artletter.getCategory())
                 .readTime(artletter.getReadTime())
                 .thumbnail(artletter.getThumbnail())
                 .likesCnt(likesCnt)
@@ -222,7 +222,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                             .content(artletter.getContent())
                             .tags(artletter.getTag())
                             .writer(artletter.getWriter())
-                            .category(String.valueOf(artletter.getCategory()))
+                            .category(artletter.getCategory())
                             .readTime(artletter.getReadTime())
                             .thumbnail(artletter.getThumbnail())
                             .likesCnt(likesCnt)
@@ -273,6 +273,30 @@ public class ArtletterServiceImpl implements ArtletterService {
                 }).toList();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
+    }
+
+    @Override
+    public List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds) {
+        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+
+        if (artletters.size() != artletterIds.size()) {
+            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
+        }
+        return artletters.stream()
+                .map(artletter -> new ArtletterDTO.recommendCategoryDto(artletter.getLetterId(), artletter.getCategory()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds) {
+        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+
+        if (artletters.size() != artletterIds.size()) {
+            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
+        }
+        return artletters.stream()
+                .map(artletter -> new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(),artletter.getKeyword()))
+                .collect(Collectors.toList());
     }
 
 }
