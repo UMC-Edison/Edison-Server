@@ -69,6 +69,7 @@ public enum ErrorStatus {
     ARTLETTER_ID_REQUIRED(HttpStatus.BAD_REQUEST, "LETTER4010", "아트레터 ID를 입력해 주세요."),
     LETTERS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4011", "아트레터를 찾을 수 없습니다."),
     NOT_EXISTS_CATEGORY(HttpStatus.BAD_REQUEST, "LETTER4012", "존재하지 않는 아트레터 카테고리입니다."),
+    ARTLETTER_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4012", "스크랩한 아트레터가 없습니다."),
 
     // 검색 관련 에러
     INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다.");

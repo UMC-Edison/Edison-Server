@@ -351,11 +351,15 @@ public class ArtletterServiceImpl implements ArtletterService {
         try {
             ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
         } catch (IllegalArgumentException e) {
-            System.out.println("밍밍");
             throw new GeneralException(ErrorStatus.NOT_EXISTS_CATEGORY);
         }
 
         Page<Scrap> scraps = scrapRepository.findByMemberAndArtletter_Category(member, category, pageable);
+
+//        // 스크랩한 아트레터가 없는 경우 예외 발생
+//        if (scraps.isEmpty() || scraps==null) {
+//            throw new GeneralException(ErrorStatus.ARTLETTER_NOT_FOUND);
+//        }
 
         PageInfo pageInfo = new PageInfo(
                 scraps.getNumber(),
