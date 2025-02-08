@@ -130,5 +130,14 @@ public class ArtletterDTO {
         private Long artletterId;
         private ArtletterCategory category;
     }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GroupedScrapResponseDto {
+        private String category;
+        private List<MyScrapResponseDto> artletters;
+    }
 }
 
