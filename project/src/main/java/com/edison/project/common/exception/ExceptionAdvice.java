@@ -4,10 +4,13 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -52,4 +55,8 @@ public class ExceptionAdvice {
         return ApiResponse.onFailure(e.getErrorStatus(), e.getMessage());
     }
 
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, ConversionFailedException.class})
+    public ResponseEntity<ApiResponse> handleConversionFailedException(Exception e) {
+        return ApiResponse.onFailure((ErrorStatus.NOT_EXISTS_CATEGORY));
+    }
 }

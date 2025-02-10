@@ -7,6 +7,7 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.entity.ArtletterLikes;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
@@ -297,6 +298,97 @@ public class ArtletterServiceImpl implements ArtletterService {
         return artletters.stream()
                 .map(artletter -> new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(),artletter.getKeyword()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Page<Scrap> scraps = scrapRepository.findByMember(member, pageable);
+
+        PageInfo pageInfo = new PageInfo(
+                scraps.getNumber(),
+                scraps.getSize(),
+                scraps.hasNext(),
+                scraps.getTotalElements(),
+                scraps.getTotalPages()
+        );
+
+        // 카테고리별 그룹화
+        Map<String, List<Scrap>> groupedByCategory = scraps.getContent().stream()
+                .collect(Collectors.groupingBy(scrap -> String.valueOf(scrap.getArtletter().getCategory())));
+
+        // 그룹화된 데이터를 DTO 리스트로 변환
+        List<ArtletterDTO.GroupedScrapResponseDto> groupedArtletters = groupedByCategory.entrySet().stream()
+                .map(entry -> new ArtletterDTO.GroupedScrapResponseDto(
+                        entry.getKey(),
+                        entry.getValue().stream().map(scrap -> {
+                            Artletter artletter = scrap.getArtletter();
+                            int likesCnt = artletterLikesRepository.countByArtletter(artletter);
+                            int scrapsCnt = scrapRepository.countByArtletter(artletter);
+                            return ArtletterDTO.MyScrapResponseDto.builder()
+                                    .artletterId(artletter.getLetterId())
+                                    .title(artletter.getTitle())
+                                    .thumbnail(artletter.getThumbnail())
+                                    .likesCnt(likesCnt)
+                                    .scrapsCnt(scrapsCnt)
+                                    .scrappedAt(artletter.getCreatedAt())
+                                    .build();
+                        }).toList()
+                )).toList();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, groupedArtletters);
+    }
+
+    @Override
+    public ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        try {
+            ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
+        } catch (IllegalArgumentException e) {
+            throw new GeneralException(ErrorStatus.NOT_EXISTS_CATEGORY);
+        }
+
+        Page<Scrap> scraps = scrapRepository.findByMemberAndArtletter_Category(member, category, pageable);
+
+//        // 스크랩한 아트레터가 없는 경우 예외 발생
+//        if (scraps.isEmpty() || scraps==null) {
+//            throw new GeneralException(ErrorStatus.ARTLETTER_NOT_FOUND);
+//        }
+
+        PageInfo pageInfo = new PageInfo(
+                scraps.getNumber(),
+                scraps.getSize(),
+                scraps.hasNext(),
+                scraps.getTotalElements(),
+                scraps.getTotalPages()
+        );
+
+        // DTO 변환 전에 엔티티 기준으로 카테고리별 그룹화
+        Map<String, List<Scrap>> groupedByCategory = scraps.getContent().stream()
+                .collect(Collectors.groupingBy(scrap -> String.valueOf(scrap.getArtletter().getCategory())));
+
+        List<ArtletterDTO.MyScrapResponseDto> artletters = scraps.getContent().stream()
+                .map(scrap -> {
+                    Artletter artletter = scrap.getArtletter();
+                    int likesCnt = artletterLikesRepository.countByArtletter(artletter);
+                    int scrapsCnt = scrapRepository.countByArtletter(artletter);
+                    return ArtletterDTO.MyScrapResponseDto.builder()
+                            .artletterId(artletter.getLetterId())
+                            .title(artletter.getTitle())
+                            .thumbnail(artletter.getThumbnail())
+                            .likesCnt(likesCnt)
+                            .scrapsCnt(scrapsCnt)
+                            .scrappedAt(artletter.getCreatedAt())
+                            .build();
+                }).toList();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
     }
 
 }

@@ -224,4 +224,25 @@ public class ArtletterController {
         List<ArtletterDTO.recommendKeywordDto> response = artletterService.getRecommendKeyword(artletterIds);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
+
+    @GetMapping("/scrap")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return artletterService.getScrapArtlettersByCategory(userPrincipal, pageable);
+    }
+
+    @GetMapping("/scrap/{category}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getScrapCategoryArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable ArtletterCategory category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return artletterService.getScrapCategoryArtletters(userPrincipal, category, pageable);
+    }
 }

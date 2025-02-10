@@ -1,6 +1,7 @@
 package com.edison.project.domain.scrap.repository;
 
 import com.edison.project.domain.artletter.entity.Artletter;
+import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.scrap.entity.Scrap;
 import jakarta.transaction.Transactional;
@@ -20,4 +21,6 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
     void deleteByMemberAndArtletter(Member member, Artletter artletter);
 
     Page<Scrap> findByMember(Member member, Pageable pageable);
+
+    Page<Scrap> findByMemberAndArtletter_Category(Member member, ArtletterCategory category, Pageable pageable);
 }
