@@ -1,19 +1,20 @@
 package com.edison.project.global.security;
 
 import com.edison.project.common.exception.GeneralException;
+import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.RefreshToken;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.repository.RefreshTokenRepository;
 import com.edison.project.domain.member.service.RedisTokenService;
 import com.edison.project.global.util.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -38,27 +39,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String authHeader = request.getHeader("Authorization");
 
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+            }
 
-                if (request.getRequestURI().equals("/members/refresh")) {
-                    // Refresh 요청 처리
-                    handleRefreshRequest(request, token);
-                } else {
-                    // 일반 요청 처리
-                    handleAccessTokenRequest(request, token);
-                }
+            String token = authHeader.substring(7);
+
+            if (request.getRequestURI().equals("/members/refresh")) {
+                // Refresh 요청 처리
+                handleRefreshRequest(request, token);
+            } else {
+                // 일반 요청 처리
+                handleAccessTokenRequest(request, token);
             }
 
             filterChain.doFilter(request, response);
         } catch (GeneralException e) {
-            // Custom Exception 처리
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().write("{\"isSuccess\":false,\"code\":\"" + e.getErrorStatus().getCode() + "\",\"message\":\"" + e.getErrorStatus().getMessage() + "\"}");
-        }
 
+            if (!response.isCommitted()) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.writeValue(response.getWriter(), ApiResponse.onFailure(e.getErrorStatus()).getBody());
+            }
+
+        }
     }
 
     private void handleAccessTokenRequest(HttpServletRequest request, String token) {
