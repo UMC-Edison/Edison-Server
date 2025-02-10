@@ -15,13 +15,18 @@ import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.repository.RefreshTokenRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.util.JwtUtil;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 
 import java.util.*;
@@ -39,6 +44,14 @@ public class MemberServiceImpl implements MemberService{
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
     private final RedisTokenService redisTokenService;
+    private final RestTemplate restTemplate;
+
+    private static final String GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+    @Value("${google.client.id}")
+    private String googleClientId;
+
+    @Value("${google.client.secret}")
+    private String googleClientSecret;
 
     @Override
     @Transactional
@@ -393,6 +406,19 @@ public class MemberServiceImpl implements MemberService{
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
 
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
+
+        // Google idToken에서 사용자 정보 추출
+        GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
+        String email = payload.getEmail();
+
+        MemberResponseDto.LoginResultDto dto = generateTokensForOidcUser(email);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, dto);
     }
 
 }

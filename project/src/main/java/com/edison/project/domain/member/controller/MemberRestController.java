@@ -79,5 +79,9 @@ public class MemberRestController {
         return memberService.getMember(userPrincipal);
     }
 
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse> googleCallback(@RequestBody MemberRequestDto.GoogleLoginDto request) {
+        return memberService.processGoogleLogin(request.getIdToken());
+    }
 
 }
