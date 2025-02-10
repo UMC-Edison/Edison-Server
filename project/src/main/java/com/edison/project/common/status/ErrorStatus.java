@@ -20,6 +20,7 @@ public enum ErrorStatus {
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "VALID401", "입력값이 올바르지 않습니다."),
 
     // 로그인 관련 에러
+    CUSTOM_ENTRY_EXCEPTION(HttpStatus.UNAUTHORIZED, "LOGIN4000", "커스텀 엔트리 예외입니다."),
     LOGIN_CANCELLED(HttpStatus.BAD_REQUEST, "LOGIN4001", "로그인이 취소되었습니다."),
     LOGIN_REQUIRED(HttpStatus.UNAUTHORIZED, "LOGIN4002", "로그인이 필요합니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "LOGIN4003", "유효하지 않은 토큰입니다."),
