@@ -25,7 +25,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("isSuccess", false);
         errorResponse.put("code", "LOGIN4000");
-        errorResponse.put("message", "인증되지 않은 사용자입니다.");
+        errorResponse.put("message", "커스텀 엔트리 예외입니다.");
 
         // 응답 설정
         response.setContentType("application/json;charset=UTF-8"); // Content-Type + UTF-8 설정
@@ -34,5 +34,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
 
         // JSON 응답 반환
         objectMapper.writeValue(response.getWriter(), errorResponse);
+
+        return;
     }
 }

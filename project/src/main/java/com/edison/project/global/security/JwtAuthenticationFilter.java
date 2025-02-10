@@ -38,16 +38,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String authHeader = request.getHeader("Authorization");
 
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+            }
 
-                if (request.getRequestURI().equals("/members/refresh")) {
-                    // Refresh 요청 처리
-                    handleRefreshRequest(request, token);
-                } else {
-                    // 일반 요청 처리
-                    handleAccessTokenRequest(request, token);
-                }
+            String token = authHeader.substring(7);
+
+            if (request.getRequestURI().equals("/members/refresh")) {
+                // Refresh 요청 처리
+                handleRefreshRequest(request, token);
+            } else {
+                // 일반 요청 처리
+                handleAccessTokenRequest(request, token);
             }
 
             filterChain.doFilter(request, response);
