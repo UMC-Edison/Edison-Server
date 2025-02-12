@@ -71,7 +71,6 @@ jobs:
       - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
         uses: actions/download-artifact@v4
         with:
-          name: Edison-Server
           path: build/libs/
 
       - name: Deploy to EC2  # EC2에 배포
@@ -99,7 +98,7 @@ jobs:
         run: |
             echo "$EC2_SSH_KEY" > edison.pem
             chmod 600 edison.pem
-            scp -i edison.pem -o StrictHostKeyChecking=no $GITHUB_WORKSPACE/../nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/etc/nginx/nginx.conf
+            scp -i edison.pem -o StrictHostKeyChecking=no $GITHUB_WORKSPACE/nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/etc/nginx/nginx.conf
             ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
               sudo nginx -t && sudo systemctl reload nginx  # 설정 테스트 후 NGINX 재시작
             "
