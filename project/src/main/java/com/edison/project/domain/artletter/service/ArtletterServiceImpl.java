@@ -72,40 +72,45 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
+
+
     // 아트레터 좋아요 토글 api
     @Override
     @Transactional
     public ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        Artletter artletter = artletterRepository.findById(letterId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
-
+        Member member = findMemberById(userPrincipal.getMemberId());
+        Artletter artletter = findArtletterById(letterId);
         boolean alreadyLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
 
-        if (alreadyLiked) {
-            // 좋아요 취소
-            artletterLikesRepository.deleteByMemberAndArtletter(member, artletter);
-        } else {
-            // 좋아요
-            ArtletterLikes like = ArtletterLikes.builder()
-                    .member(member)
-                    .artletter(artletter)
-                    .build();
-
-            artletterLikesRepository.save(like);
-        }
-
+        toggleLikeStatus(member, artletter, alreadyLiked);
         int likeCnt = artletterLikesRepository.countByArtletter(artletter);
 
+        return buildLikeResponseDto(letterId, likeCnt, !alreadyLiked);
+    }
+
+    // 아트레터 좋아요 토글 api - 좋아요 토글 메서드 분리
+    private void toggleLikeStatus(Member member, Artletter artletter, boolean alreadyLiked) {
+        if (alreadyLiked) {
+            artletterLikesRepository.deleteByMemberAndArtletter(member, artletter);
+        } else {
+            artletterLikesRepository.save(ArtletterLikes.builder()
+                    .member(member)
+                    .artletter(artletter)
+                    .build());
+        }
+    }
+
+    // 아트레터 좋아요 토글 api - 결과 생성 메서드 분리
+    private ArtletterDTO.LikeResponseDto buildLikeResponseDto(Long letterId, int likeCnt, boolean isLiked) {
         return ArtletterDTO.LikeResponseDto.builder()
                 .artletterId(letterId)
                 .likesCnt(likeCnt)
-                .isLiked(!alreadyLiked)
+                .isLiked(isLiked)
                 .build();
     }
+
+
 
     // 아트레터 스크랩 토글 api
     @Override
@@ -117,13 +122,12 @@ public class ArtletterServiceImpl implements ArtletterService {
         boolean alreadyScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
 
         toggleScrap(member, artletter, alreadyScrapped);
-
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
         return buildScrapResponseDto(letterId, scrapCnt, !alreadyScrapped);
     }
 
-    // 아트레터 스크랩 토글 api - 스크랩 추가/삭제 토글 메서드 분리
+    // 아트레터 스크랩 토글 api - 스크랩 토글 메서드 분리
     private void toggleScrap(Member member, Artletter artletter, boolean alreadyScrapped) {
         if (alreadyScrapped) {
             scrapRepository.deleteByMemberAndArtletter(member, artletter);
