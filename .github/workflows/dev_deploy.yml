@@ -90,6 +90,9 @@ jobs:
           "
           rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'
 
+      - name: Debug Current Directory
+        run: pwd && ls -al
+
       - name: Deploy NGINX Configuration  # NGINX 설정 배포
         env:
             EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
