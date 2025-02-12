@@ -16,8 +16,11 @@ public class MemberResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LoginResultDto{
-        String accessToken;
-        String refreshToken;
+
+        private Long memberId;
+        private String email;
+        private String accessToken;
+        private String refreshToken;
     }
 
     @Builder
@@ -45,7 +48,7 @@ public class MemberResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RefreshResultDto{
-        String accessToken;
+        private String accessToken;
     }
 
     @Builder
