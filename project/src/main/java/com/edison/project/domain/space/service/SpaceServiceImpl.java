@@ -5,6 +5,7 @@ import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.domain.space.dto.SpaceInfoResponseDto;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
 import com.edison.project.domain.space.entity.Space;
 import com.edison.project.domain.space.repository.SpaceRepository;
@@ -104,7 +105,7 @@ public class SpaceServiceImpl implements SpaceService {
                         space.getContent(),
                         space.getX(),
                         space.getY(),
-                        space.getGroupNames()
+                        space.getGroup()
                 ))
                 .collect(Collectors.toList());
 
@@ -243,21 +244,9 @@ public class SpaceServiceImpl implements SpaceService {
                 String content = (String) item.get("content");
                 double x = ((Number) item.get("x")).doubleValue();
                 double y = ((Number) item.get("y")).doubleValue();
+                int group = item.get("group") != null ? ((Number) item.get("group")).intValue() : 0;
 
-                List<String> groups = item.containsKey("groups") && item.get("groups") != null
-                        ? ((List<?>) item.get("groups")).stream()
-                        .map(Object::toString)
-                        .collect(Collectors.toList())
-                        : new ArrayList<>(); // ✅ 빈 리스트 할당
-
-                // ✅ 여기서 추가적으로 체크: 만약 groups가 비어 있다면 "UNASSIGNED" 추가
-                if (groups.isEmpty()) {
-                    groups.add("UNASSIGNED");
-                }
-
-
-
-                spaces.add(new Space(content, x, y, groups, bubble, memberId));
+                spaces.add(new Space(content, x, y, group, bubble, memberId));
             }
             return spaces;
 
@@ -277,13 +266,13 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
         promptBuilder.append("- x: A unique floating-point number for the x-coordinate (spread across four quadrants).\n");
         promptBuilder.append("- y: A unique floating-point number for the y-coordinate (spread across four quadrants).\n");
-        promptBuilder.append("- groups: A list of integers representing the item's group IDs.\n\n");
+        promptBuilder.append("- group: A integer representing the item's group ID.\n\n");
 
         promptBuilder.append("### Rules:\n");
         promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum spacing of 0.5.\n");
         promptBuilder.append("2. Items with similar topics should form visually distinct clusters, appearing as bursts from a central point.\n");
         promptBuilder.append("3. Clusters should be well-separated from each other but internally cohesive.\n");
-        promptBuilder.append("4. Each group should contain **5 to 8 items**, and **no group should have more than 10 items**.\n");
+        promptBuilder.append("4. Each group should contain **5 to 8 items**, and **no group should have more than 10 items**, also group always starts with number 1.\n");
         promptBuilder.append("5. The number of group should be minimized, ideally around **1/4 of the total number of items**.\n");
         promptBuilder.append("6. Items that do not naturally fit into a cluster should remain ungrouped, keeping their original coordinates.\n");
         promptBuilder.append("7. X and Y coordinates should be distributed across all four quadrants for better visualization.\n");
@@ -292,16 +281,47 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("10. Each item **MUST belong to at least one group**. If an item does not fit into any existing group, create a new unique group ID for it.\n");
         promptBuilder.append("11. The output must strictly include the `groups` field for all items, even if they belong to a single group.\n");
         promptBuilder.append("12. The output must be strictly in JSON format as shown below:\n\n");
+        promptBuilder.append("13. **The last provided bubble MUST be positioned at coordinates (0, 0) without exception.**\n");
+        promptBuilder.append("14. **The coordinates of all other items MUST be determined considering that the last item is fixed at (0, 0), ensuring proper spacing and distribution.**\n\n");
+
+        Long lastKey = null;
+        for (Long key : requestData.keySet()) {
+            lastKey = key;
+        }
 
         for (Map.Entry<Long, String> entry : requestData.entrySet()) {
             promptBuilder.append("- ID: ").append(entry.getKey()).append("\n");
             promptBuilder.append(entry.getValue()).append("\n");
+
+            if (entry.getKey().equals(lastKey)) {
+                promptBuilder.append("(This item MUST be placed at coordinates (0, 0))\n");
+            }
         }
 
         return promptBuilder.toString();
     }
 
+    public ResponseEntity<ApiResponse> getSpaceInfo() {
+        List<Space> spaces = spaceRepository.findAll();
 
+        if (spaces.isEmpty()) {
+            return ApiResponse.onFailure(ErrorStatus.NO_SPACES_FOUND);
+        }
+
+        double minX = spaces.stream().mapToDouble(Space::getX).min().orElse(0);
+        double maxX = spaces.stream().mapToDouble(Space::getX).max().orElse(0);
+        double minY = spaces.stream().mapToDouble(Space::getY).min().orElse(0);
+        double maxY = spaces.stream().mapToDouble(Space::getY).max().orElse(0);
+
+        double centerX = (minX + maxX) / 2;
+        double centerY = (minY + maxY) / 2;
+
+        double radius = Math.sqrt(Math.pow(maxX - centerX, 2) + Math.pow(maxY - centerY, 2));
+
+        SpaceInfoResponseDto response = new SpaceInfoResponseDto(centerX, centerY, radius);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
 }
 
 

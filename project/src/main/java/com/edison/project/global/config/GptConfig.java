@@ -23,8 +23,8 @@ public class GptConfig {
         return model;
     }
 
-    @Bean
-    public RestTemplate restTemplate() {
+    @Bean(name = "gptRestTemplate")
+    public RestTemplate gptRestTemplate() {
         return new RestTemplate();
     }
 

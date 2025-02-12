@@ -8,4 +8,5 @@ import org.springframework.http.ResponseEntity;
 public interface SpaceService {
 
     ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable);
+    ResponseEntity<ApiResponse> getSpaceInfo();
 }
