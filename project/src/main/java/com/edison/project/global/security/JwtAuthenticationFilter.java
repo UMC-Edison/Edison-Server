@@ -35,6 +35,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws IOException, ServletException {
 
+        String requestURI = request.getRequestURI();
+
+        // ✅ OAuth2와 무관한 요청은 필터 적용 제외
+        if (requestURI.equals("/members/google") || requestURI.equals("/members/refresh") || requestURI.equals("/auth/google")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             String authHeader = request.getHeader("Authorization");
 

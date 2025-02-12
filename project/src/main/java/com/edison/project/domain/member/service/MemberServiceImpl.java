@@ -67,16 +67,17 @@ public class MemberServiceImpl implements MemberService{
                     return memberRepository.save(newMember);
                 });
 
-        String accessToken = jwtUtil.generateAccessToken(member.getMemberId(), member.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(member.getMemberId(), member.getEmail());
+        Long memberId = member.getMemberId();
+        String accessToken = jwtUtil.generateAccessToken(memberId, email);
+        String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
 
         refreshTokenRepository.deleteByEmail(email);
         RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
         refreshTokenRepository.save(tokenEntity);
 
         return MemberResponseDto.LoginResultDto.builder()
-                .memberId(member.getMemberId())
-                .email(member.getEmail())
+                .memberId(memberId)
+                .email(email)
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
@@ -406,14 +407,27 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
+        if (idToken == null || idToken.isEmpty()) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+        }
 
-        // Google idToken에서 사용자 정보 추출
+        // ✅ Google ID Token 검증
         GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
-        String email = payload.getEmail();
+        if (payload == null) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+        }
 
+        String email = payload.getEmail();
+        if (email == null || email.isEmpty()) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+        }
+
+        // ✅ OIDC 사용자 토큰 생성
         MemberResponseDto.LoginResultDto dto = generateTokensForOidcUser(email);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, dto);
     }
+
+
 
 }

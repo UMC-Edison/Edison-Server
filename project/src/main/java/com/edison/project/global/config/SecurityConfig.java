@@ -50,7 +50,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/.well-known/acme-challenge/**").permitAll()
-                        .requestMatchers("/members/refresh", "/members/google", "/favicon.ico").permitAll()
+                        .requestMatchers("/members/refresh", "/members/google", "auth/google", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
