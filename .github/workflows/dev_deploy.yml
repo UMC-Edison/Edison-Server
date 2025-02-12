@@ -10,8 +10,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3  # 저장소 코드 체크아웃
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK 17  # Java 개발 킷 설정
         uses: actions/setup-java@v3
@@ -70,6 +68,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Repository  # 🔥 추가된 부분
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
         uses: actions/download-artifact@v4
         with:
