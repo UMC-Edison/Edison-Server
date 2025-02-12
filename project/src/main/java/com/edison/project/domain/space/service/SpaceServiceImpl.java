@@ -249,17 +249,22 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
         promptBuilder.append("- x: A unique floating-point number for the x-coordinate (spread across four quadrants).\n");
         promptBuilder.append("- y: A unique floating-point number for the y-coordinate (spread across four quadrants).\n");
-        promptBuilder.append("- group: An integer representing the item's group ID, starting from 1.\n\n");
+        promptBuilder.append("- group: An integer representing the item's group ID, starting from 1. If an item does not belong to any group, set this to `null`.\n\n");
 
         promptBuilder.append("### Rules:\n");
         promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum spacing of 0.5.\n");
         promptBuilder.append("2. Items with similar topics should form visually distinct clusters.\n");
-        promptBuilder.append("3. Absolutely !!! Each group should contain **5 to 8 items**, and **no group should have more than 10 items**.\n");
-        promptBuilder.append("4. Groups always start with number 1 and increment sequentially (1, 2, 3, ...).\n");
-        promptBuilder.append("5. The output **MUST** be in valid JSON format as shown below:\n\n");
-        promptBuilder.append("6. Not all items MUST belong to a group. If an item is difficult to group with others, leave it blank. However, if items that are difficult to group can be grouped together, create an additional group for them.");
+        promptBuilder.append("3. Clusters should be well-separated from each other but internally cohesive.\n");
+        promptBuilder.append("4. **❗ Each group MUST contain between 5 and 8 items. This is MANDATORY. ❗**\n");
+        promptBuilder.append("5. **If any group contains fewer than 5 or more than 8 items, YOU MUST re-cluster that group into smaller sub-groups, each containing 5-8 items.**\n");
+        promptBuilder.append("6. **Continue re-clustering until ALL groups satisfy the 5-8 item rule. This process must be repeated as many times as necessary.**\n");
+        promptBuilder.append("7. Groups must start with number 1 and increment sequentially (1, 2, 3, ...).\n");
+        promptBuilder.append("8. The number of groups should be minimized, ideally around 1/4 of the total number of items.\n");
+        promptBuilder.append("9. **Items do NOT have to belong to a group. However, if possible, items should be grouped based on topic similarity.**\n");
+        promptBuilder.append("10. Extract the core meaning of each content item, reducing it to 1 or 2 essential words.\n");
+        promptBuilder.append("11. The output MUST strictly include the `group` field for ALL items, even if it's `null`.\n");
+        promptBuilder.append("12. The output MUST be valid JSON format as shown below, with NO explanations or extra text.\n\n");
 
-        // ✅ Specify JSON format
         promptBuilder.append("### Response Format:\n");
         promptBuilder.append("[\n");
         promptBuilder.append("  {\n");
@@ -274,11 +279,11 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("    \"content\": \"Topic\",\n");
         promptBuilder.append("    \"x\": -1.0,\n");
         promptBuilder.append("    \"y\": 0.8,\n");
-        promptBuilder.append("    \"group\": 2\n");
+        promptBuilder.append("    \"group\": null  // ✅ Example of an ungrouped item\n");
         promptBuilder.append("  }\n");
         promptBuilder.append("]\n\n");
 
-        promptBuilder.append("DO NOT include any explanations or additional text. Respond ONLY with the JSON array.\n");
+        promptBuilder.append("⚠️ **DO NOT** include any explanations, comments, or extra formatting. Respond ONLY with the JSON array. ⚠️\n");
 
         Long lastKey = null;
         for (Long key : requestData.keySet()) {
