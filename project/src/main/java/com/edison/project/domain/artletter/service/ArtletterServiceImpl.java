@@ -149,25 +149,25 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
+    // 아트레터 상세조회 api
     @Override
     public ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId) {
 
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         Artletter artletter = artletterRepository.findById(letterId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         boolean isLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
         int likesCnt = artletterLikesRepository.countByArtletter(artletter);
         boolean isScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
+        return buildListResponseDto(artletter, likesCnt, scrapCnt, isLiked, isScrapped);
+    }
+
+    private ArtletterDTO.ListResponseDto buildListResponseDto(Artletter artletter, int likesCnt, int scrapCnt, boolean isLiked, boolean isScrapped) {
         return ArtletterDTO.ListResponseDto.builder()
                 .artletterId(artletter.getLetterId())
                 .title(artletter.getTitle())
