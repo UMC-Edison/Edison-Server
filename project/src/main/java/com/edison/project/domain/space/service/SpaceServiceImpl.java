@@ -303,6 +303,7 @@ public class SpaceServiceImpl implements SpaceService {
 
     public ResponseEntity<ApiResponse> getSpaceInfo() {
         List<Space> spaces = spaceRepository.findAll();
+        System.out.println("Fetched Spaces: " + spaces.size());
 
         if (spaces.isEmpty()) {
             return ApiResponse.onFailure(ErrorStatus.NO_SPACES_FOUND);
@@ -310,12 +311,20 @@ public class SpaceServiceImpl implements SpaceService {
 
         Map<Integer, List<Space>> groupedSpaces = spaces.stream()
                 .collect(Collectors.groupingBy(Space::getGroup));
+        System.out.println("Grouped Spaces: " + groupedSpaces.keySet());
+
+        int maxGroupId = groupedSpaces.keySet().stream().max(Integer::compareTo).orElse(0);
+        System.out.println("Max Group ID: " + maxGroupId);
 
         List<SpaceInfoResponseDto> responseList = new ArrayList<>();
 
-        for (Map.Entry<Integer, List<Space>> entry : groupedSpaces.entrySet()) {
-            int groupId = entry.getKey();
-            List<Space> groupSpaces = entry.getValue();
+        for (int groupId = 1; groupId <= maxGroupId; groupId++) {
+            List<Space> groupSpaces = groupedSpaces.getOrDefault(groupId, new ArrayList<>());
+            System.out.println("Processing Group ID: " + groupId + ", Spaces: " + groupSpaces.size());
+
+            if (groupSpaces.isEmpty()) {
+                continue;
+            }
 
             double minX = groupSpaces.stream().mapToDouble(Space::getX).min().orElse(0);
             double maxX = groupSpaces.stream().mapToDouble(Space::getX).max().orElse(0);
@@ -330,8 +339,10 @@ public class SpaceServiceImpl implements SpaceService {
             responseList.add(new SpaceInfoResponseDto(groupId, centerX, centerY, radius));
         }
 
+        System.out.println("Response List Size: " + responseList.size());
         return ApiResponse.onSuccess(SuccessStatus._OK, responseList);
     }
+
 }
 
 
