@@ -99,7 +99,7 @@ jobs:
         run: |
             echo "$EC2_SSH_KEY" > edison.pem
             chmod 600 edison.pem
-            scp -i edison.pem -o StrictHostKeyChecking=no $GITHUB_WORKSPACE/nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/etc/nginx/nginx.conf
+            scp -i edison.pem -o StrictHostKeyChecking=no $GITHUB_WORKSPACE/../nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/etc/nginx/nginx.conf
             ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
               sudo nginx -t && sudo systemctl reload nginx  # 설정 테스트 후 NGINX 재시작
             "
