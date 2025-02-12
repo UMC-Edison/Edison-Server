@@ -73,8 +73,10 @@ public enum ErrorStatus {
     ARTLETTER_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4012", "스크랩한 아트레터가 없습니다."),
 
     // 검색 관련 에러
-    INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다.");
+    INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다."),
 
+    // 페이징 관련 에러
+    INVALID_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "PAGENATION4001", "page는 음수일 수 없고, size는 100 이하의 양수여야 합니다.");
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;

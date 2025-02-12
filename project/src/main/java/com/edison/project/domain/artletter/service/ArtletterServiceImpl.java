@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -37,12 +38,39 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
 
-    public Page<Artletter> getAllArtletters(int page, int size) {
 
-        // 페이지 요청 생성
+
+    // 전체 아트레터 조회 api
+    @Override
+    public ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size) {
+        if (page < 0 || size <= 0 || size > 100) {
+            throw new GeneralException(ErrorStatus.INVALID_PAGE_REQUEST);
+        }
+        Page<Artletter> artletters = getPaginatedArtletters(page, size);
+        PageInfo pageInfo = buildPageInfo(artletters);
+        List<Map<String, Object>> response = extractSimplifiedArtletters(artletters);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
+    }
+
+    // 전체 아트레터 조회 api - 페이징된 아트레터 목록 조회
+    private Page<Artletter> getPaginatedArtletters(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-
         return artletterRepository.findAll(pageable);
+    }
+
+    // 전체 아트레터 조회 api - 필요한 정보만 포함하도록 간소화
+    private List<Map<String, Object>> extractSimplifiedArtletters(Page<Artletter> artletters) {
+        return artletters.getContent().stream()
+                .map(artletter -> {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("id", artletter.getLetterId());
+                    map.put("title", artletter.getTitle());
+                    map.put("thumbnail", artletter.getThumbnail());
+                    map.put("isScrapped", scrapRepository.existsByArtletter(artletter)); // 스크랩 여부 확인
+                    return map;
+                })
+                .collect(Collectors.toList());
     }
 
 
@@ -389,6 +417,17 @@ public class ArtletterServiceImpl implements ArtletterService {
                 }).toList();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
+    }
+
+    // [공통 메소드] 페이지 정보 생성
+    private PageInfo buildPageInfo(Page<Artletter> artletters) {
+        return new PageInfo(
+                artletters.getNumber(),
+                artletters.getSize(),
+                artletters.hasNext(),
+                artletters.getTotalElements(),
+                artletters.getTotalPages()
+        );
     }
 
 }

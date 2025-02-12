@@ -14,7 +14,7 @@ import java.util.Map;
 
 
 public interface ArtletterService {
-    Page<Artletter> getAllArtletters(int page, int size);
+    ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size);
 
     ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request);
 

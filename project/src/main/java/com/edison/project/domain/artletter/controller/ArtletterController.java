@@ -112,26 +112,7 @@ public class ArtletterController {
     public ResponseEntity<ApiResponse> getAllArtletters(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-
-        Page<Artletter> artletters = artletterService.getAllArtletters(page, size);
-
-        // 필드(id, title)만 추출
-        List<Map<String, Object>> simplifiedResult = artletters.getContent().stream()
-                .map(artletter -> {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("id", artletter.getLetterId()); // letterId를 id로 변환
-                    map.put("title", artletter.getTitle());
-                    return map;
-                })
-                .collect(Collectors.toList());
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, new PageInfo(
-                artletters.getNumber(),
-                artletters.getSize(),
-                artletters.hasNext(),
-                artletters.getTotalElements(),
-                artletters.getTotalPages()
-        ), simplifiedResult);
+        return artletterService.getAllArtlettersResponse(page, size);
     }
 
 
