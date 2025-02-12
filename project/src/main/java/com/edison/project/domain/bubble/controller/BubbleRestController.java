@@ -26,36 +26,6 @@ import org.springframework.data.domain.Pageable;
 public class BubbleRestController {
     private final BubbleService bubbleService;
 
-    /*
-    // 버블 생성
-    @PostMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> createBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody @Valid BubbleRequestDto.ListDto request) {
-        BubbleResponseDto.ListResultDto response = bubbleService.createBubble(userPrincipal, request);
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-    }
-
-    //버블 삭제
-    @PatchMapping("/{bubbleId}/delete")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> deleteBubble(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId) {
-        BubbleResponseDto.DeleteResultDto result = bubbleService.deleteBubble(userPrincipal, bubbleId);
-        return ApiResponse.onSuccess(SuccessStatus._OK, result);
-    }
-
-    //버블 복원
-    @PatchMapping("/{bubbleId}/restore")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> restoreBubble(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId) {
-        BubbleResponseDto.RestoreResultDto result = bubbleService.restoreBubble(userPrincipal, bubbleId);
-        return ApiResponse.onSuccess(SuccessStatus._OK, result);
-    }
-    */
-
     // 버블 전체 목록 조회
     @GetMapping("/space")
     @PreAuthorize("isAuthenticated()")
@@ -89,7 +59,7 @@ public class BubbleRestController {
     public ResponseEntity<ApiResponse> getBubble (
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @PathVariable Long bubbleId) {
-        BubbleResponseDto.ListResultDto response = bubbleService.getBubble(userPrincipal, bubbleId);
+        BubbleResponseDto.SyncResultDto response = bubbleService.getBubble(userPrincipal, bubbleId);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
@@ -126,31 +96,6 @@ public class BubbleRestController {
         Pageable pageable = PageRequest.of(page, size);
         return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
-
-    // 버블 hard-delete
-    @DeleteMapping("/trashbin/{bubbleId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> hardDeleteBubble(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId
-    ) {
-        bubbleService.hardDelteBubble(userPrincipal, bubbleId);
-        return ApiResponse.onSuccess(SuccessStatus._OK);
-    }
-
-    /*
-    // 버블 수정
-    @PatchMapping("/{bubbleId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> updateBubble(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId,
-            @RequestBody @Valid BubbleRequestDto.ListDto request
-    ) {
-        BubbleResponseDto.ListResultDto response = bubbleService.updateBubble(userPrincipal, bubbleId, request);
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-    }
-     */
 
     // 버블 SYNC
     @PostMapping("/sync")

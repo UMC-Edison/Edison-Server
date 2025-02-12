@@ -51,22 +51,23 @@ public class Bubble {
     @Column(name = "deleted_at", nullable = true)
     protected LocalDateTime deletedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "linked_bubble")
-    private Bubble linkedBubble;
-
     @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<BubbleLabel> labels = new HashSet<>();
 
+    @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<BubbleBacklink> backlinks = new HashSet<>();
+
+    @OneToMany(mappedBy = "backlinkBubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private Set<BubbleBacklink> referencingBubbles = new HashSet<>();
+
     @Builder
-    public Bubble(Member member, Long bubbleId, String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> labels,
+    public Bubble(Member member, Long bubbleId, String title, String content, String mainImg, Set<BubbleLabel> labels,
                   boolean isTrashed, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
         this.bubbleId = bubbleId;
         this.member = member;
         this.title = title;
         this.content = content;
         this.mainImg = mainImg;
-        this.linkedBubble = linkedBubble;
         // 기존 라벨 초기화 후 새로운 라벨 추가
         this.labels.clear();
         this.labels.addAll(labels);
@@ -76,11 +77,10 @@ public class Bubble {
         this.setDeletedAt(deletedAt);
     }
 
-    public void update(String title, String content, String mainImg, Bubble linkedBubble, Set<BubbleLabel> bubbleLabels) {
+    public void update(String title, String content, String mainImg, Set<BubbleLabel> bubbleLabels) {
         this.title = title;
         this.content = content;
         this.mainImg = mainImg;
-        this.linkedBubble = linkedBubble;
 
         // 기존 라벨 초기화 후 새로운 라벨 추가
         this.labels.clear();

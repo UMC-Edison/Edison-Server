@@ -15,14 +15,14 @@ import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.repository.RefreshTokenRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.util.JwtUtil;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
-
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,6 +53,8 @@ public class MemberServiceImpl implements MemberService{
             refreshTokenRepository.save(tokenEntity);
 
             return MemberResponseDto.LoginResultDto.builder()
+                    .memberId(memberId)
+                    .email(email)
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .build();
@@ -68,6 +70,8 @@ public class MemberServiceImpl implements MemberService{
             refreshTokenRepository.save(tokenEntity);
 
              return MemberResponseDto.LoginResultDto.builder()
+                     .memberId(memberId)
+                     .email(email)
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .build();
@@ -95,6 +99,7 @@ public class MemberServiceImpl implements MemberService{
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
+
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
@@ -190,10 +195,10 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshToken) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshtoken) {
 
-        Long memberId = jwtUtil.extractUserId(refreshToken);
-        String email = jwtUtil.extractEmail(refreshToken);
+        Long memberId = jwtUtil.extractUserId(refreshtoken);
+        String email = jwtUtil.extractEmail(refreshtoken);
 
         String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
 
@@ -377,5 +382,34 @@ public class MemberServiceImpl implements MemberService{
                 .build();
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        MemberResponseDto.MemberResultDto response = MemberResponseDto.MemberResultDto.builder()
+                .email(userPrincipal.getEmail())
+                .nickname(member.getNickname())
+                .profileImg(member.getProfileImg())
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
+
+        // Google idToken에서 사용자 정보 추출
+        GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
+        String email = payload.getEmail();
+
+        MemberResponseDto.LoginResultDto dto = generateTokensForOidcUser(email);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, dto);
+    }
 
 }

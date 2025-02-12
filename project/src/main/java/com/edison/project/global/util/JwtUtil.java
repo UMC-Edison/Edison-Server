@@ -7,9 +7,14 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.status.ErrorStatus;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Date;
 
 @Component
@@ -23,6 +28,9 @@ public class JwtUtil {
 
     @Value("${jwt.refresh-token-expiration}")
     private long refreshTokenExpiration;
+
+    private static final String GOOGLE_ISSUER = "https://accounts.google.com";
+    private static final String CLIENT_ID = "${GOOGLE_CLIENT_ID}";
 
     public String generateAccessToken(Long memberId, String email) {
         return JWT.create()
@@ -96,6 +104,27 @@ public class JwtUtil {
             // 토큰이 만료된 경우
             return true;
         } catch (JWTVerificationException e) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+        }
+    }
+
+    public GoogleIdToken.Payload verifyGoogleIdToken(String idTokenString) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(),
+                    new GsonFactory()
+            )
+                    .setAudience(Collections.singletonList(CLIENT_ID)) // 내 앱의 Client ID
+                    .setIssuer(GOOGLE_ISSUER) // Google이 발급한 토큰인지 확인
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenString);
+            if (idToken != null) {
+                return idToken.getPayload(); // 사용자 정보 추출
+            } else {
+                throw new GeneralException(ErrorStatus.INVALID_TOKEN);
+            }
+        } catch (Exception e) {
             throw new GeneralException(ErrorStatus.INVALID_TOKEN);
         }
     }

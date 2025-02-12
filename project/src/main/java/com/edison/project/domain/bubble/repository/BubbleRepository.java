@@ -45,9 +45,4 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     @Query("SELECT b from Bubble b where b.updatedAt < :expiryDate and b.isTrashed = true")
     List<Bubble> findAllByUpdatedAtBeforeAndIsTrashedTrue(@Param("expiryDate") LocalDateTime expiryDate);
 
-    @Modifying
-    @Transactional
-    @Query("UPDATE Bubble b SET b.linkedBubble = null WHERE b.linkedBubble.bubbleId = :bubbleId")
-
-    void clearLinkedBubble(@Param("bubbleId") Long bubbleId);
 }

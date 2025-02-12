@@ -13,21 +13,6 @@ public class BubbleResponseDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ListResultDto {
-        private Long bubbleId;
-        private String title;
-        private String content;
-        private String mainImageUrl;
-        private List<LabelResponseDTO.CreateResultDto> labels;
-        private Long linkedBubbleId;
-        private LocalDateTime createdAt;
-        private LocalDateTime updatedAt;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class TrashResultDto {
         private Long bubbleId;
         private boolean isTrashed;
@@ -52,7 +37,7 @@ public class BubbleResponseDto {
         private String content;
         private String mainImageUrl;
         private List<LabelResponseDTO.CreateResultDto> labels;
-        private Long linkedBubbleId;
+        private Set<Long> backlinkIds;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private Integer remainDay;
@@ -68,7 +53,7 @@ public class BubbleResponseDto {
         private String content;
         private String mainImageUrl;
         private List<LabelResponseDTO.CreateResultDto> labels;
-        private Long linkedBubbleId;
+        private Set<Long> backlinkIds;
         private Boolean isDeleted;
         private Boolean isTrashed;
         private LocalDateTime createdAt;

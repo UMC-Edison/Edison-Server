@@ -4,7 +4,7 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.service.CustomOidcUserService;
-import com.edison.project.domain.member.service.MemberServiceImpl;
+import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.global.security.CustomAuthenticationEntryPoint;
 import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.security.JwtAuthenticationFilter;
@@ -38,7 +38,7 @@ import static com.edison.project.common.status.SuccessStatus._OK;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final MemberServiceImpl memberService;
+    private final MemberService memberService;
     private final CustomOidcUserService customOidcUserService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
@@ -49,7 +49,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/.well-known/acme-challenge/**").permitAll() // 서버 인증서 관련 경로 추가
                         .requestMatchers("/members/refresh").permitAll()
+                        .requestMatchers("/members/google").permitAll()
                         .requestMatchers("/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )

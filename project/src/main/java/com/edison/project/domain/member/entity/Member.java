@@ -46,6 +46,10 @@ public class Member extends BaseEntity {
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Label> labels = new ArrayList<>();
 
+    public Member(String email) {
+        super();
+    }
+
     //복사 빌더 메서드
     public Member registerProfile(String nickname) {
         return Member.builder()
