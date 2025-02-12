@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -17,9 +19,21 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
+    private static final Logger logger = LoggerFactory.getLogger(CustomAuthenticationEntryPoint.class);
+
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
             throws IOException {
+
+
+        logger.debug("CustomAuthenticationEntryPoint - commence 호출됨");
+        logger.debug("요청 URI: {}", request.getRequestURI());
+        logger.debug("요청 메서드: {}", request.getMethod());
+        logger.debug("클라이언트 IP: {}", request.getRemoteAddr());
+
+        if (authException != null) {
+            logger.error("인증 예외 발생: {}", authException.getMessage(), authException);
+        }
 
         ResponseEntity<ApiResponse> errorResponse = ApiResponse.onFailure(ErrorStatus.CUSTOM_ENTRY_EXCEPTION);
 
@@ -32,5 +46,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.writeValue(response.getWriter(), errorResponse.getBody());
 
+        logger.debug("에러 응답 전송 완료, 상태 코드: {}", response.getStatus());
     }
 }

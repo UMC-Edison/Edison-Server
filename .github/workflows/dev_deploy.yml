@@ -40,6 +40,9 @@ jobs:
           echo "spring.data.redis.host=${{ secrets.REDIS_HOST }}" >> ./project/src/main/resources/application.properties
           echo "spring.data.redis.port=${{ secrets.REDIS_PORT }}" >> ./project/src/main/resources/application.properties
           echo "spring.data.redis.password=${{ secrets.REDIS_PASSWORD }}" >> ./project/src/main/resources/application.properties
+
+          # Server Configuration
+          echo "server.forward-headers-strategy=native" >> ./project/src/main/resources/application.properties
         shell: bash
 
       - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
@@ -68,10 +71,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout Repository  # 🔥 추가된 부분
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
         uses: actions/download-artifact@v4
         with:
-          name: Edison-Server
           path: build/libs/
 
       - name: Deploy to EC2  # EC2에 배포
@@ -91,16 +98,52 @@ jobs:
           "
           rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'
 
-      - name: Deploy NGINX Configuration  # NGINX 설정 배포
-        env:
-            EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-            EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-            EC2_HOST: ${{ secrets.EC2_HOST }}
+      - name: Debug Current Directory
         run: |
-            echo "$EC2_SSH_KEY" > edison.pem
-            chmod 600 edison.pem
-            scp -i edison.pem -o StrictHostKeyChecking=no nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/etc/nginx/nginx.conf
-            ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
-              sudo nginx -t && sudo systemctl reload nginx  # 설정 테스트 후 NGINX 재시작
-            "
-            rm -f edison.pem  # 민감한 정보 삭제
+          echo "Current Directory:"
+          pwd
+          echo "Files and Folders in Current Directory:"
+          ls -al
+          echo "Recursive Directory Listing:"
+          find . -type f
+
+
+      - name: Deploy NGINX Configuration  # NGINX 설정 배포 및 Redis 관리
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          echo "$EC2_SSH_KEY" > edison.pem
+          chmod 600 edison.pem
+      
+          # 1️⃣ EC2 홈 디렉토리로 nginx.conf 파일 업로드
+          scp -i edison.pem -o StrictHostKeyChecking=no ./nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/nginx.conf
+      
+          # 2️⃣ EC2 접속 후 sudo 권한으로 파일 이동 및 NGINX 재시작
+          ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
+            sudo mv /home/$EC2_USERNAME/nginx.conf /etc/nginx/nginx.conf
+            sudo chown root:root /etc/nginx/nginx.conf
+            sudo chmod 644 /etc/nginx/nginx.conf
+            sudo nginx -t && sudo systemctl reload nginx
+          "
+      
+          # 3️⃣ Redis 설치 및 실행 (Ubuntu 전용)
+          ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
+            if ! command -v redis-server &> /dev/null
+            then
+              echo 'Redis가 설치되어 있지 않습니다. 설치를 진행합니다.'
+              sudo apt update
+              sudo apt install -y redis
+            else
+              echo 'Redis가 이미 설치되어 있습니다.'
+            fi
+      
+            # Redis 서버 시작 및 활성화
+            sudo systemctl start redis
+            sudo systemctl enable redis
+            sudo systemctl status redis
+          "
+      
+          # 4️⃣ 민감한 정보 삭제
+          rm -f edison.pem
