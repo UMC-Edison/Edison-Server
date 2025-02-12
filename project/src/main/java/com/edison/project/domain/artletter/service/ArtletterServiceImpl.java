@@ -40,15 +40,17 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
 
-    // 전체 아트레터 조회 api
+
+
+    // 전체 아트레터 조회 API
     @Override
     public ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size) {
-        if (page < 0 || size <= 0 || size > 100) {
-            throw new GeneralException(ErrorStatus.INVALID_PAGE_REQUEST);
-        }
+
+        // member 인증하는거 추가
+        // List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(artletters.getContent(), member);
         Page<Artletter> artletters = getPaginatedArtletters(page, size);
         PageInfo pageInfo = buildPageInfo(artletters);
-        List<Map<String, Object>> response = extractSimplifiedArtletters(artletters);
+        List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(artletters.getContent());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
@@ -59,19 +61,6 @@ public class ArtletterServiceImpl implements ArtletterService {
         return artletterRepository.findAll(pageable);
     }
 
-    // 전체 아트레터 조회 api - 필요한 정보만 포함하도록 간소화
-    private List<Map<String, Object>> extractSimplifiedArtletters(Page<Artletter> artletters) {
-        return artletters.getContent().stream()
-                .map(artletter -> {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("id", artletter.getLetterId());
-                    map.put("title", artletter.getTitle());
-                    map.put("thumbnail", artletter.getThumbnail());
-                    map.put("isScrapped", scrapRepository.existsByArtletter(artletter)); // 스크랩 여부 확인
-                    return map;
-                })
-                .collect(Collectors.toList());
-    }
 
 
     @Override
@@ -171,10 +160,36 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
+
+
+    // 아트레터 검색 api
     @Override
-    public Page<Artletter> searchArtletters(String keyword, Pageable pageable) {
-        return artletterRepository.searchByKeyword(keyword, pageable);
+    public ResponseEntity<ApiResponse> searchArtletters(String keyword, int page, int size) {
+
+        // member 인증하는거 추가
+        // List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(sortedResults, member);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
+
+        List<Artletter> sortedResults = sortSearchResults(resultPage.getContent(), keyword);
+
+        PageInfo pageInfo = buildPageInfo(resultPage);
+        List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(sortedResults);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
+
+    // 아트레터 검색 api - 검색 결과 정렬
+    private List<Artletter> sortSearchResults(List<Artletter> artletters, String keyword) {
+        return artletters.stream()
+                .sorted(Comparator
+                        .comparing((Artletter a) -> a.getTag() != null && a.getTag().contains(keyword) ? 0 : 1)
+                        .thenComparing(a -> a.getTitle() != null && a.getTitle().contains(keyword) ? 0 : 1)
+                        .thenComparing(a -> a.getContent() != null && a.getContent().contains(keyword) ? 0 : 1)
+                )
+                .collect(Collectors.toList());
+    }
+
 
 
     @Override
@@ -419,6 +434,18 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
     }
 
+    // [공통 메소드] Member 조회 메서드 분리
+    private Member findMemberById(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+    }
+
+    // [공통 메소드] Artletter 조회 메서드 분리
+    private Artletter findArtletterById(Long letterId) {
+        return artletterRepository.findById(letterId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
+    }
+
     // [공통 메소드] 페이지 정보 생성
     private PageInfo buildPageInfo(Page<Artletter> artletters) {
         return new PageInfo(
@@ -428,6 +455,31 @@ public class ArtletterServiceImpl implements ArtletterService {
                 artletters.getTotalElements(),
                 artletters.getTotalPages()
         );
+    }
+
+    // !! 해결되면 이거 주석 해제 해 !![공통 메소드] 아트레터 필요한 필드만 추출
+//    private List<ArtletterDTO.SimpleArtletterResponseDto> extractSimplifiedArtletters(List<Artletter> artletters, Member member) {
+//        return artletters.stream()
+//                .map(artletter -> ArtletterDTO.SimpleArtletterResponseDto.builder()
+//                        .artletterId(artletter.getLetterId())
+//                        .title(artletter.getTitle())
+//                        .thumbnail(artletter.getThumbnail())
+//                        .isScrapped(member != null && scrapRepository.existsByMemberAndArtletter(member, artletter))
+//                        .build()
+//                )
+//                .collect(Collectors.toList());
+//    }
+
+    private List<ArtletterDTO.SimpleArtletterResponseDto> extractSimplifiedArtletters(List<Artletter> artletters) {
+        return artletters.stream()
+                .map(artletter -> ArtletterDTO.SimpleArtletterResponseDto.builder()
+                        .artletterId(artletter.getLetterId())
+                        .title(artletter.getTitle())
+                        .thumbnail(artletter.getThumbnail())
+                        .isScrapped(scrapRepository.existsByArtletter(artletter))
+                        .build()
+                )
+                .collect(Collectors.toList());
     }
 
 }

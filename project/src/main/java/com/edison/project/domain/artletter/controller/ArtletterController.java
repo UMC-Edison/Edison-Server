@@ -112,12 +112,17 @@ public class ArtletterController {
     public ResponseEntity<ApiResponse> getAllArtletters(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
+        if (page < 0 || size <= 0 || size > 100) {
+            return ApiResponse.onFailure(ErrorStatus.INVALID_PAGE_REQUEST);
+        }
+
         return artletterService.getAllArtlettersResponse(page, size);
     }
 
 
 
-    // GET: 키워드 기반 search
+    // 아트레터 검색 api
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
@@ -125,21 +130,15 @@ public class ArtletterController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        if(keyword == null) {
-            // 키워드 비어있을 때 에러핸들링
+        if (page < 0 || size <= 0 || size > 100) {
+            return ApiResponse.onFailure(ErrorStatus.INVALID_PAGE_REQUEST);
+        }
+
+        if (keyword == null || keyword.trim().isEmpty()) {
             return ApiResponse.onFailure(ErrorStatus.KEYWORD_IS_EMPTY);
         }
 
-        if (keyword.trim().isEmpty()) {
-            // 검색 결과가 없을 때 처리
-            return ApiResponse.onFailure(ErrorStatus.RESULT_NOT_FOUND);
-        }
-
-
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> results = artletterService.searchArtletters(keyword, pageable);
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
+        return artletterService.searchArtletters(keyword.trim(), page, size);
     }
 
 
