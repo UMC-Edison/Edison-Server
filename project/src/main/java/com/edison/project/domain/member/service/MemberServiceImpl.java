@@ -40,44 +40,48 @@ public class MemberServiceImpl implements MemberService{
     private final JwtUtil jwtUtil;
     private final RedisTokenService redisTokenService;
 
+    // ✅ 이메일 존재 여부 확인
+    public boolean existsByEmail(String email) {
+        return memberRepository.existsByEmail(email);
+    }
+
+    // ✅ 새 회원 등록
+    public void registerNewMember(String email) {
+        Member newMember = Member.builder()
+                .email(email)
+                .role("ROLE_USER")
+                .build();
+        memberRepository.save(newMember);
+    }
+
+    // ✅ JWT 토큰 생성
     @Override
     @Transactional
     public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    Member newMember = Member.builder()
+                            .email(email)
+                            .role("ROLE_USER")
+                            .build();
+                    return memberRepository.save(newMember);
+                });
 
-        if (!memberRepository.existsByEmail(email)){
-            Long memberId = createUserIfNotExist(email);
-            String accessToken = jwtUtil.generateAccessToken(memberId, email);
-            String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
+        String accessToken = jwtUtil.generateAccessToken(member.getMemberId(), member.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(member.getMemberId(), member.getEmail());
 
-            RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
-            refreshTokenRepository.save(tokenEntity);
+        refreshTokenRepository.deleteByEmail(email);
+        RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
+        refreshTokenRepository.save(tokenEntity);
 
-            return MemberResponseDto.LoginResultDto.builder()
-                    .memberId(memberId)
-                    .email(email)
-                    .accessToken(accessToken)
-                    .refreshToken(refreshToken)
-                    .build();
-        }
-        else{
-            // 이미 존재하는 사용자의 경우
-            Long memberId = memberRepository.findByEmail(email).get().getMemberId();
-            String accessToken = jwtUtil.generateAccessToken(memberId, email);
-            String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
-
-            refreshTokenRepository.deleteByEmail(email);
-            RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
-            refreshTokenRepository.save(tokenEntity);
-
-             return MemberResponseDto.LoginResultDto.builder()
-                     .memberId(memberId)
-                     .email(email)
-                    .accessToken(accessToken)
-                    .refreshToken(refreshToken)
-                    .build();
-        }
-
+        return MemberResponseDto.LoginResultDto.builder()
+                .memberId(member.getMemberId())
+                .email(member.getEmail())
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
+
 
     @Override
     @Transactional

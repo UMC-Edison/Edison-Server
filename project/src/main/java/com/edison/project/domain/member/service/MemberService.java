@@ -19,4 +19,6 @@ public interface MemberService {
     MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request);
     ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> processGoogleLogin(String authorizationCode);
+    boolean existsByEmail(String email);
+    void registerNewMember(String email);
 }

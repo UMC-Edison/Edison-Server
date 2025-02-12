@@ -42,7 +42,7 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-	implementation 'com.auth0:java-jwt:4.2.1'
+	implementation 'org.springframework.security:spring-security-oauth2-jose'
 	implementation 'com.google.api-client:google-api-client:1.33.0'
 	implementation 'com.google.http-client:google-http-client-gson:1.39.2'
 

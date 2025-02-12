@@ -14,7 +14,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -46,16 +45,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
 
             if (request.getRequestURI().equals("/members/refresh")) {
-                // Refresh 요청 처리
                 handleRefreshRequest(request, token);
             } else {
-                // 일반 요청 처리
                 handleAccessTokenRequest(request, token);
             }
 
             filterChain.doFilter(request, response);
         } catch (GeneralException e) {
-
             if (!response.isCommitted()) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
@@ -64,40 +60,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 ObjectMapper objectMapper = new ObjectMapper();
                 objectMapper.writeValue(response.getWriter(), ApiResponse.onFailure(e.getErrorStatus()).getBody());
             }
-
         }
     }
 
     private void handleAccessTokenRequest(HttpServletRequest request, String token) {
-
         if (jwtUtil.validateToken(token)) {
             Long userId = jwtUtil.extractUserId(token);
+            String email = jwtUtil.extractEmail(token);
 
             if (redisTokenService.isTokenBlacklisted(token)) {
-                if(!memberRepository.existsByMemberId(userId)){
-                    throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
-                }
                 throw new GeneralException(ErrorStatus.ACCESSTOKEN_EXPIRED);
             }
 
-            String email = jwtUtil.extractEmail(token);
+            if (!memberRepository.existsByMemberId(userId)) {
+                throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+            }
 
-            // Refresh Token 검증
             RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
                     .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
 
             if (jwtUtil.isTokenExpired(refreshToken.getRefreshToken())) {
-                // Refresh Token이 만료된 경우 Access Token 블랙리스트 처리
                 redisTokenService.addToBlacklist(token, jwtUtil.getRemainingTime(token));
                 throw new GeneralException(ErrorStatus.REFRESHTOKEN_EXPIRED);
             }
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+
+            JwtAuthenticationToken authentication = new JwtAuthenticationToken(
                     new CustomUserPrincipal(userId, email),
                     token,
-                    List.of(new SimpleGrantedAuthority("USER"))
+                    List.of(new SimpleGrantedAuthority("ROLE_USER"))
             );
-            SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             request.setAttribute("token", token);
         }
     }
@@ -106,20 +99,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String refreshToken = request.getHeader("Refresh-Token");
 
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED); // Refresh Token이 없을 때 예외 처리
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
         String email = jwtUtil.extractEmail(token);
 
-        if(!memberRepository.existsByEmail(email)){
+        if (!memberRepository.existsByEmail(email)) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
 
-        // Refresh Token 검증
         RefreshToken storedRefreshToken = refreshTokenRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
 
-        if(!jwtUtil.isTokenExpired(token)){
+        if (!jwtUtil.isTokenExpired(token)) {
             throw new GeneralException(ErrorStatus.ACCESS_TOKEN_VALID);
         }
 
@@ -128,10 +120,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (!storedRefreshToken.getRefreshToken().equals(refreshToken)) {
-            throw new GeneralException(ErrorStatus.INVALID_TOKEN); // Refresh Token이 저장된 것과 다를 때 예외 처리
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN);
         }
 
         request.setAttribute("refreshToken", refreshToken);
-
     }
 }

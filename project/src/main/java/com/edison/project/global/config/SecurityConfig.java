@@ -43,28 +43,24 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final JwtUtil jwtUtil;
-  
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/.well-known/acme-challenge/**").permitAll() // 서버 인증서 관련 경로 추가
-                        .requestMatchers("/members/refresh").permitAll()
-                        .requestMatchers("/members/google").permitAll()
-                        .requestMatchers("/favicon.ico").permitAll()
+                        .requestMatchers("/.well-known/acme-challenge/**").permitAll()
+                        .requestMatchers("/members/refresh", "/members/google", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                // OIDC 전용 (구글로그인)
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .oidcUserService(customOidcUserService))
+                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService))
                         .successHandler(this::oidcLoginSuccessHandler)
                         .failureHandler(this::oidcLoginFailureHandler)
                 )
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(customAuthenticationEntryPoint) // EntryPoint 등록
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(customAuthenticationEntryPoint)
                 );
 
         return http.build();
@@ -74,75 +70,73 @@ public class SecurityConfig {
     private void oidcLoginSuccessHandler(HttpServletRequest request,
                                          HttpServletResponse response,
                                          Authentication authentication) throws IOException {
-        if (!(authentication.getPrincipal() instanceof OidcUser)){
-            ResponseEntity<ApiResponse> apiResponse = ApiResponse.onFailure(ErrorStatus._UNAUTHORIZED);
-
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.setStatus(apiResponse.getStatusCode().value());
-
-            new ObjectMapper().writeValue(response.getWriter(), apiResponse.getBody());
+        if (!(authentication.getPrincipal() instanceof OidcUser)) {
+            sendErrorResponse(response, ErrorStatus._UNAUTHORIZED);
+            return;
         }
-
 
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
 
+        // ✅ 이메일 중복 체크 및 회원 등록
+        if (!memberService.existsByEmail(email)) {
+            memberService.registerNewMember(email); // 새 회원 등록
+        }
+
+        // ✅ JWT 토큰 발급
         MemberResponseDto.LoginResultDto dto = memberService.generateTokensForOidcUser(email);
 
-        // SecurityContextHolder에 인증 정보 설정
+        // SecurityContextHolder에 인증 정보 저장
         Long userId = jwtUtil.extractUserId(dto.getAccessToken());
         CustomUserPrincipal customUserPrincipal = new CustomUserPrincipal(userId, email);
 
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 customUserPrincipal,
                 dto.getAccessToken(),
-                List.of(new SimpleGrantedAuthority("USER"))
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
 
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
-        ResponseEntity<ApiResponse> apiResponse = ApiResponse.onSuccess(_OK, dto);
-
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        new ObjectMapper().writeValue(response.getWriter(), apiResponse.getBody());
-
+        // ✅ 성공 응답 반환
+        sendSuccessResponse(response, dto);
     }
 
+    // OIDC 로그인 실패 핸들러
     private void oidcLoginFailureHandler(HttpServletRequest request,
                                          HttpServletResponse response,
                                          AuthenticationException exception) throws IOException {
-
         if ("access_denied".equals(request.getParameter("error"))) {
-            ResponseEntity<ApiResponse> apiResponse = ApiResponse.onFailure(ErrorStatus.LOGIN_CANCELLED);
-
-            // JSON 에러 메시지 반환
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.setStatus(apiResponse.getStatusCode().value());
-
-            // JSON 형식으로 클라이언트에 전달
-            new ObjectMapper().writeValue(response.getWriter(), apiResponse.getBody());
-            return;
+            sendErrorResponse(response, ErrorStatus.LOGIN_CANCELLED);
+        } else {
+            sendErrorResponse(response, ErrorStatus._BAD_REQUEST);
         }
+    }
 
-        ResponseEntity<ApiResponse> apiResponse = ApiResponse.onFailure(ErrorStatus._BAD_REQUEST);
-
+    // 인증 실패 응답 처리
+    private void sendErrorResponse(HttpServletResponse response, ErrorStatus errorStatus) throws IOException {
+        ResponseEntity<ApiResponse> apiResponse = ApiResponse.onFailure(errorStatus);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setStatus(apiResponse.getStatusCode().value());
-
         new ObjectMapper().writeValue(response.getWriter(), apiResponse.getBody());
     }
 
-    //인증 매니저
+    // 인증 성공 응답 처리
+    private void sendSuccessResponse(HttpServletResponse response, MemberResponseDto.LoginResultDto dto) throws IOException {
+        ResponseEntity<ApiResponse> apiResponse = ApiResponse.onSuccess(_OK, dto);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        new ObjectMapper().writeValue(response.getWriter(), apiResponse.getBody());
+    }
+
+    // 인증 매니저
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
-    //비밀번호 암호화
+    // 비밀번호 암호화
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

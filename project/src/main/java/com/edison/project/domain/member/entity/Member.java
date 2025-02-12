@@ -34,6 +34,9 @@ public class Member extends BaseEntity {
     @Column(name = "nickname", length = 50)
     private String nickname;
 
+    @Column(nullable = false)
+    private String role;
+
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
