@@ -308,19 +308,29 @@ public class SpaceServiceImpl implements SpaceService {
             return ApiResponse.onFailure(ErrorStatus.NO_SPACES_FOUND);
         }
 
-        double minX = spaces.stream().mapToDouble(Space::getX).min().orElse(0);
-        double maxX = spaces.stream().mapToDouble(Space::getX).max().orElse(0);
-        double minY = spaces.stream().mapToDouble(Space::getY).min().orElse(0);
-        double maxY = spaces.stream().mapToDouble(Space::getY).max().orElse(0);
+        Map<Integer, List<Space>> groupedSpaces = spaces.stream()
+                .collect(Collectors.groupingBy(Space::getGroup));
 
-        double centerX = (minX + maxX) / 2;
-        double centerY = (minY + maxY) / 2;
+        List<SpaceInfoResponseDto> responseList = new ArrayList<>();
 
-        double radius = Math.sqrt(Math.pow(maxX - centerX, 2) + Math.pow(maxY - centerY, 2));
+        for (Map.Entry<Integer, List<Space>> entry : groupedSpaces.entrySet()) {
+            int groupId = entry.getKey();
+            List<Space> groupSpaces = entry.getValue();
 
-        SpaceInfoResponseDto response = new SpaceInfoResponseDto(centerX, centerY, radius);
+            double minX = groupSpaces.stream().mapToDouble(Space::getX).min().orElse(0);
+            double maxX = groupSpaces.stream().mapToDouble(Space::getX).max().orElse(0);
+            double minY = groupSpaces.stream().mapToDouble(Space::getY).min().orElse(0);
+            double maxY = groupSpaces.stream().mapToDouble(Space::getY).max().orElse(0);
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+            double centerX = (minX + maxX) / 2;
+            double centerY = (minY + maxY) / 2;
+
+            double radius = Math.sqrt(Math.pow(maxX - centerX, 2) + Math.pow(maxY - centerY, 2));
+
+            responseList.add(new SpaceInfoResponseDto(groupId, centerX, centerY, radius));
+        }
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, responseList);
     }
 }
 

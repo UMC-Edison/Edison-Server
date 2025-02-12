@@ -1,6 +1,7 @@
 package com.edison.project.domain.space.dto;
 
 public class SpaceInfoResponseDto {
+    private int groupId;
     private double centerX;
     private double centerY;
     private double radius;
@@ -9,10 +10,15 @@ public class SpaceInfoResponseDto {
     public SpaceInfoResponseDto() {
     }
 
-    public SpaceInfoResponseDto(double centerX, double centerY, double radius) {
+    public SpaceInfoResponseDto(int groupId, double centerX, double centerY, double radius) {
+        this.groupId = groupId;
         this.centerX = centerX;
         this.centerY = centerY;
         this.radius = radius;
+    }
+
+    public int getGroupId() {
+        return groupId;
     }
 
     public double getCenterX() {
