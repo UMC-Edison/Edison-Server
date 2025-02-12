@@ -90,3 +90,17 @@ jobs:
             nohup java -jar /home/$EC2_USERNAME/Edison-Server.jar > app.log 2>&1 &  # 새 버전 애플리케이션 실행
           "
           rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'
+
+      - name: Deploy NGINX Configuration  # NGINX 설정 배포
+        env:
+            EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+            EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+            EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+            echo "$EC2_SSH_KEY" > edison.pem
+            chmod 600 edison.pem
+            scp -i edison.pem -o StrictHostKeyChecking=no nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/etc/nginx/nginx.conf
+            ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
+              sudo nginx -t && sudo systemctl reload nginx  # 설정 테스트 후 NGINX 재시작
+            "
+            rm -f edison.pem  # 민감한 정보 삭제
