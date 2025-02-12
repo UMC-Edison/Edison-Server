@@ -21,7 +21,7 @@ public class Space {
     @JoinColumn(name = "bubble_id", nullable = false) // 🚨 `NOT NULL` 적용
     private Bubble bubble;
 
-    @Column(name = "`group`")  // ✅ 예약어 처리
+    @Column(name = "group_id")
     private Integer group;
 
     @Column(nullable = false) // member_id 추가

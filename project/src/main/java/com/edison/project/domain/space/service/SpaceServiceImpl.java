@@ -126,6 +126,7 @@ public class SpaceServiceImpl implements SpaceService {
             spaceToUpdate.setX(newSpace.getX());
             spaceToUpdate.setY(newSpace.getY());
             spaceToUpdate.setContent(newSpace.getContent());
+            spaceToUpdate.setGroup(newSpace.getGroup());
             spaceRepository.save(spaceToUpdate);
             System.out.println("🔄 기존 Space 업데이트 완료! ID: " + spaceToUpdate.getId());
         } else {
@@ -191,46 +192,28 @@ public class SpaceServiceImpl implements SpaceService {
     private List<Space> parseGptResponse(String gptResponse, List<Bubble> bubbles, Long memberId) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-
             System.out.println("🔍 Raw GPT Response (Before Parsing): " + gptResponse);
 
-            // ✅ 1. GPT 응답을 Map으로 변환
+            // ✅ GPT 응답에서 JSON 추출
             Map<String, Object> responseMap = objectMapper.readValue(gptResponse, new TypeReference<Map<String, Object>>() {});
-
-            // ✅ 2. "choices" 필드 확인
             List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
+
             if (choices == null || choices.isEmpty()) {
                 throw new RuntimeException("'choices' 필드가 비어 있음");
             }
 
-            // ✅ 3. "message" 내부 "content" 확인
             Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
             if (message == null || !message.containsKey("content")) {
                 throw new RuntimeException("'message' 필드가 없거나 'content'가 없음");
             }
 
-            // ✅ 4. "content" 값에서 JSON 문자열 추출 후 다시 변환
             String contentJson = (String) message.get("content");
-
-            // ✅ JSON이 ```json ... ``` 형태일 경우 제거
             contentJson = contentJson.replaceAll("```json", "").replaceAll("```", "").trim();
 
-            // ✅ 5. 문자열을 Map으로 변환
-            Map<String, Object> parsedContent = objectMapper.readValue(contentJson, new TypeReference<Map<String, Object>>() {});
-
-            // ✅ 6. "items" 필드 확인 후 리스트로 변환
-            if (!parsedContent.containsKey("items")) {
-                throw new RuntimeException("'items' 필드가 존재하지 않습니다.");
-            }
-
-            List<Map<String, Object>> parsedData = (List<Map<String, Object>>) parsedContent.get("items");
-            if (parsedData == null || parsedData.isEmpty()) {
-                throw new RuntimeException("'items' 필드가 비어 있음");
-            }
-
+            // ✅ JSON 배열 파싱
+            List<Map<String, Object>> parsedData = objectMapper.readValue(contentJson, new TypeReference<List<Map<String, Object>>>() {});
             System.out.println("✅ 변환된 Space 데이터: " + parsedData);
 
-            // ✅ 7. Space 엔티티로 변환
             List<Space> spaces = new ArrayList<>();
             for (Map<String, Object> item : parsedData) {
                 Long id = ((Number) item.get("id")).longValue();
@@ -244,7 +227,7 @@ public class SpaceServiceImpl implements SpaceService {
                 String content = (String) item.get("content");
                 double x = ((Number) item.get("x")).doubleValue();
                 double y = ((Number) item.get("y")).doubleValue();
-                int group = item.get("group") != null ? ((Number) item.get("group")).intValue() : 0;
+                int group = item.get("group") != null ? ((Number) item.get("group")).intValue() : 1;  // ✅ 기본 그룹 1
 
                 spaces.add(new Space(content, x, y, group, bubble, memberId));
             }
@@ -266,23 +249,36 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
         promptBuilder.append("- x: A unique floating-point number for the x-coordinate (spread across four quadrants).\n");
         promptBuilder.append("- y: A unique floating-point number for the y-coordinate (spread across four quadrants).\n");
-        promptBuilder.append("- group: A integer representing the item's group ID.\n\n");
+        promptBuilder.append("- group: An integer representing the item's group ID, starting from 1.\n\n");
 
         promptBuilder.append("### Rules:\n");
         promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum spacing of 0.5.\n");
-        promptBuilder.append("2. Items with similar topics should form visually distinct clusters, appearing as bursts from a central point.\n");
-        promptBuilder.append("3. Clusters should be well-separated from each other but internally cohesive.\n");
-        promptBuilder.append("4. Each group should contain **5 to 8 items**, and **no group should have more than 10 items**, also group always starts with number 1.\n");
-        promptBuilder.append("5. The number of group should be minimized, ideally around **1/4 of the total number of items**.\n");
-        promptBuilder.append("6. Items that do not naturally fit into a cluster should remain ungrouped, keeping their original coordinates.\n");
-        promptBuilder.append("7. X and Y coordinates should be distributed across all four quadrants for better visualization.\n");
-        promptBuilder.append("8. Similar items across different clusters should still be positioned near each other where possible.\n");
-        promptBuilder.append("9. Extract the **core meaning** of each content item, reducing it to **1 or 2 essential words**.\n");
-        promptBuilder.append("10. Each item **MUST belong to at least one group**. If an item does not fit into any existing group, create a new unique group ID for it.\n");
-        promptBuilder.append("11. The output must strictly include the `groups` field for all items, even if they belong to a single group.\n");
-        promptBuilder.append("12. The output must be strictly in JSON format as shown below:\n\n");
-        promptBuilder.append("13. **The last provided bubble MUST be positioned at coordinates (0, 0) without exception.**\n");
-        promptBuilder.append("14. **The coordinates of all other items MUST be determined considering that the last item is fixed at (0, 0), ensuring proper spacing and distribution.**\n\n");
+        promptBuilder.append("2. Items with similar topics should form visually distinct clusters.\n");
+        promptBuilder.append("3. Absolutely !!! Each group should contain **5 to 8 items**, and **no group should have more than 10 items**.\n");
+        promptBuilder.append("4. Groups always start with number 1 and increment sequentially (1, 2, 3, ...).\n");
+        promptBuilder.append("5. The output **MUST** be in valid JSON format as shown below:\n\n");
+        promptBuilder.append("6. Not all items MUST belong to a group. If an item is difficult to group with others, leave it blank. However, if items that are difficult to group can be grouped together, create an additional group for them.");
+
+        // ✅ Specify JSON format
+        promptBuilder.append("### Response Format:\n");
+        promptBuilder.append("[\n");
+        promptBuilder.append("  {\n");
+        promptBuilder.append("    \"id\": 1,\n");
+        promptBuilder.append("    \"content\": \"Keyword\",\n");
+        promptBuilder.append("    \"x\": 1.5,\n");
+        promptBuilder.append("    \"y\": -0.5,\n");
+        promptBuilder.append("    \"group\": 1\n");
+        promptBuilder.append("  },\n");
+        promptBuilder.append("  {\n");
+        promptBuilder.append("    \"id\": 2,\n");
+        promptBuilder.append("    \"content\": \"Topic\",\n");
+        promptBuilder.append("    \"x\": -1.0,\n");
+        promptBuilder.append("    \"y\": 0.8,\n");
+        promptBuilder.append("    \"group\": 2\n");
+        promptBuilder.append("  }\n");
+        promptBuilder.append("]\n\n");
+
+        promptBuilder.append("DO NOT include any explanations or additional text. Respond ONLY with the JSON array.\n");
 
         Long lastKey = null;
         for (Long key : requestData.keySet()) {
