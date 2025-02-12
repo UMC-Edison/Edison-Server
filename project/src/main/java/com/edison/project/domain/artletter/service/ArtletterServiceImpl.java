@@ -72,12 +72,10 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
+    // 아트레터 좋아요 토글 api
     @Override
     @Transactional
     public ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
@@ -109,37 +107,37 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
+    // 아트레터 스크랩 토글 api
     @Override
+    @Transactional
     public ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        Artletter artletter = artletterRepository.findById(letterId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
-
+        Member member = findMemberById(userPrincipal.getMemberId());
+        Artletter artletter = findArtletterById(letterId);
         boolean alreadyScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
 
-        if (alreadyScrapped) {
-            scrapRepository.deleteByMemberAndArtletter(member, artletter);
-        } else {
-            Scrap scrap = Scrap.builder()
-                    .member(member)
-                    .artletter(artletter)
-                    .build();
-
-            scrapRepository.save(scrap);
-        }
+        toggleScrap(member, artletter, alreadyScrapped);
 
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
+        return buildScrapResponseDto(letterId, scrapCnt, !alreadyScrapped);
+    }
+
+    // 아트레터 스크랩 토글 api - 스크랩 추가/삭제 토글 메서드 분리
+    private void toggleScrap(Member member, Artletter artletter, boolean alreadyScrapped) {
+        if (alreadyScrapped) {
+            scrapRepository.deleteByMemberAndArtletter(member, artletter);
+        } else {
+            scrapRepository.save(Scrap.builder().member(member).artletter(artletter).build());
+        }
+    }
+
+    // 아트레터 스크랩 토글 api - 결과 생성 메서드 분리
+    private ArtletterDTO.ScrapResponseDto buildScrapResponseDto(Long letterId, int scrapCnt, boolean isScrapped) {
         return ArtletterDTO.ScrapResponseDto.builder()
                 .artletterId(letterId)
                 .scrapsCnt(scrapCnt)
-                .isScrapped(!alreadyScrapped)
+                .isScrapped(isScrapped)
                 .build();
     }
 
@@ -153,11 +151,8 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId) {
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        Artletter artletter = artletterRepository.findById(letterId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
+        Member member = findMemberById(userPrincipal.getMemberId());
+        Artletter artletter = findArtletterById(letterId);
 
         boolean isLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
         int likesCnt = artletterLikesRepository.countByArtletter(artletter);
@@ -167,6 +162,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         return buildListResponseDto(artletter, likesCnt, scrapCnt, isLiked, isScrapped);
     }
 
+    // 아트레터 상세조회 api - 결과 조회 메서드 분리
     private ArtletterDTO.ListResponseDto buildListResponseDto(Artletter artletter, int likesCnt, int scrapCnt, boolean isLiked, boolean isScrapped) {
         return ArtletterDTO.ListResponseDto.builder()
                 .artletterId(artletter.getLetterId())
@@ -389,6 +385,18 @@ public class ArtletterServiceImpl implements ArtletterService {
                 }).toList();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
+    }
+
+    // Member 조회 메서드 분리
+    private Member findMemberById(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+    }
+
+    // Artletter 조회 메서드 분리
+    private Artletter findArtletterById(Long letterId) {
+        return artletterRepository.findById(letterId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
     }
 
 }
