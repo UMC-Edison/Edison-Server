@@ -50,5 +50,13 @@ public class MemberRequestDto {
 
     }
 
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GoogleLoginDto{
+        private String idToken;
+    }
+
 
 }
