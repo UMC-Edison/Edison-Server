@@ -53,6 +53,8 @@ public class MemberServiceImpl implements MemberService{
             refreshTokenRepository.save(tokenEntity);
 
             return MemberResponseDto.LoginResultDto.builder()
+                    .memberId(memberId)
+                    .email(email)
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .build();
@@ -68,6 +70,8 @@ public class MemberServiceImpl implements MemberService{
             refreshTokenRepository.save(tokenEntity);
 
              return MemberResponseDto.LoginResultDto.builder()
+                     .memberId(memberId)
+                     .email(email)
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .build();
