@@ -9,12 +9,14 @@ import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/artletters")
 @RequiredArgsConstructor
+@Slf4j
 public class ArtletterController {
 
     private final ArtletterService artletterService;
@@ -106,6 +109,7 @@ public class ArtletterController {
     // GET: 전체 아트레터 조회
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "default") String sortType) {
@@ -118,13 +122,16 @@ public class ArtletterController {
             sortType = "default";
         }
 
-        return artletterService.getAllArtlettersResponse(page, size, sortType);
+        log.info("인증된 유저: {}", (userPrincipal != null) ? userPrincipal.getMemberId() : "비인증 유저");
+
+        return artletterService.getAllArtlettersResponse(userPrincipal, page, size, sortType);
     }
 
 
 
     // 아트레터 검색 api
     @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> searchArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(value = "keyword", required = false) String keyword,
@@ -144,7 +151,19 @@ public class ArtletterController {
             sortType = "default";
         }
 
-        return artletterService.searchArtletters(keyword.trim(), page, size, sortType);
+
+        // ✅ `userPrincipal`이 null이면 SecurityContextHolder에서 가져오기
+        if (userPrincipal == null) {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.getPrincipal() instanceof CustomUserPrincipal) {
+                userPrincipal = (CustomUserPrincipal) authentication.getPrincipal();
+                log.info("🔄 SecurityContext에서 가져온 사용자 ID: {}", userPrincipal.getMemberId());
+            } else {
+                log.warn("🚨 SecurityContext에서도 인증 정보를 가져올 수 없음!");
+            }
+        }
+
+        return artletterService.searchArtletters(userPrincipal, keyword.trim(), page, size, sortType);
     }
 
 

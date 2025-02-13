@@ -6,12 +6,13 @@ import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.global.security.CustomUserPrincipal;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
 
 public interface ArtletterService {
-    ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size, String sortType);
+    ResponseEntity<ApiResponse> getAllArtlettersResponse(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, int page, int size, String sortType);
 
     ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request);
 
@@ -20,7 +21,7 @@ public interface ArtletterService {
 
     ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
 
-    ResponseEntity<ApiResponse> searchArtletters(String keyword, int page, int size, String sortType);
+    ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType);
 
     ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId);
 

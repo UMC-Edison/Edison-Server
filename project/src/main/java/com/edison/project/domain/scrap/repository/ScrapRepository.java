@@ -15,7 +15,6 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
 
     int countByArtletter(Artletter artletter);
     boolean existsByMemberAndArtletter(Member member, Artletter artletter);
-    boolean existsByArtletter(Artletter artletter);
 
     @Modifying
     @Transactional
