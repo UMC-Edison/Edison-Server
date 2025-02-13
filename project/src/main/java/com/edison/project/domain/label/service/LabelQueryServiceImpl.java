@@ -142,13 +142,13 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     private LabelResponseDTO.LabelSyncResponseDTO labelDeletion(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
         if (!labelRepository.existsByLabelId(request.getLabelId())) {
-            return buildLabelResponse(request.getLabelId(), null, 0, true, null, null, null);
+            return buildLabelResponse(request.getLabelId(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
         }
 
         Label label = labelRepository.findById(request.getLabelId()).orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
         checkOwnership(label, userPrincipal);
         labelRepository.delete(label);
-        return buildLabelResponse(request.getLabelId(), null, 0, true, null, null, null);
+        return buildLabelResponse(request.getLabelId(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
     }
 
     private LabelResponseDTO.LabelSyncResponseDTO labelUpdate(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
