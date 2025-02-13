@@ -21,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -44,13 +43,15 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 전체 아트레터 조회 API
     @Override
-    public ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size) {
+    public ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size, String sortType) {
 
         // member 인증하는거 추가
         // List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(artletters.getContent(), member);
         Page<Artletter> artletters = getPaginatedArtletters(page, size);
         PageInfo pageInfo = buildPageInfo(artletters);
         List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(artletters.getContent());
+
+        response = sortArtletters(response, sortType);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
@@ -164,7 +165,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 아트레터 검색 api
     @Override
-    public ResponseEntity<ApiResponse> searchArtletters(String keyword, int page, int size) {
+    public ResponseEntity<ApiResponse> searchArtletters(String keyword, int page, int size, String sortType) {
 
         // member 인증하는거 추가
         // List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(sortedResults, member);
@@ -176,10 +177,12 @@ public class ArtletterServiceImpl implements ArtletterService {
         PageInfo pageInfo = buildPageInfo(resultPage);
         List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(sortedResults);
 
+        response = sortArtletters(response, sortType);
+
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
-    // 아트레터 검색 api - 검색 결과 정렬
+    // 아트레터 검색 api - 검색 결과 기본 정렬
     private List<Artletter> sortSearchResults(List<Artletter> artletters, String keyword) {
         return artletters.stream()
                 .sorted(Comparator
@@ -477,9 +480,36 @@ public class ArtletterServiceImpl implements ArtletterService {
                         .title(artletter.getTitle())
                         .thumbnail(artletter.getThumbnail())
                         .isScrapped(scrapRepository.existsByArtletter(artletter))
+                        .likesCnt(artletterLikesRepository.countByArtletter(artletter)) // 좋아요 개수 반영
+                        .scrapsCnt(scrapRepository.countByArtletter(artletter)) // 스크랩 개수 반영
+                        .updatedAt(artletter.getUpdatedAt()) // 최신순 정렬을 위한 필드
                         .build()
                 )
                 .collect(Collectors.toList());
     }
+
+    // [공통 메소드] Artletter 정렬 메서드
+    private List<ArtletterDTO.SimpleArtletterResponseDto> sortArtletters(List<ArtletterDTO.SimpleArtletterResponseDto> artletters, String sortType) {
+        return switch (sortType) {
+            case "likes" -> artletters.stream()
+                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt)
+                            .reversed())
+                    .toList();
+
+            case "scraps" -> artletters.stream()
+                    .sorted(Comparator
+                            .comparing(ArtletterDTO.SimpleArtletterResponseDto::getScrapsCnt).reversed()
+                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed()
+                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt).reversed())
+                    .toList();
+
+            case "latest" -> artletters.stream()
+                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed())
+                    .toList();
+
+            default -> artletters;
+        };
+    }
+
 
 }

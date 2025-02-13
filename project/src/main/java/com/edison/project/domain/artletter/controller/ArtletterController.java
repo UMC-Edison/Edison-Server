@@ -1,17 +1,14 @@
 package com.edison.project.domain.artletter.controller;
 
 import com.edison.project.common.response.ApiResponse;
-import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
-import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,10 +17,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/artletters")
@@ -111,13 +106,18 @@ public class ArtletterController {
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "default") String sortType) {
 
         if (page < 0 || size <= 0 || size > 100) {
             return ApiResponse.onFailure(ErrorStatus.INVALID_PAGE_REQUEST);
         }
 
-        return artletterService.getAllArtlettersResponse(page, size);
+        if (!List.of("default", "likes", "scraps", "latest").contains(sortType)) {
+            sortType = "default";
+        }
+
+        return artletterService.getAllArtlettersResponse(page, size, sortType);
     }
 
 
@@ -128,7 +128,8 @@ public class ArtletterController {
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "default") String sortType) {
 
         if (page < 0 || size <= 0 || size > 100) {
             return ApiResponse.onFailure(ErrorStatus.INVALID_PAGE_REQUEST);
@@ -138,7 +139,11 @@ public class ArtletterController {
             return ApiResponse.onFailure(ErrorStatus.KEYWORD_IS_EMPTY);
         }
 
-        return artletterService.searchArtletters(keyword.trim(), page, size);
+        if (!List.of("default", "likes", "scraps", "latest").contains(sortType)) {
+            sortType = "default";
+        }
+
+        return artletterService.searchArtletters(keyword.trim(), page, size, sortType);
     }
 
 
