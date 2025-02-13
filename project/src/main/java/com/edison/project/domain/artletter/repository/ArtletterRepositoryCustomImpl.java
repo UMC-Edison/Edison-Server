@@ -17,18 +17,31 @@ public class ArtletterRepositoryCustomImpl implements ArtletterRepositoryCustom 
 
     @Override
     public Page<Artletter> searchByKeyword(String keyword, Pageable pageable) {
+        TypedQuery<Artletter> query = createSearchQuery(keyword);
+        TypedQuery<Long> countQuery = createCountQuery(keyword);
+
+        long totalRows = countQuery.getSingleResult();
+        applyPagination(query, pageable);
+
+        return new PageImpl<>(query.getResultList(), pageable, totalRows);
+    }
+
+    private TypedQuery<Artletter> createSearchQuery(String keyword) {
         String queryStr = "SELECT a FROM Artletter a WHERE a.title LIKE :keyword OR a.content LIKE :keyword";
         TypedQuery<Artletter> query = entityManager.createQuery(queryStr, Artletter.class);
         query.setParameter("keyword", "%" + keyword + "%");
+        return query;
+    }
 
+    private TypedQuery<Long> createCountQuery(String keyword) {
         String countQueryStr = "SELECT COUNT(a) FROM Artletter a WHERE a.title LIKE :keyword OR a.content LIKE :keyword";
         TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr, Long.class);
         countQuery.setParameter("keyword", "%" + keyword + "%");
-        long totalRows = countQuery.getSingleResult();
+        return countQuery;
+    }
 
+    private void applyPagination(TypedQuery<Artletter> query, Pageable pageable) {
         query.setFirstResult((int) pageable.getOffset());
         query.setMaxResults(pageable.getPageSize());
-
-        return new PageImpl<>(query.getResultList(), pageable, totalRows);
     }
 }
