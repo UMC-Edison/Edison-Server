@@ -147,7 +147,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (!storedRefreshToken.getRefreshToken().equals(refreshToken)) {
             throw new GeneralException(ErrorStatus.INVALID_TOKEN);
         }
-
-        request.setAttribute("refreshToken", refreshToken);
     }
 }
