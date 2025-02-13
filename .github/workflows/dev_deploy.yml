@@ -86,14 +86,28 @@ jobs:
         run: |
           echo "$EC2_SSH_KEY" > edison.pem
           chmod 600 edison.pem
-          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
-          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/Edison-Server.jar
+          
+          # JAR 파일 경로 설정 (HOME 디렉토리에 직접 배치)
+          jar_file="/home/$EC2_USERNAME/Edison-Server.jar"
+          
+          # EC2로 JAR 파일 업로드 (HOME 디렉토리로)
+          scp -i edison.pem -o StrictHostKeyChecking=no project/build/libs/*.jar $EC2_USERNAME@$EC2_HOST:$jar_file
+          
+          # EC2에서 기존 실행 중인 프로세스 종료 후 실행
           ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
-            pgrep java | xargs -r kill -15  # 기존에 실행 중인 Java 프로세스 종료
-            sleep 10
-            nohup java -jar /home/$EC2_USERNAME/Edison-Server.jar > app.log 2>&1 &  # 새 버전 애플리케이션 실행
+            echo '🔄 기존 실행 중인 애플리케이션 종료...'
+            pgrep java | xargs -r kill -9
+            
+            echo '🚀 새 버전 애플리케이션 실행 중...'
+            nohup java -cp $jar_file:BOOT-INF/classes:BOOT-INF/lib/* com.edison.project.ProjectApplication > /home/$EC2_USERNAME/app.log 2>&1 &
+            
+            sleep 5
+            echo '📄 실행 로그:'
+            tail -n 20 /home/$EC2_USERNAME/app.log
           "
-          rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'
+          
+          # 민감한 정보 삭제
+          rm -f edison.pem  && github.event.pull_request.base.ref == 'develop'
       - name: Debug Current Directory
         run: |
           echo "Current Directory:"
