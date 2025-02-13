@@ -18,16 +18,18 @@ import com.edison.project.domain.scrap.repository.ScrapRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ArtletterServiceImpl implements ArtletterService {
@@ -562,7 +564,6 @@ public class ArtletterServiceImpl implements ArtletterService {
             default -> artletters;
         };
     }
-
 
 
 }

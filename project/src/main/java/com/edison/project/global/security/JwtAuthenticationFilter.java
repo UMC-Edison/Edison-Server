@@ -46,7 +46,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             List<String> openEndpoints = List.of(
                     "/members/google",
                     "/favicon.ico",
-                    "/artletters/search",
                     "/artletters/recommend-bar/category",
                     "/artletters/recommend-bar/keyword",
                     "/artletters/editor-pick"

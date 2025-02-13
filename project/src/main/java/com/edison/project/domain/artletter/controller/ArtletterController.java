@@ -9,6 +9,7 @@ import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/artletters")
 @RequiredArgsConstructor
+@Slf4j
 public class ArtletterController {
 
     private final ArtletterService artletterService;
