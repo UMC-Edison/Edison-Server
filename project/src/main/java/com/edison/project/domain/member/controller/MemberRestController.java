@@ -13,6 +13,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/members")
 @RequiredArgsConstructor
@@ -37,7 +39,8 @@ public class MemberRestController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestAttribute("refreshToken") String refreshToken) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestBody Map<String, String> request) {
+        String refreshToken = request.get("refreshToken");
         return memberService.refreshAccessToken(refreshToken);
     }
 

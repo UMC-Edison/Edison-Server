@@ -71,9 +71,13 @@ public class MemberServiceImpl implements MemberService{
         String accessToken = jwtUtil.generateAccessToken(memberId, email);
         String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
 
+        // ✅ Refresh Token 저장 (기존 값 삭제 후 새로 저장)
         refreshTokenRepository.deleteByEmail(email);
         RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
         refreshTokenRepository.save(tokenEntity);
+
+        // 🔍 로그 추가 (DB에 올바르게 저장되었는지 확인)
+        System.out.println("✅ 새로 저장된 Refresh Token: " + refreshToken);
 
         return MemberResponseDto.LoginResultDto.builder()
                 .memberId(memberId)
@@ -82,7 +86,6 @@ public class MemberServiceImpl implements MemberService{
                 .refreshToken(refreshToken)
                 .build();
     }
-
 
     @Override
     @Transactional
@@ -200,19 +203,37 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshtoken) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshToken) {
+        // 1️⃣ Refresh Token이 비어있는지 확인
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN, "Refresh Token이 제공되지 않았습니다.");
+        }
 
-        Long memberId = jwtUtil.extractUserId(refreshtoken);
-        String email = jwtUtil.extractEmail(refreshtoken);
+        // 2️⃣ Refresh Token 검증
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN, "유효하지 않은 Refresh Token입니다.");
+        }
 
+        // 3️⃣ Refresh Token에서 사용자 정보 추출
+        String email = jwtUtil.extractEmail(refreshToken);
+        RefreshToken storedToken = refreshTokenRepository.findByEmail(email)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.INVALID_TOKEN, "DB에 Refresh Token이 존재하지 않습니다."));
+
+        // 4️⃣ Refresh Token이 DB에 저장된 것과 일치하는지 확인
+        if (!storedToken.getRefreshToken().equals(refreshToken)) {
+            throw new GeneralException(ErrorStatus.INVALID_TOKEN, "DB에 저장된 Refresh Token과 일치하지 않습니다.");
+        }
+
+        // 5️⃣ 새로운 Access Token 생성
+        Long memberId = jwtUtil.extractUserId(refreshToken);
         String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
 
+        // ✅ 성공 응답 반환
         MemberResponseDto.RefreshResultDto response = MemberResponseDto.RefreshResultDto.builder()
                 .accessToken(newAccessToken)
                 .build();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
     }
 
     @Override

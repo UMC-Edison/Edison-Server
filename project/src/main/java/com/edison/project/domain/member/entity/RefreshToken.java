@@ -17,4 +17,8 @@ public class RefreshToken {
     public static RefreshToken create(String email, String refreshToken) {
         return new RefreshToken(email, refreshToken);
     }
+
+    public void updateToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
 }
