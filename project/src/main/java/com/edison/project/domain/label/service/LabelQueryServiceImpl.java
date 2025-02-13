@@ -98,8 +98,8 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // Bubble -> BubbleResponseDto 변환 함수 (중복 제거)
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
-        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+        List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
                         .labelId(bl.getLabel().getLabelId())
                         .name(bl.getLabel().getName())
                         .color(bl.getLabel().getColor())

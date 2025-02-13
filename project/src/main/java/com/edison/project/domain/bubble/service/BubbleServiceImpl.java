@@ -53,8 +53,8 @@ public class BubbleServiceImpl implements BubbleService {
 
     // Bubble -> BubbleResponseDto 변환 메서드 (공통 로직)
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
-        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+        List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
                         .labelId(bl.getLabel().getLabelId())
                         .name(bl.getLabel().getName())
                         .color(bl.getLabel().getColor())
@@ -122,8 +122,8 @@ public class BubbleServiceImpl implements BubbleService {
                     long remainDays = 30 - ChronoUnit.DAYS.between(updatedAt, now);
 
                     // 라벨 정보 변환
-                    List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
-                            .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+                    List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                            .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
                                     .labelId(bl.getLabel().getLabelId())
                                     .name(bl.getLabel().getName())
                                     .color(bl.getLabel().getColor())
@@ -322,8 +322,8 @@ public class BubbleServiceImpl implements BubbleService {
 
         if (!request.isDeleted()) {
             // 결과 반환
-            List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
-                    .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+            List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                    .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
                             .labelId(bl.getLabel().getLabelId())
                             .name(bl.getLabel().getName())
                             .color(bl.getLabel().getColor())
