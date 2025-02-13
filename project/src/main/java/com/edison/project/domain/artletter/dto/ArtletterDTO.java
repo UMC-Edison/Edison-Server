@@ -147,11 +147,10 @@ public class ArtletterDTO {
         private Long artletterId;
         private String title;
         private String thumbnail;
-        @JsonProperty("isScrapped")
-        private boolean isScrapped;
-
         private int likesCnt;
         private int scrapsCnt;
+        private boolean isLiked;
+        private boolean isScraped;
         private LocalDateTime updatedAt;
     }
 

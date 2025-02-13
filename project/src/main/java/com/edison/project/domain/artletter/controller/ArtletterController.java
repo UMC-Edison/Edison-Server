@@ -106,6 +106,7 @@ public class ArtletterController {
     // GET: 전체 아트레터 조회
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "default") String sortType) {
@@ -118,7 +119,7 @@ public class ArtletterController {
             sortType = "default";
         }
 
-        return artletterService.getAllArtlettersResponse(page, size, sortType);
+        return artletterService.getAllArtlettersResponse(userPrincipal, page, size, sortType);
     }
 
 
@@ -144,7 +145,7 @@ public class ArtletterController {
             sortType = "default";
         }
 
-        return artletterService.searchArtletters(keyword.trim(), page, size, sortType);
+        return artletterService.searchArtletters(userPrincipal, keyword.trim(), page, size, sortType);
     }
 
 

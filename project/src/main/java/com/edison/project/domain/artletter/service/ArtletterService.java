@@ -11,7 +11,7 @@ import java.util.List;
 
 
 public interface ArtletterService {
-    ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size, String sortType);
+    ResponseEntity<ApiResponse> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType);
 
     ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request);
 
@@ -20,7 +20,7 @@ public interface ArtletterService {
 
     ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
 
-    ResponseEntity<ApiResponse> searchArtletters(String keyword, int page, int size, String sortType);
+    ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType);
 
     ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId);
 

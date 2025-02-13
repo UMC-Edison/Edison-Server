@@ -43,17 +43,48 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 전체 아트레터 조회 API
     @Override
-    public ResponseEntity<ApiResponse> getAllArtlettersResponse(int page, int size, String sortType) {
+    public ResponseEntity<ApiResponse> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType) {
 
-        // member 인증하는거 추가
-        // List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(artletters.getContent(), member);
         Page<Artletter> artletters = getPaginatedArtletters(page, size);
         PageInfo pageInfo = buildPageInfo(artletters);
-        List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(artletters.getContent());
 
+        // 로그인 여부 확인 후 멤버 조회
+        Member member;
+        if (userPrincipal != null) {
+            member = memberRepository.findById(userPrincipal.getMemberId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        } else {
+            member = null;
+        }
+
+        // 각 Artletter에 대한 정보 처리
+        List<ArtletterDTO.SimpleArtletterResponseDto> response = artletters.getContent().stream()
+                .map(artletter -> {
+                    boolean isLiked = member != null && artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
+                    int likesCnt = artletterLikesRepository.countByArtletter(artletter);
+                    boolean isScrapped = member != null && scrapRepository.existsByMemberAndArtletter(member, artletter);
+                    int scrapCnt = scrapRepository.countByArtletter(artletter);
+
+                    return buildSimpleListResponseDto(artletter, likesCnt, scrapCnt, isLiked, isScrapped);
+                })
+                .collect(Collectors.toList());
+
+        // 정렬 적용
         response = sortArtletters(response, sortType);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
+    }
+    private ArtletterDTO.SimpleArtletterResponseDto buildSimpleListResponseDto(Artletter artletter, int likesCnt, int scrapCnt, boolean isLiked, boolean isScrapped) {
+        return ArtletterDTO.SimpleArtletterResponseDto.builder()
+                .artletterId(artletter.getLetterId())
+                .title(artletter.getTitle())
+                .thumbnail(artletter.getThumbnail())
+                .likesCnt(likesCnt)
+                .scrapsCnt(scrapCnt)
+                .isLiked(isLiked)
+                .isScraped(isScrapped)
+                .updatedAt(artletter.getUpdatedAt())
+                .build();
     }
 
     // 전체 아트레터 조회 api - 페이징된 아트레터 목록 조회
@@ -167,17 +198,23 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 아트레터 검색 api
     @Override
-    public ResponseEntity<ApiResponse> searchArtletters(String keyword, int page, int size, String sortType) {
+    public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
 
-        // member 인증하는거 추가
-        // List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(sortedResults, member);
+        Member member;
+        if (userPrincipal != null) { //로그인한 경우에만 member 조회
+            member = memberRepository.findById(userPrincipal.getMemberId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        } else {
+            member = null;
+        }
+
         Pageable pageable = PageRequest.of(page, size);
         Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
 
         List<Artletter> sortedResults = sortSearchResults(resultPage.getContent(), keyword);
 
         PageInfo pageInfo = buildPageInfo(resultPage);
-        List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(sortedResults);
+        List<ArtletterDTO.SimpleArtletterResponseDto> response = extractSimplifiedArtletters(sortedResults,member);
 
         response = sortArtletters(response, sortType);
 
@@ -213,9 +250,9 @@ public class ArtletterServiceImpl implements ArtletterService {
         }
 
 
-        boolean isLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
+        boolean isLiked = member != null && artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
         int likesCnt = artletterLikesRepository.countByArtletter(artletter);
-        boolean isScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
+        boolean isScrapped = member != null && scrapRepository.existsByMemberAndArtletter(member, artletter);
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
         return buildListResponseDto(artletter, likesCnt, scrapCnt, isLiked, isScrapped);
@@ -486,20 +523,22 @@ public class ArtletterServiceImpl implements ArtletterService {
 //                .collect(Collectors.toList());
 //    }
 
-    private List<ArtletterDTO.SimpleArtletterResponseDto> extractSimplifiedArtletters(List<Artletter> artletters) {
+    private List<ArtletterDTO.SimpleArtletterResponseDto> extractSimplifiedArtletters(List<Artletter> artletters, Member member) {
         return artletters.stream()
                 .map(artletter -> ArtletterDTO.SimpleArtletterResponseDto.builder()
                         .artletterId(artletter.getLetterId())
                         .title(artletter.getTitle())
                         .thumbnail(artletter.getThumbnail())
-                        .isScrapped(scrapRepository.existsByArtletter(artletter))
                         .likesCnt(artletterLikesRepository.countByArtletter(artletter)) // 좋아요 개수 반영
                         .scrapsCnt(scrapRepository.countByArtletter(artletter)) // 스크랩 개수 반영
-                        .updatedAt(artletter.getUpdatedAt()) // 최신순 정렬을 위한 필드
+                        .isLiked(member != null && artletterLikesRepository.existsByMemberAndArtletter(member, artletter)) // 로그인한 유저의 좋아요 여부
+                        .isScraped(member != null && scrapRepository.existsByMemberAndArtletter(member, artletter)) // 로그인한 유저의 스크랩 여부
+                        .updatedAt(artletter.getUpdatedAt())
                         .build()
                 )
                 .collect(Collectors.toList());
     }
+
 
     // [공통 메소드] Artletter 정렬 메서드
     private List<ArtletterDTO.SimpleArtletterResponseDto> sortArtletters(List<ArtletterDTO.SimpleArtletterResponseDto> artletters, String sortType) {
@@ -523,6 +562,7 @@ public class ArtletterServiceImpl implements ArtletterService {
             default -> artletters;
         };
     }
+
 
 
 }
