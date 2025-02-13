@@ -102,7 +102,6 @@ public class SpaceServiceImpl implements SpaceService {
         List<SpaceResponseDto> spaceDtos = spaces.stream()
                 .map(space -> new SpaceResponseDto(
                         space.getBubble(),    // ✅ Bubble 객체 전달
-                        space.getContent(),
                         space.getX(),
                         space.getY(),
                         space.getGroup()
@@ -252,7 +251,7 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("- group: An integer representing the item's group ID, starting from 1. If an item does not belong to any group, set this to `null`.\n\n");
 
         promptBuilder.append("### Rules:\n");
-        promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum spacing of 0.5.\n");
+        promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum Euclidean distance of 0.5 between any two items.\n");
         promptBuilder.append("2. Items with similar topics should form visually distinct clusters.\n");
         promptBuilder.append("3. Clusters should be well-separated from each other but internally cohesive.\n");
         promptBuilder.append("4. **❗ Each group MUST contain between 5 and 8 items. This is MANDATORY. ❗**\n");

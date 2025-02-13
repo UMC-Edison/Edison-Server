@@ -12,9 +12,8 @@ public class SpaceResponseDto {
     private Integer group = 0;
 
     // 올바른 생성자 추가
-    public SpaceResponseDto(Bubble bubble, String content, double x, double y, Integer group) {
+    public SpaceResponseDto(Bubble bubble, double x, double y, Integer group) {
         this.id = bubble.getBubbleId();
-        this.content = content;
         this.x = x;
         this.y = y;
         this.group = group;
@@ -27,14 +26,6 @@ public class SpaceResponseDto {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
     }
 
     public double getX() {
