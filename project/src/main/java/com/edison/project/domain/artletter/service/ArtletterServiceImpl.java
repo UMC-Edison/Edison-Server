@@ -346,8 +346,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        Member member = findMemberById(userPrincipal.getMemberId());
 
         try {
             ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
@@ -357,11 +356,6 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         Page<Scrap> scraps = scrapRepository.findByMemberAndArtletter_Category(member, category, pageable);
 
-//        // 스크랩한 아트레터가 없는 경우 예외 발생
-//        if (scraps.isEmpty() || scraps==null) {
-//            throw new GeneralException(ErrorStatus.ARTLETTER_NOT_FOUND);
-//        }
-
         PageInfo pageInfo = new PageInfo(
                 scraps.getNumber(),
                 scraps.getSize(),
@@ -369,10 +363,6 @@ public class ArtletterServiceImpl implements ArtletterService {
                 scraps.getTotalElements(),
                 scraps.getTotalPages()
         );
-
-        // DTO 변환 전에 엔티티 기준으로 카테고리별 그룹화
-        Map<String, List<Scrap>> groupedByCategory = scraps.getContent().stream()
-                .collect(Collectors.groupingBy(scrap -> String.valueOf(scrap.getArtletter().getCategory())));
 
         List<ArtletterDTO.MyScrapResponseDto> artletters = scraps.getContent().stream()
                 .map(scrap -> {
