@@ -36,6 +36,9 @@ public class Bubble {
     @Column(name = "main_img", length = 2083)
     private String mainImg;
 
+    @Column(name = "is_deleted", nullable = false)  //휴지통에도 없는!
+    private boolean isDeleted = false;
+
     @Column(name = "is_trashed", nullable = false)  //휴지통에 있는 지(soft_delete)
     private boolean isTrashed = false;
 

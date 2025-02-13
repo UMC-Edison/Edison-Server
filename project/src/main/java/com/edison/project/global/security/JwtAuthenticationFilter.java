@@ -36,6 +36,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws IOException, ServletException {
 
         try {
+
+            String requestURI = request.getRequestURI();
+            String method = request.getMethod();
+
+            // 로그인 없이 접근 가능한 경로 리스트
+            List<String> openEndpoints = List.of(
+                    "/members/google",
+                    "/favicon.ico",
+                    "/artletters/search",
+                    "/artletters/recommend-bar/category",
+                    "/artletters/recommend-bar/keyword",
+                    "/artletters/editor-pick"
+            );
+
+            if (method.equals("GET") && requestURI.startsWith("/artletters")&& !requestURI.contains("scrap")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            if (requestURI.matches("^/artletters/\\d+$")) { // "/artletters/{letterId}" 패턴 허용
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 로그인 없이 접근 가능한 경로는 필터를 통과
+            if (openEndpoints.contains(requestURI)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String authHeader = request.getHeader("Authorization");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -122,7 +152,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (!storedRefreshToken.getRefreshToken().equals(refreshToken)) {
             throw new GeneralException(ErrorStatus.INVALID_TOKEN);
         }
-
-        request.setAttribute("refreshToken", refreshToken);
     }
 }

@@ -30,6 +30,7 @@ public class ArtletterController {
 
     // POST: 아트레터 등록
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> createArtletter(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody Map<String, Object> request) {
         // 필드 값 추출
         Object readTimeObj = request.get("readTime");
@@ -148,7 +149,6 @@ public class ArtletterController {
 
 
     @PostMapping("/editor-pick")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getEditorArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestBody ArtletterDTO.EditorRequestDto editorRequestDto) {
@@ -176,7 +176,6 @@ public class ArtletterController {
 
 
     @GetMapping("/{letterId}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getArtletterInfo(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @PathVariable("letterId") Long letterId) {

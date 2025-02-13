@@ -37,7 +37,7 @@ public class MemberRestController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestAttribute("refreshToken") String refreshToken) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestHeader("Refresh-Token") String refreshToken) {
         return memberService.refreshAccessToken(refreshToken);
     }
 

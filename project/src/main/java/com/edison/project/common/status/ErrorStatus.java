@@ -75,6 +75,10 @@ public enum ErrorStatus {
     // 검색 관련 에러
     INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다."),
 
+    // 스페이스 관련 에러
+    NO_BUBBLES_FOUND(HttpStatus.BAD_REQUEST,"SPACE4001", "작성된 버블이 없습니다."),
+    NO_SPACES_FOUND(HttpStatus.BAD_REQUEST, "SPACE4002", "스페이스를 찾을 수 없습니다."),
+
     // 페이징 관련 에러
     INVALID_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "PAGENATION4001", "page는 음수일 수 없고, size는 100 이하의 양수여야 합니다.");
     private final HttpStatus httpStatus;

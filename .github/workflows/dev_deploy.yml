@@ -23,26 +23,24 @@ jobs:
           echo "spring.datasource.username=${{ secrets.RDS_USERNAME }}" >> ./project/src/main/resources/application.properties
           echo "spring.datasource.password=${{ secrets.RDS_PASSWORD }}" >> ./project/src/main/resources/application.properties
           echo "spring.jpa.hibernate.ddl-auto=update" >> ./project/src/main/resources/application.properties
-
           # Google OAuth2
           echo "spring.security.oauth2.client.registration.google.client-id=${{ secrets.GOOGLE_CLIENT_ID }}" >> ./project/src/main/resources/application.properties
           echo "spring.security.oauth2.client.registration.google.client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> ./project/src/main/resources/application.properties
           echo "spring.security.oauth2.client.registration.google.scope=openid,email" >> ./project/src/main/resources/application.properties
           echo "spring.security.oauth2.client.registration.google.redirect-uri=https://api.umcedison.site/login/oauth2/code/google" >> ./project/src/main/resources/application.properties
           echo "spring.security.oauth2.client.provider.google.issuer-uri=https://accounts.google.com" >> ./project/src/main/resources/application.properties
-
           # JWT
           echo "jwt.secret=${{ secrets.JWT_SECRET }}" >> ./project/src/main/resources/application.properties
           echo "jwt.access-token-expiration=${{ secrets.JWT_ACCESS_EXPIRATION }}" >> ./project/src/main/resources/application.properties
           echo "jwt.refresh-token-expiration=${{ secrets.JWT_REFRESH_EXPIRATION }}" >> ./project/src/main/resources/application.properties
-
           # Redis
           echo "spring.data.redis.host=${{ secrets.REDIS_HOST }}" >> ./project/src/main/resources/application.properties
           echo "spring.data.redis.port=${{ secrets.REDIS_PORT }}" >> ./project/src/main/resources/application.properties
           echo "spring.data.redis.password=${{ secrets.REDIS_PASSWORD }}" >> ./project/src/main/resources/application.properties
-
           # Server Configuration
           echo "server.forward-headers-strategy=native" >> ./project/src/main/resources/application.properties
+          # OpenAI
+          echo "openai_key=${{ secrets.OPENAI_KEY }}" >> ./project/src/main/resources/application.properties
         shell: bash
 
       - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
@@ -75,7 +73,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
       - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
         uses: actions/download-artifact@v4
         with:
@@ -89,15 +86,28 @@ jobs:
         run: |
           echo "$EC2_SSH_KEY" > edison.pem
           chmod 600 edison.pem
-          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
-          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/Edison-Server.jar
+          
+          # JAR 파일 경로 설정 (HOME 디렉토리에 직접 배치)
+           jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
+          
+          # EC2로 JAR 파일 업로드 (HOME 디렉토리로)
+          scp -i edison.pem -o StrictHostKeyChecking=no project/build/libs/*.jar $EC2_USERNAME@$EC2_HOST:$jar_file
+          
+          # EC2에서 기존 실행 중인 프로세스 종료 후 실행
           ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
-            pgrep java | xargs -r kill -15  # 기존에 실행 중인 Java 프로세스 종료
-            sleep 10
-            nohup java -jar /home/$EC2_USERNAME/Edison-Server.jar > app.log 2>&1 &  # 새 버전 애플리케이션 실행
+            echo '🔄 기존 실행 중인 애플리케이션 종료...'
+            pgrep java | xargs -r kill -9
+            
+            echo '🚀 새 버전 애플리케이션 실행 중...'
+            nohup java -cp $jar_file:BOOT-INF/classes:BOOT-INF/lib/* com.edison.project.ProjectApplication > /home/$EC2_USERNAME/app.log 2>&1 &
+            
+            sleep 5
+            echo '📄 실행 로그:'
+            tail -n 20 /home/$EC2_USERNAME/app.log
           "
-          rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'
-
+          
+          # 민감한 정보 삭제
+          rm -f edison.pem  && github.event.pull_request.base.ref == 'develop'
       - name: Debug Current Directory
         run: |
           echo "Current Directory:"
@@ -106,8 +116,6 @@ jobs:
           ls -al
           echo "Recursive Directory Listing:"
           find . -type f
-
-
       - name: Deploy NGINX Configuration  # NGINX 설정 배포 및 Redis 관리
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
