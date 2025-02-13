@@ -50,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     "/artletters/editor-pick"
             );
 
-            if (method.equals("GET") && requestURI.startsWith("/artletters")) {
+            if (method.equals("GET") && requestURI.startsWith("/artletters")&& !requestURI.contains("scrap")) {
                 filterChain.doFilter(request, response);
                 return;
             }
