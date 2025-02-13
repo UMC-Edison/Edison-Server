@@ -40,21 +40,7 @@ public class MemberServiceImpl implements MemberService{
     private final JwtUtil jwtUtil;
     private final RedisTokenService redisTokenService;
 
-    // ✅ 이메일 존재 여부 확인
-    public boolean existsByEmail(String email) {
-        return memberRepository.existsByEmail(email);
-    }
 
-    // ✅ 새 회원 등록
-    public void registerNewMember(String email) {
-        Member newMember = Member.builder()
-                .email(email)
-                .role("ROLE_USER")
-                .build();
-        memberRepository.save(newMember);
-    }
-
-    // ✅ JWT 토큰 생성
     @Override
     @Transactional
     public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
@@ -134,9 +120,7 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
