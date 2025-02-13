@@ -269,9 +269,10 @@ public class ArtletterServiceImpl implements ArtletterService {
                             .thumbnail(artletter.getThumbnail())
                             .likesCnt(likesCnt)
                             .scrapsCnt(scrapsCnt)
-                            .scrappedAt(artletter.getCreatedAt())
+                            .scrappedAt(scrap.getCreatedAt())
                             .build();
-                }).toList();
+                }).sorted(Comparator.comparing(ArtletterDTO.MyScrapResponseDto::getScrappedAt).reversed())
+                .toList();
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
     }
@@ -334,7 +335,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                                     .thumbnail(artletter.getThumbnail())
                                     .likesCnt(likesCnt)
                                     .scrapsCnt(scrapsCnt)
-                                    .scrappedAt(artletter.getCreatedAt())
+                                    .scrappedAt(scrap.getCreatedAt())
                                     .build();
                         }).toList()
                 )).toList();
