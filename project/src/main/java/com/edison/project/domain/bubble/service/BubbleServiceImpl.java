@@ -288,90 +288,21 @@ public class BubbleServiceImpl implements BubbleService {
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        // backlink 검증
-        Set<Bubble> backlinks = new HashSet<>();
-        if (request.getBacklinkIds() != null) {
-            backlinks = new HashSet<>(bubbleRepository.findAllById(request.getBacklinkIds()));
-            if (backlinks.size() != request.getBacklinkIds().size()) {
-                throw new GeneralException(ErrorStatus.BACKLINK_NOT_FOUND);
-            }
-            if (!backlinks.stream().allMatch(backlink-> backlink.getMember().equals(member))) {
-                throw new GeneralException(ErrorStatus.BACKLINK_FORBIDDEN);
-            }
-        }
+        Set<Bubble> backlinks = validateBacklinks(request.getBacklinkIds(), member);
+        Set<Label> labels = validateLabels(request.getLabelIds(), member);
 
-        // 라벨 검증
-        Set<Long> labelIds = Optional.ofNullable(request.getLabelIds()).orElse(Collections.emptySet());
-        if (labelIds.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
-
-        Set<Label> labels = new HashSet<>(labelRepository.findAllById(labelIds));
-        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
-        if (!labels.stream().allMatch(label -> label.getMember().equals(member))) throw new GeneralException(ErrorStatus.LABELS_FORBIDDEN);
-
-        Bubble bubble;
-
-
-        if (request.isDeleted()) {
-            bubble = bubbleRepository.existsById(request.getBubbleId()) ?
-                    hardDeleteBubble(request, member) : null;
-        } else {
-            bubble =  bubbleRepository.existsById(request.getBubbleId()) ?
-                    updateExistingBubble(request, member, backlinks, labels)
-                    : createNewBubble(request, member, backlinks, labels);
-        }
-
-        if (!request.isDeleted()) {
-            // 결과 반환
-            List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
-                    .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                            .labelId(bl.getLabel().getLabelId())
-                            .name(bl.getLabel().getName())
-                            .color(bl.getLabel().getColor())
-                            .build())
-                    .collect(Collectors.toList());
-
-            return BubbleResponseDto.SyncResultDto.builder()
-                    .bubbleId(bubble.getBubbleId())
-                    .title(bubble.getTitle())
-                    .content(bubble.getContent())
-                    .mainImageUrl(bubble.getMainImg())
-                    .labels(labelDtos)
-                    .backlinkIds(bubble.getBacklinks().stream()
-                            .map(BubbleBacklink::getBacklinkBubble)
-                            .map(Bubble::getBubbleId)
-                            .collect(Collectors.toSet()))
-                    .isDeleted(request.isDeleted())
-                    .isTrashed(bubble.isTrashed())
-                    .createdAt(bubble.getCreatedAt())
-                    .updatedAt(bubble.getUpdatedAt())
-                    .deletedAt(bubble.getDeletedAt())
-                    .build();
-        } else {
-            return BubbleResponseDto.SyncResultDto.builder()
-                    .bubbleId(request.getBubbleId())
-                    .title(null)
-                    .content(null)
-                    .mainImageUrl(null)
-                    .labels(null)
-                    .backlinkIds(null)
-                    .isDeleted(request.isDeleted())
-                    .isTrashed(null)
-                    .createdAt(null)
-                    .updatedAt(null)
-                    .deletedAt(null)
-                    .build();
-        }
+        Bubble bubble = processBubble(request, member, backlinks, labels);
+        return buildSyncResultDto(request, bubble);
     }
 
-    private int countOccurrences(String content, String keyword) {
-        if (content == null || keyword == null || keyword.isEmpty()) return 0;
-        int count = 0;
-        int idx = content.indexOf(keyword);
-        while (idx != -1) {
-            count++;
-            idx = content.indexOf(keyword, idx + keyword.length());
+    private Bubble processBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
+        if (request.isDeleted()){
+            return bubbleRepository.existsById(request.getBubbleId()) ? hardDeleteBubble(request, member) : null;
         }
-        return count;
+
+        return bubbleRepository.existsById(request.getBubbleId())
+                ? updateExistingBubble(request, member, backlinks, labels)
+                : createNewBubble(request, member, backlinks, labels);
     }
 
     private Bubble updateExistingBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
@@ -385,7 +316,6 @@ public class BubbleServiceImpl implements BubbleService {
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
                 .collect(Collectors.toSet());
-
         bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), bubbleLabels);
 
         bubble.getBacklinks().clear();
@@ -401,8 +331,7 @@ public class BubbleServiceImpl implements BubbleService {
         bubble.setUpdatedAt(request.getUpdatedAt());
         bubble.setDeletedAt(request.getDeletedAt());
 
-        bubbleRepository.saveAndFlush(bubble);
-        return bubble;
+        return bubbleRepository.saveAndFlush(bubble);
     }
 
     private Bubble hardDeleteBubble(BubbleRequestDto.SyncDto request, Member member) {
@@ -410,7 +339,6 @@ public class BubbleServiceImpl implements BubbleService {
         Bubble bubble = bubbleRepository.findById(request.getBubbleId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
-        // 권한 확인
         if (!bubble.getMember().getMemberId().equals(member.getMemberId())) {
             throw new GeneralException(ErrorStatus._FORBIDDEN);
         }
@@ -448,9 +376,100 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toSet());
 
         bubbleLabelRepository.saveAll(bubbleLabels);
-
         savedBubble.getLabels().addAll(bubbleLabels);
 
         return savedBubble;
+    }
+
+    // SyncResultDto 생성
+    private BubbleResponseDto.SyncResultDto buildSyncResultDto(BubbleRequestDto.SyncDto request, Bubble bubble) {
+        if (bubble == null) {
+            return BubbleResponseDto.SyncResultDto.builder()
+                    .bubbleId(request.getBubbleId())
+                    .title(request.getTitle())
+                    .content(request.getContent())
+                    .mainImageUrl(request.getMainImageUrl())
+                    .labels(mapLabelsToDto(request.getLabelIds().stream()
+                            .map(id -> labelRepository.findById(id)
+                                    .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))
+                            .collect(Collectors.toSet())))
+                    .backlinkIds(request.getBacklinkIds())
+                    .isDeleted(true)
+                    .isTrashed(request.isTrashed())
+                    .createdAt(request.getCreatedAt())
+                    .updatedAt(request.getUpdatedAt())
+                    .deletedAt(request.getDeletedAt())
+                    .build();
+        }
+        Set<Label> labels = bubble.getLabels().stream()
+                .map(BubbleLabel::getLabel)
+                .collect(Collectors.toSet());
+
+        return BubbleResponseDto.SyncResultDto.builder()
+                .bubbleId(bubble.getBubbleId())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(mapLabelsToDto(labels))
+                .backlinkIds(bubble.getBacklinks().stream()
+                        .map(BubbleBacklink::getBacklinkBubble)
+                        .map(Bubble::getBubbleId)
+                        .collect(Collectors.toSet()))
+                .isDeleted(false)
+                .isTrashed(bubble.isTrashed())
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .deletedAt(bubble.getDeletedAt())
+                .build();
+    }
+    // 라벨을 DTO로 변환
+    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDto(Set<Label> labels) {
+        return labels.stream()
+                .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+                        .labelId(l.getLabelId())
+                        .name(l.getName())
+                        .color(l.getColor())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+
+    // 백링크 검증
+    private Set<Bubble> validateBacklinks(Set<Long> backlinkIds, Member member) {
+        if (backlinkIds == null || backlinkIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllById(backlinkIds));
+        if (backlinks.size() != backlinkIds.size()) {
+            throw new GeneralException(ErrorStatus.BACKLINK_NOT_FOUND);
+        }
+        if (!backlinks.stream().allMatch(backlink-> backlink.getMember().equals(member))) {
+            throw new GeneralException(ErrorStatus.BACKLINK_FORBIDDEN);
+        }
+        return backlinks;
+    }
+
+    // 라벨 검증
+    private Set<Label> validateLabels(Set<Long> labelIds, Member member) {
+        Set<Long> Ids = Optional.ofNullable(labelIds).orElse(Collections.emptySet());
+        if (Ids.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
+
+        Set<Label> labels = new HashSet<>(labelRepository.findAllById(Ids));
+        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
+        if (!labels.stream().allMatch(label -> label.getMember().equals(member))) throw new GeneralException(ErrorStatus.LABELS_FORBIDDEN);
+
+        return labels;
+    }
+
+    private int countOccurrences(String content, String keyword) {
+        if (content == null || keyword == null || keyword.isEmpty()) return 0;
+        int count = 0;
+        int idx = content.indexOf(keyword);
+        while (idx != -1) {
+            count++;
+            idx = content.indexOf(keyword, idx + keyword.length());
+        }
+        return count;
     }
 }

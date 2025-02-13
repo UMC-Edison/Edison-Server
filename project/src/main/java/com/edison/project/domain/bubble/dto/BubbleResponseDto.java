@@ -60,4 +60,5 @@ public class BubbleResponseDto {
         private LocalDateTime updatedAt;
         private LocalDateTime deletedAt;
     }
+
 }
