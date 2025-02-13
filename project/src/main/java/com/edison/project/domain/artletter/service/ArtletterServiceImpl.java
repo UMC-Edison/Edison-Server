@@ -385,7 +385,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                             .thumbnail(artletter.getThumbnail())
                             .likesCnt(likesCnt)
                             .scrapsCnt(scrapsCnt)
-                            .scrappedAt(artletter.getCreatedAt())
+                            .scrappedAt(scrap.getCreatedAt())
                             .build();
                 }).toList();
 
