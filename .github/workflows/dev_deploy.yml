@@ -88,7 +88,7 @@ jobs:
           chmod 600 edison.pem
           
           # JAR 파일 경로 설정 (HOME 디렉토리에 직접 배치)
-          jar_file="/home/$EC2_USERNAME/Edison-Server.jar"
+           jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
           
           # EC2로 JAR 파일 업로드 (HOME 디렉토리로)
           scp -i edison.pem -o StrictHostKeyChecking=no project/build/libs/*.jar $EC2_USERNAME@$EC2_HOST:$jar_file
