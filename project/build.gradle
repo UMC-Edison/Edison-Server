@@ -8,6 +8,10 @@ group = 'com.edison'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
 
+bootJar {
+    mainClass = 'com.edison.project.ProjectApplication' 
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(17)
