@@ -8,6 +8,10 @@ group = 'com.edison'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '17'
 
+springBoot {
+    mainClass = 'com.edison.project.ProjectApplication'  // 실행할 Main 클래스
+}
+
 bootJar {
     mainClass = 'com.edison.project.ProjectApplication' 
 }
