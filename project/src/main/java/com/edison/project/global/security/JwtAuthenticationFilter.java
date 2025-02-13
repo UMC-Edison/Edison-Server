@@ -38,16 +38,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
 
             String requestURI = request.getRequestURI();
+            String method = request.getMethod();
 
             // 로그인 없이 접근 가능한 경로 리스트
             List<String> openEndpoints = List.of(
                     "/members/google",
                     "/favicon.ico",
-                    "/artletters",
                     "/artletters/search",
                     "/artletters/recommend-bar/category",
-                    "/artletters/recommend-bar/keyword"
+                    "/artletters/recommend-bar/keyword",
+                    "/artletters/editor-pick"
             );
+
+            if (method.equals("GET") && requestURI.startsWith("/artletters")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (requestURI.matches("^/artletters/\\d+$")) { // "/artletters/{letterId}" 패턴 허용
                 filterChain.doFilter(request, response);

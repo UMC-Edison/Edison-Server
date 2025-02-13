@@ -152,16 +152,16 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId) {
 
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-
         Artletter artletter = artletterRepository.findById(letterId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        Member member;
+        if (userPrincipal != null) { //로그인한 경우에만 member 조회
+            member = memberRepository.findById(userPrincipal.getMemberId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        } else {
+            member = null;
+        }
 
         boolean isLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
         int likesCnt = artletterLikesRepository.countByArtletter(artletter);
@@ -188,14 +188,18 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     @Override
     public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+
         if (editorRequestDto == null || editorRequestDto.getArtletterIds() == null || editorRequestDto.getArtletterIds().isEmpty()) {
             throw new GeneralException(ErrorStatus.ARTLETTER_ID_REQUIRED);
         }
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Member member;
+        if (userPrincipal != null) { //로그인한 경우에만 member 조회
+            member = memberRepository.findById(userPrincipal.getMemberId())
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        } else {
+            member = null;
+        }
 
         List<Long> artletterIds = editorRequestDto.getArtletterIds();
         List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);

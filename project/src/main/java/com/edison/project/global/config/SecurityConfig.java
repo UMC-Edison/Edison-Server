@@ -55,9 +55,11 @@ public class SecurityConfig {
                         .requestMatchers("/members/google", "/favicon.ico").permitAll()
                         .requestMatchers(HttpMethod.GET, "/artletters").permitAll() // 전체 아트레터 조회
                         .requestMatchers(HttpMethod.GET, "/artletters/search").permitAll() // 검색 API
-                        .requestMatchers(HttpMethod.GET, "/artletters/{letterId}").permitAll() // 특정 아트레터 조회
+                        .requestMatchers(HttpMethod.GET, "/artletters/**").permitAll() //특정 아트레터 조회
                         .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/category").permitAll() // 추천 카테고리
                         .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/keyword").permitAll() // 추천 키워드
+                        .requestMatchers(HttpMethod.POST, "/artletters/editor-pick").permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -85,12 +87,7 @@ public class SecurityConfig {
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
         String email = oidcUser.getEmail();
 
-        // ✅ 이메일 중복 체크 및 회원 등록
-        if (!memberService.existsByEmail(email)) {
-            memberService.registerNewMember(email); // 새 회원 등록
-        }
-
-        // ✅ JWT 토큰 발급
+        //JWT 토큰 발급
         MemberResponseDto.LoginResultDto dto = memberService.generateTokensForOidcUser(email);
 
         // SecurityContextHolder에 인증 정보 저장
