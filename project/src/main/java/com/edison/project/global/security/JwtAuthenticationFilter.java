@@ -36,6 +36,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws IOException, ServletException {
 
         try {
+
+            String requestURI = request.getRequestURI();
+
+            // 로그인 없이 접근 가능한 경로 리스트
+            List<String> openEndpoints = List.of(
+                    "/members/refresh",
+                    "/members/google",
+                    "/favicon.ico",
+                    "/artletters",
+                    "/artletters/search",
+                    "/artletters/recommend-bar/category",
+                    "/artletters/recommend-bar/keyword"
+            );
+
+            if (requestURI.matches("^/artletters/\\d+$")) { // "/artletters/{letterId}" 패턴 허용
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 로그인 없이 접근 가능한 경로는 필터를 통과
+            if (openEndpoints.contains(requestURI)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String authHeader = request.getHeader("Authorization");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {

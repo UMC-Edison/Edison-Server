@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -49,8 +50,14 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        //로그인 없이 접근 가능
                         .requestMatchers("/.well-known/acme-challenge/**").permitAll()
                         .requestMatchers("/members/refresh", "/members/google", "/favicon.ico").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/artletters").permitAll() // 전체 아트레터 조회
+                        .requestMatchers(HttpMethod.GET, "/artletters/search").permitAll() // 검색 API
+                        .requestMatchers(HttpMethod.GET, "/artletters/{letterId}").permitAll() // 특정 아트레터 조회
+                        .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/category").permitAll() // 추천 카테고리
+                        .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/keyword").permitAll() // 추천 키워드
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
