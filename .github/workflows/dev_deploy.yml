@@ -91,7 +91,7 @@ jobs:
           ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
             pgrep java | xargs -r kill -15  # 기존에 실행 중인 Java 프로세스 종료
             sleep 10
-            nohup java -cp /home/$EC2_USERNAME/Edison-Server.jar:BOOT-INF/classes:BOOT-INF/lib/* com.edison.project.ProjectApplication > app.log 2>&1 &
+            nohup java -jar /home/$EC2_USERNAME/Edison-Server.jar > app.log 2>&1 &
           "
           rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'
       - name: Debug Current Directory
