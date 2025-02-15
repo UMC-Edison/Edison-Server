@@ -25,33 +25,6 @@ public class LabelRestController {
     private final LabelCommandService labelCommandService;
     private final LabelQueryService labelQueryService;
 
-    @PostMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> createLabel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody @Valid LabelRequestDTO.CreateAndUpdateDto request) {
-        LabelResponseDTO.CreateResultDto response = labelCommandService.createLabel(userPrincipal, request);
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-    }
-
-    @PatchMapping("/{labelId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> updateLabel(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long labelId,
-            @RequestBody @Valid LabelRequestDTO.CreateAndUpdateDto request) {
-        LabelResponseDTO.CreateResultDto response = labelCommandService.updateLabel(userPrincipal, labelId, request);
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-    }
-
-    @DeleteMapping("/{labelId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> deleteLabel(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long labelId) {
-        labelCommandService.deleteLabel(userPrincipal, labelId);
-        return ApiResponse.onSuccess(SuccessStatus._OK);
-
-    }
-
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getLabelList(

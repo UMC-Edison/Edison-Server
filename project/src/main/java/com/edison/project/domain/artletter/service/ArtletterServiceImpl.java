@@ -49,8 +49,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        Member member = findMemberById(userPrincipal.getMemberId());
 
         Artletter artletter = Artletter.builder()
                 .title(request.getTitle())
@@ -61,7 +60,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .category(request.getCategory())
                 .build();
 
-        Artletter savedArtletter = artletterRepository.save(artletter); // JpaRepository 기본 메서드 사용
+        Artletter savedArtletter = artletterRepository.save(artletter);
 
         return ArtletterDTO.CreateResponseDto.builder()
                 .artletterId(savedArtletter.getLetterId())
@@ -71,7 +70,6 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .isScrap(scrapRepository.existsByMemberAndArtletter(member, artletter))
                 .build();
     }
-
 
 
     // 아트레터 좋아요 토글 api
@@ -88,6 +86,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         return buildLikeResponseDto(letterId, likeCnt, !alreadyLiked);
     }
+
 
     // 아트레터 좋아요 토글 api - 좋아요 토글 메서드 분리
     private void toggleLikeStatus(Member member, Artletter artletter, boolean alreadyLiked) {
@@ -109,7 +108,6 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .isLiked(isLiked)
                 .build();
     }
-
 
 
     // 아트레터 스크랩 토글 api
@@ -204,8 +202,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         Member member;
         if (userPrincipal != null) { //로그인한 경우에만 member 조회
-            member = memberRepository.findById(userPrincipal.getMemberId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+            member = findMemberById(userPrincipal.getMemberId());
         } else {
             member = null;
         }
@@ -214,7 +211,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
 
         Set<Long> foundArtletterIds = artletters.stream()
-                .map(Artletter::getLetterId)  // Artletter에서 letterId 추출
+                .map(Artletter::getLetterId)
                 .collect(Collectors.toSet());
 
         for (Long artletterId : artletterIds) {
@@ -253,43 +250,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getScrapArtletter(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        Page<Scrap> scraps = scrapRepository.findByMember(member, pageable);
-
-        PageInfo pageInfo = new PageInfo(
-                scraps.getNumber(),
-                scraps.getSize(),
-                scraps.hasNext(),
-                scraps.getTotalElements(),
-                scraps.getTotalPages()
-        );
-
-        List<ArtletterDTO.MyScrapResponseDto> artletters = scraps.getContent().stream()
-                .map(scrap -> {
-                    Artletter artletter = scrap.getArtletter();
-                    int likesCnt = artletterLikesRepository.countByArtletter(artletter);
-                    int scrapsCnt = scrapRepository.countByArtletter(artletter);
-                    return ArtletterDTO.MyScrapResponseDto.builder()
-                            .artletterId(artletter.getLetterId())
-                            .title(artletter.getTitle())
-                            .thumbnail(artletter.getThumbnail())
-                            .likesCnt(likesCnt)
-                            .scrapsCnt(scrapsCnt)
-                            .scrappedAt(artletter.getCreatedAt())
-                            .build();
-                }).toList();
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
-    }
-
-    @Override
     public List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds) {
         List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
 
@@ -316,8 +276,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        Member member = findMemberById(userPrincipal.getMemberId());
 
         Page<Scrap> scraps = scrapRepository.findByMember(member, pageable);
 
@@ -347,7 +306,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                                     .thumbnail(artletter.getThumbnail())
                                     .likesCnt(likesCnt)
                                     .scrapsCnt(scrapsCnt)
-                                    .scrappedAt(artletter.getCreatedAt())
+                                    .scrappedAt(scrap.getCreatedAt())
                                     .build();
                         }).toList()
                 )).toList();
@@ -358,8 +317,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        Member member = findMemberById(userPrincipal.getMemberId());
 
         try {
             ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
@@ -369,11 +327,6 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         Page<Scrap> scraps = scrapRepository.findByMemberAndArtletter_Category(member, category, pageable);
 
-//        // 스크랩한 아트레터가 없는 경우 예외 발생
-//        if (scraps.isEmpty() || scraps==null) {
-//            throw new GeneralException(ErrorStatus.ARTLETTER_NOT_FOUND);
-//        }
-
         PageInfo pageInfo = new PageInfo(
                 scraps.getNumber(),
                 scraps.getSize(),
@@ -381,10 +334,6 @@ public class ArtletterServiceImpl implements ArtletterService {
                 scraps.getTotalElements(),
                 scraps.getTotalPages()
         );
-
-        // DTO 변환 전에 엔티티 기준으로 카테고리별 그룹화
-        Map<String, List<Scrap>> groupedByCategory = scraps.getContent().stream()
-                .collect(Collectors.groupingBy(scrap -> String.valueOf(scrap.getArtletter().getCategory())));
 
         List<ArtletterDTO.MyScrapResponseDto> artletters = scraps.getContent().stream()
                 .map(scrap -> {
@@ -397,7 +346,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                             .thumbnail(artletter.getThumbnail())
                             .likesCnt(likesCnt)
                             .scrapsCnt(scrapsCnt)
-                            .scrappedAt(artletter.getCreatedAt())
+                            .scrappedAt(scrap.getCreatedAt())
                             .build();
                 }).toList();
 
