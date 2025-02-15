@@ -66,7 +66,6 @@ public class LabelQueryServiceImpl implements LabelQueryService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        // **중복**
         if (!memberRepository.existsById(userPrincipal.getMemberId())) {
             throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
         }
@@ -74,10 +73,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         Label label = labelRepository.findById(labelId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
-        // 요청한 라벨이 memberId에 속해 있는지(해당 사용자가 만든 라벨이 맞는지) 검증
-        if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._UNAUTHORIZED);
-        }
+        checkOwnership(label, userPrincipal);
 
         List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(labelId);
 
@@ -98,8 +94,8 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // Bubble -> BubbleResponseDto 변환 함수 (중복 제거)
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
-        List<LabelResponseDTO.CreateResultDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.CreateResultDto.builder()
+        List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
                         .labelId(bl.getLabel().getLabelId())
                         .name(bl.getLabel().getName())
                         .color(bl.getLabel().getColor())
@@ -130,91 +126,80 @@ public class LabelQueryServiceImpl implements LabelQueryService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        Label label;
-
+        // 라벨 삭제
         if (Boolean.TRUE.equals(request.getIsDeleted())) {
-            // 존재하지 않는 라벨 ID의 삭제 요청 -> 에러 대신 요청값 그대로 반환
-            if (!labelRepository.existsById(request.getLabelId())) {
-                return LabelResponseDTO.LabelSyncResponseDTO.builder()
-                        .labelId(request.getLabelId())
-                        .name(request.getName())
-                        .color(request.getColor())
-                        .isDeleted(true)
-                        .createdAt(request.getCreatedAt())
-                        .updatedAt(request.getUpdatedAt())
-                        .deletedAt(request.getDeletedAt())
-                        .build();
-            }
-
-            // 라벨 삭제(hard delete)
-            label = labelRepository.findById(request.getLabelId()).get();
-
-            if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-                throw new GeneralException(ErrorStatus._FORBIDDEN);
-            }
-
-            label.setDeletedAt(request.getDeletedAt());
-            labelRepository.save(label);
-            labelRepository.deleteById(label.getLabelId());
-
-            return LabelResponseDTO.LabelSyncResponseDTO.builder()
-                    .labelId(request.getLabelId())
-                    .name(request.getName())
-                    .color(request.getColor())
-                    .isDeleted(true)
-                    .createdAt(request.getCreatedAt())
-                    .updatedAt(request.getUpdatedAt())
-                    .deletedAt(label.getDeletedAt())
-                    .build();
+            return labelDeletion(request, userPrincipal);
         }
 
-        // 라벨 업데이트 로직
+        // 라벨 수정
         if (labelRepository.existsById(request.getLabelId())) {
-            label = labelRepository.findById(request.getLabelId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
-
-            if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-                throw new GeneralException(ErrorStatus._FORBIDDEN);
-            }
-
-            label.setName(request.getName());
-            label.setColor(request.getColor());
-            label.setCreatedAt(request.getCreatedAt());
-            label.setUpdatedAt(request.getUpdatedAt());
-
-            labelRepository.save(label);
+            return labelUpdate(request, userPrincipal);
         }
 
-        // 라벨 생성 로직
-        else {
-            Member member = memberRepository.findById(userPrincipal.getMemberId())
-                    .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-            label = Label.builder()
-                    .labelId(request.getLabelId())
-                    .name(request.getName())
-                    .color(request.getColor())
-                    .member(member)
-                    .createdAt(request.getCreatedAt())
-                    .updatedAt(request.getUpdatedAt())
-                    .deletedAt(request.getDeletedAt())
-                    .build();
-
-            labelRepository.save(label);
-        }
-
-        return LabelResponseDTO.LabelSyncResponseDTO.builder()
-                .labelId(label.getLabelId())
-                .name(label.getName())
-                .color(label.getColor())
-                .isDeleted(false)
-                .createdAt(label.getCreatedAt())
-                .updatedAt(label.getUpdatedAt())
-                .deletedAt(label.getDeletedAt())
-                .build();
-
+        //라벨 생성
+        return labelCreation(request, userPrincipal);
     }
 
+    private LabelResponseDTO.LabelSyncResponseDTO labelDeletion(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
+        if (!labelRepository.existsByLabelId(request.getLabelId())) {
+            return buildLabelResponse(request.getLabelId(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
+        }
 
+        Label label = labelRepository.findById(request.getLabelId()).orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+        checkOwnership(label, userPrincipal);
+        labelRepository.delete(label);
+        return buildLabelResponse(request.getLabelId(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
+    }
+
+    private LabelResponseDTO.LabelSyncResponseDTO labelUpdate(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
+        Label label = labelRepository.findById(request.getLabelId()).orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+        checkOwnership(label, userPrincipal);
+
+        label.setName(request.getName());
+        label.setColor(request.getColor());
+        label.setCreatedAt(request.getCreatedAt());
+        label.setUpdatedAt(request.getUpdatedAt());
+
+        labelRepository.save(label);
+        return buildLabelResponse(label.getLabelId(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
+    }
+
+    // 라벨 생성 처리
+    private LabelResponseDTO.LabelSyncResponseDTO labelCreation(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Label label = Label.builder()
+                .labelId(request.getLabelId())
+                .name(request.getName())
+                .color(request.getColor())
+                .member(member)
+                .createdAt(request.getCreatedAt())
+                .updatedAt(request.getUpdatedAt())
+                .deletedAt(request.getDeletedAt())
+                .build();
+
+        labelRepository.save(label);
+
+        return buildLabelResponse(label.getLabelId(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
+    }
+
+    private LabelResponseDTO.LabelSyncResponseDTO buildLabelResponse(Long labelId,String name, int color, boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+        return LabelResponseDTO.LabelSyncResponseDTO.builder()
+                .labelId(labelId)
+                .name(name)
+                .color(color)
+                .isDeleted(isDeleted)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .deletedAt(deletedAt)
+                .build();
+    }
+
+    private void checkOwnership(Label label, CustomUserPrincipal userPrincipal) {
+        if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
+            throw new GeneralException(ErrorStatus._FORBIDDEN);
+        }
+    }
 
 }

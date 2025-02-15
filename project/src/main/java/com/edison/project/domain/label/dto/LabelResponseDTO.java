@@ -12,7 +12,7 @@ public class LabelResponseDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CreateResultDto {
+    public static class LabelSimpleInfoDto {
         private Long labelId;
         private String name;
         private int color;
