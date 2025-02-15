@@ -122,7 +122,6 @@ public class JwtUtil {
                 throw new GeneralException(ErrorStatus.INVALID_TOKEN);
             }
         } catch (Exception e) {
-            log.error("Google ID Token 검증 실패: ", e);
             throw new GeneralException(ErrorStatus.INVALID_TOKEN);
         }
     }
