@@ -136,7 +136,6 @@ public class ArtletterController {
     }
 
 
-
     // GET: 키워드 기반 search
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
@@ -196,16 +195,6 @@ public class ArtletterController {
             @PathVariable("letterId") Long letterId) {
         ArtletterDTO.ListResponseDto response = artletterService.getArtletter(userPrincipal, letterId);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
-    }
-
-    @GetMapping("/myscrap")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> getScrapArtletters(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return artletterService.getScrapArtletter(userPrincipal, pageable);
     }
 
     @GetMapping("/recommend-bar/category")

@@ -32,7 +32,8 @@ public class JwtUtil {
     private static final String GOOGLE_ISSUER = "https://accounts.google.com";
     
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String clientId ;
+    private String clientId;
+
 
     public String generateAccessToken(Long memberId, String email) {
         return JWT.create()
@@ -110,7 +111,6 @@ public class JwtUtil {
                     new NetHttpTransport(),
                     new GsonFactory()
             )
-
                     .setAudience(Collections.singletonList(clientId)) // 내 앱의 Client ID
                     .setIssuer(GOOGLE_ISSUER) // Google이 발급한 토큰인지 확인
                     .build();
