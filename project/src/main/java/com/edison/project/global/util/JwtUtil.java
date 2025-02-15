@@ -31,7 +31,7 @@ public class JwtUtil {
 
     private static final String GOOGLE_ISSUER = "https://accounts.google.com";
     
-    @Value("${GOOGLE_CLIENT_ID}")
+    @Value("${google.client-id}")
     private String clientId;
 
 
