@@ -31,7 +31,7 @@ public class JwtUtil {
 
     private static final String GOOGLE_ISSUER = "https://accounts.google.com";
     
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    @Value("${GOOGLE_CLIENT_ID}")
     private String clientId;
 
 
