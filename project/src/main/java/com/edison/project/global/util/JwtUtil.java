@@ -30,7 +30,10 @@ public class JwtUtil {
     private long refreshTokenExpiration;
 
     private static final String GOOGLE_ISSUER = "https://accounts.google.com";
-    private static final String CLIENT_ID = "${GOOGLE_CLIENT_ID}";
+    
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
+
 
     public String generateAccessToken(Long memberId, String email) {
         return JWT.create()
@@ -41,12 +44,6 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(Long memberId, String email) {
-        JWT.create()
-                .withSubject(String.valueOf(memberId))
-                .withClaim("email", email)
-                .withExpiresAt(new Date(System.currentTimeMillis() + refreshTokenExpiration * 1000))
-                .sign(Algorithm.HMAC256(secretKey));
-
         return JWT.create()
                 .withSubject(String.valueOf(memberId))
                 .withClaim("email", email)
@@ -114,7 +111,7 @@ public class JwtUtil {
                     new NetHttpTransport(),
                     new GsonFactory()
             )
-                    .setAudience(Collections.singletonList(CLIENT_ID)) // 내 앱의 Client ID
+                    .setAudience(Collections.singletonList(clientId)) // 내 앱의 Client ID
                     .setIssuer(GOOGLE_ISSUER) // Google이 발급한 토큰인지 확인
                     .build();
 

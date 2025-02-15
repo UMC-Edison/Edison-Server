@@ -36,7 +36,7 @@ public class BubbleResponseDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private List<LabelResponseDTO.CreateResultDto> labels;
+        private List<LabelResponseDTO.LabelSimpleInfoDto> labels;
         private Set<Long> backlinkIds;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -52,7 +52,7 @@ public class BubbleResponseDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private List<LabelResponseDTO.CreateResultDto> labels;
+        private List<LabelResponseDTO.LabelSimpleInfoDto> labels;
         private Set<Long> backlinkIds;
         private Boolean isDeleted;
         private Boolean isTrashed;
@@ -60,4 +60,5 @@ public class BubbleResponseDto {
         private LocalDateTime updatedAt;
         private LocalDateTime deletedAt;
     }
+
 }
