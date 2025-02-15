@@ -31,7 +31,7 @@ public class JwtUtil {
 
     private static final String GOOGLE_ISSUER = "https://accounts.google.com";
     
-    @Value("${google.client-id}")
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
 
 
@@ -122,6 +122,7 @@ public class JwtUtil {
                 throw new GeneralException(ErrorStatus.INVALID_TOKEN);
             }
         } catch (Exception e) {
+            log.error("Google ID Token 검증 실패: ", e);
             throw new GeneralException(ErrorStatus.INVALID_TOKEN);
         }
     }
