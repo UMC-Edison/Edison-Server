@@ -105,7 +105,7 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
-    // GET: 전체 아트레터 조회
+    // 전체 아트레터 조회
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
@@ -126,7 +126,7 @@ public class ArtletterController {
 
 
 
-    // 아트레터 검색 api
+    // 아트레터 검색
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
@@ -177,7 +177,7 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
-
+    // 아트레터 상세 조회
     @GetMapping("/{letterId}")
     public ResponseEntity<ApiResponse> getArtletterInfo(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
