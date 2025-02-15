@@ -34,6 +34,7 @@ public class JwtUtil {
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
 
+
     public String generateAccessToken(Long memberId, String email) {
         return JWT.create()
                 .withSubject(String.valueOf(memberId))
@@ -43,12 +44,6 @@ public class JwtUtil {
     }
 
     public String generateRefreshToken(Long memberId, String email) {
-        JWT.create()
-                .withSubject(String.valueOf(memberId))
-                .withClaim("email", email)
-                .withExpiresAt(new Date(System.currentTimeMillis() + refreshTokenExpiration * 1000))
-                .sign(Algorithm.HMAC256(secretKey));
-
         return JWT.create()
                 .withSubject(String.valueOf(memberId))
                 .withClaim("email", email)
