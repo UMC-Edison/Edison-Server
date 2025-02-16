@@ -81,6 +81,19 @@ public class MemberServiceImpl implements MemberService{
 
     }
 
+    // 개인정보 변경 API - 이미지 여부에 따른 빌드 로직 분리
+    private MemberResponseDto.UpdateProfileResultDto updateNicknameOrProfile(Member member, String nickname, String imageUrl) {
+        if (imageUrl == null) {
+            member.updateNickname(nickname);
+        } else {
+            member.updateProfile(nickname, imageUrl);
+        }
+        return MemberResponseDto.UpdateProfileResultDto.builder()
+                .nickname(member.getNickname())
+                .imageUrl(member.getProfileImg())
+                .build();
+    }
+
 
 
     // 개인정보 조회 API
