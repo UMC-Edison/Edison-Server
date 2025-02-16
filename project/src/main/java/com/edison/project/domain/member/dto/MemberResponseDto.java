@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MemberResponseDto {
 
@@ -17,6 +18,7 @@ public class MemberResponseDto {
     @AllArgsConstructor
     public static class LoginResultDto{
 
+        private AtomicReference<Boolean> isNewMember;
         private Long memberId;
         private String email;
         private String accessToken;
