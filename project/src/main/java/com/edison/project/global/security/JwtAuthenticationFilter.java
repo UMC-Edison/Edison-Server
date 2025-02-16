@@ -152,5 +152,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (!storedRefreshToken.getRefreshToken().equals(refreshToken)) {
             throw new GeneralException(ErrorStatus.INVALID_TOKEN);
         }
+
+        JwtAuthenticationToken authentication = new JwtAuthenticationToken(
+                new CustomUserPrincipal(null, email), // userId가 없을 수도 있음
+                token,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }
