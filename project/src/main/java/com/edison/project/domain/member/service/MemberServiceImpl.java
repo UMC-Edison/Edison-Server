@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.edison.project.domain.member.entity.Member;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.edison.project.common.status.SuccessStatus._OK;
@@ -44,8 +45,11 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
     public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
+
+        AtomicReference<Boolean> isNew = new AtomicReference<>(false);
         Member member = memberRepository.findByEmail(email)
                 .orElseGet(() -> {
+                    isNew.set(true);
                     Member newMember = Member.builder()
                             .email(email)
                             .role("ROLE_USER")
@@ -61,6 +65,7 @@ public class MemberServiceImpl implements MemberService{
         refreshTokenRepository.save(tokenEntity);
 
         return MemberResponseDto.LoginResultDto.builder()
+                .isNewMember(isNew)
                 .memberId(member.getMemberId())
                 .email(member.getEmail())
                 .accessToken(accessToken)
