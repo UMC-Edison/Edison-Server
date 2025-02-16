@@ -26,10 +26,7 @@ public class MemberResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UpdateProfileResultDto {
-
-        @NotBlank(message = "닉네임은 필수입니다.")
         private String nickname;
-
         private String imageUrl;
     }
 
@@ -38,12 +35,8 @@ public class MemberResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ProfileResultDto {
-
         private String email;
-
-        @NotBlank(message = "닉네임은 필수입니다.")
         private String nickname;
-
         private String profileImg;
     }
 

@@ -22,22 +22,24 @@ public class MemberRestController {
 
     // 회원정보(닉네임) 설정
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse> registerMember(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.CreateProfileDto request) {
-        return memberService.registerMember(userPrincipal, request);
+    public ResponseEntity<ApiResponse> createProfile(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.CreateProfileDto request) {
+        return memberService.createProfile(userPrincipal, request);
     }
 
     // 회원정보 변경
     @PatchMapping("/profile")
-    public ResponseEntity<ApiResponse> updateProfile(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.UpdateProfileDto request) {
+    public ResponseEntity<ApiResponse> updateProfile(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.UpdateProfileDto request) {
         return memberService.updateProfile(userPrincipal, request);
     }
 
     // 회원정보 조회
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> getMember(
+    public ResponseEntity<ApiResponse> getProfile(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        return memberService.getMember(userPrincipal);
+        return memberService.getProfile(userPrincipal);
     }
 
 

@@ -30,7 +30,7 @@ public enum ErrorStatus {
 
     // 멤버 관련 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),
-    NICKNAME_NOT_EXIST(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 필수 입니다."),
+    INVALID_NICKNAME(HttpStatus.BAD_REQUEST, "MEMBER4002", "닉네임은 공백일 수 없습니다."),
     NICKNAME_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4003", "닉네임이 변경되지 않았습니다."),
     PROFILE_NOT_CHANGED(HttpStatus.BAD_REQUEST, "MEMBER4004", "프로필이 변경되지 않았습니다."),
     NICKNAME_ALREADY_SET(HttpStatus.BAD_REQUEST, "MEMBER4005", "닉네임은 최초 1회만 설정 가능합니다."),
