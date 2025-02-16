@@ -12,24 +12,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class MemberResponseDto {
 
+    // 개인정보 관련 DTO
     @Builder
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class LoginResultDto{
-
-        private AtomicReference<Boolean> isNewMember;
-        private Long memberId;
-        private String email;
-        private String accessToken;
-        private String refreshToken;
-    }
-
-    @Builder
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ProfileResultDto{
+    public static class CreateProfileResultDto {
         private String nickname;
     }
 
@@ -44,15 +32,24 @@ public class MemberResponseDto {
 
         private String imageUrl;
     }
-  
+
     @Builder
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class RefreshResultDto{
-        private String accessToken;
+    public static class ProfileResultDto {
+
+        private String email;
+
+        @NotBlank(message = "닉네임은 필수입니다.")
+        private String nickname;
+
+        private String profileImg;
     }
 
+
+
+    // 아이덴티티 관련 DTO
     @Builder
     @Getter
     @NoArgsConstructor
@@ -79,17 +76,28 @@ public class MemberResponseDto {
         private Map<String, List<IdentityKeywordDto>> categories;
     }
 
+
+
+    // 로그인 관련 DTO
     @Builder
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class MemberResultDto {
-
-        private String email;
-
-        @NotBlank(message = "닉네임은 필수입니다.")
-        private String nickname;
-
-        private String profileImg;
+    public static class RefreshResultDto{
+        private String accessToken;
     }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LoginResultDto{
+
+        private AtomicReference<Boolean> isNewMember;
+        private Long memberId;
+        private String email;
+        private String accessToken;
+        private String refreshToken;
+    }
+
 }

@@ -42,6 +42,106 @@ public class MemberServiceImpl implements MemberService{
     private final RedisTokenService redisTokenService;
 
 
+    // 개인정보 설정 API
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.CreateProfileDto request) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+//        if(member.getNickname()!=null){
+//            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
+//        }
+
+        if (request.getNickname()==null || request.getNickname() == "") {
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        if (request.getNickname().length() > 20) {
+            throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
+        }
+
+        member = member.registerProfile(request.getNickname());
+        memberRepository.save(member);
+
+        MemberResponseDto.CreateProfileResultDto response = MemberResponseDto.CreateProfileResultDto.builder()
+                .nickname(member.getNickname())
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+
+
+
+    // 개인정보 변경 API
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
+
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        if (request.getNickname()==null || request.getNickname() == "") {
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
+        }
+
+        if(Objects.equals(member.getNickname(), request.getNickname()) && request.getImageUrl()==null){
+            throw new GeneralException(ErrorStatus.NICKNAME_NOT_CHANGED);
+        }
+
+        if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
+            throw new GeneralException(ErrorStatus.PROFILE_NOT_CHANGED);
+        }
+
+        MemberResponseDto.UpdateProfileResultDto response;
+
+        if(request.getImageUrl()==null){
+            member.updateNickname(request.getNickname());
+            response = MemberResponseDto.UpdateProfileResultDto.builder()
+                    .nickname(member.getNickname())
+                    .imageUrl(member.getProfileImg())
+                    .build();
+        }
+        else{
+            member.updateProfile(request.getNickname(), request.getImageUrl());
+
+            response = MemberResponseDto.UpdateProfileResultDto.builder()
+                    .nickname(member.getNickname())
+                    .imageUrl(request.getImageUrl())
+                    .build();
+        }
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+
+
+
+    // 개인정보 조회 API
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        MemberResponseDto.ProfileResultDto response = MemberResponseDto.ProfileResultDto.builder()
+                .email(userPrincipal.getEmail())
+                .nickname(member.getNickname())
+                .profileImg(member.getProfileImg())
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+
+
     @Override
     @Transactional
     public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
@@ -88,81 +188,6 @@ public class MemberServiceImpl implements MemberService{
                 });
     }
 
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.ProfileDto request) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        if(member.getNickname()!=null){
-            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
-        }
-
-        if (request.getNickname()==null || request.getNickname() == "") {
-            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
-        }
-
-        if (request.getNickname().length() > 20) {
-            throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
-        }
-
-        member = member.registerProfile(request.getNickname());
-        memberRepository.save(member);
-
-        MemberResponseDto.ProfileResultDto response = MemberResponseDto.ProfileResultDto.builder()
-                .nickname(member.getNickname())
-                .build();
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
-
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        if (request.getNickname()==null || request.getNickname() == "") {
-            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
-        }
-
-        if(Objects.equals(member.getNickname(), request.getNickname()) && request.getImageUrl()==null){
-            throw new GeneralException(ErrorStatus.NICKNAME_NOT_CHANGED);
-        }
-
-        if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
-            throw new GeneralException(ErrorStatus.PROFILE_NOT_CHANGED);
-        }
-
-        MemberResponseDto.UpdateProfileResultDto response;
-
-        if(request.getImageUrl()==null){
-            member.updateNickname(request.getNickname());
-            response = MemberResponseDto.UpdateProfileResultDto.builder()
-                    .nickname(member.getNickname())
-                    .imageUrl(member.getProfileImg())
-                    .build();
-        }
-        else{
-            member.updateProfile(request.getNickname(), request.getImageUrl());
-
-            response = MemberResponseDto.UpdateProfileResultDto.builder()
-                    .nickname(member.getNickname())
-                    .imageUrl(request.getImageUrl())
-                    .build();
-        }
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
-    }
 
     @Override
     @Transactional
@@ -373,23 +398,6 @@ public class MemberServiceImpl implements MemberService{
                 .category(category)
                 .keywords(request.getKeywords())
                 .build();
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal) {
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        MemberResponseDto.MemberResultDto response = MemberResponseDto.MemberResultDto.builder()
-                .email(userPrincipal.getEmail())
-                .nickname(member.getNickname())
-                .profileImg(member.getProfileImg())
-                .build();
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
     }
 
     @Override
