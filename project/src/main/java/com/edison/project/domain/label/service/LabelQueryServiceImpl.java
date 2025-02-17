@@ -91,7 +91,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
         List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
                 .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                        .labelId(bl.getLabel().getLabelId())
+                        .localIdx(bl.getLabel().getLocalIdx())
                         .name(bl.getLabel().getName())
                         .color(bl.getLabel().getColor())
                         .build())

@@ -13,7 +13,7 @@ public class LabelResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LabelSimpleInfoDto {
-        private Long labelId;
+        private Long localIdx;
         private String name;
         private int color;
     }

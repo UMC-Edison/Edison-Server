@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface LabelRepository extends JpaRepository<Label, Long> {
 
@@ -19,6 +20,7 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
             "GROUP BY l")
     List<Object[]> findLabelInfoByMemberId(@Param("memberId") Long memberId);
 
+    Set<Label> findAllByMemberAndLocalIdxIn(Member member, Set<Long> localIdxs);
 
     Optional<Label> findLabelByMemberAndLocalIdx(Member member, Long localIdx);
 
