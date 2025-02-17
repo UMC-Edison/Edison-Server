@@ -41,6 +41,73 @@ public class MemberServiceImpl implements MemberService{
     private final JwtUtil jwtUtil;
     private final RedisTokenService redisTokenService;
 
+    // 개인정보 설정 API
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> createProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.CreateProfileDto request) {
+
+        Member member = validateMember(userPrincipal);
+        validateNickname(request.getNickname());
+
+        if (member.getNickname() != null) {
+            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
+        }
+
+        member.setNickname(request.getNickname());
+        memberRepository.save(member);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, new MemberResponseDto.CreateProfileResultDto(member.getNickname()));
+    }
+
+
+
+    // 개인정보 변경 API
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
+
+        Member member = validateMember(userPrincipal);
+        validateNickname(request.getNickname());
+
+        if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
+            throw new GeneralException(ErrorStatus.PROFILE_NOT_CHANGED);
+        }
+
+        updateNicknameOrProfile(member, request.getNickname(), request.getImageUrl());
+        memberRepository.save(member);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, new MemberResponseDto.UpdateProfileResultDto(member.getNickname(), member.getProfileImg()));
+
+    }
+
+    // 개인정보 변경 API - 이미지 여부에 따른 빌드 로직 분리
+    private void updateNicknameOrProfile(Member member, String nickname, String imageUrl) {
+        if (imageUrl == null) {
+            member.setNickname(nickname);
+        } else {
+            member.setNickname(nickname);
+            member.setProfileImg(imageUrl);
+        }
+    }
+
+
+
+    // 개인정보 조회 API
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> getProfile(CustomUserPrincipal userPrincipal) {
+
+        Member member = validateMember(userPrincipal);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK,
+                new MemberResponseDto.ProfileResultDto(
+                        member.getEmail(),
+                        member.getNickname(),
+                        member.getProfileImg()
+                )
+        );
+    }
+
 
     @Override
     @Transactional
@@ -88,81 +155,6 @@ public class MemberServiceImpl implements MemberService{
                 });
     }
 
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> registerMember(CustomUserPrincipal userPrincipal,  MemberRequestDto.ProfileDto request) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        if(member.getNickname()!=null){
-            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
-        }
-
-        if (request.getNickname()==null || request.getNickname() == "") {
-            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
-        }
-
-        if (request.getNickname().length() > 20) {
-            throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
-        }
-
-        member = member.registerProfile(request.getNickname());
-        memberRepository.save(member);
-
-        MemberResponseDto.ProfileResultDto response = MemberResponseDto.ProfileResultDto.builder()
-                .nickname(member.getNickname())
-                .build();
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
-
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        if (request.getNickname()==null || request.getNickname() == "") {
-            throw new GeneralException(ErrorStatus.NICKNAME_NOT_EXIST);
-        }
-
-        if(Objects.equals(member.getNickname(), request.getNickname()) && request.getImageUrl()==null){
-            throw new GeneralException(ErrorStatus.NICKNAME_NOT_CHANGED);
-        }
-
-        if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
-            throw new GeneralException(ErrorStatus.PROFILE_NOT_CHANGED);
-        }
-
-        MemberResponseDto.UpdateProfileResultDto response;
-
-        if(request.getImageUrl()==null){
-            member.updateNickname(request.getNickname());
-            response = MemberResponseDto.UpdateProfileResultDto.builder()
-                    .nickname(member.getNickname())
-                    .imageUrl(member.getProfileImg())
-                    .build();
-        }
-        else{
-            member.updateProfile(request.getNickname(), request.getImageUrl());
-
-            response = MemberResponseDto.UpdateProfileResultDto.builder()
-                    .nickname(member.getNickname())
-                    .imageUrl(request.getImageUrl())
-                    .build();
-        }
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
-    }
 
     @Override
     @Transactional
@@ -377,23 +369,6 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> getMember(CustomUserPrincipal userPrincipal) {
-
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        MemberResponseDto.MemberResultDto response = MemberResponseDto.MemberResultDto.builder()
-                .email(userPrincipal.getEmail())
-                .nickname(member.getNickname())
-                .profileImg(member.getProfileImg())
-                .build();
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
-    }
-
-    @Override
-    @Transactional
     public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
 
         // Google idToken에서 사용자 정보 추출
@@ -405,4 +380,27 @@ public class MemberServiceImpl implements MemberService{
         return ApiResponse.onSuccess(SuccessStatus._OK, dto);
     }
 
+
+
+
+
+    /*
+    공통 메서드 모음
+     */
+
+    // 멤버 검증 로직
+    private Member validateMember(CustomUserPrincipal userPrincipal) {
+        return memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+    }
+
+    // 닉네임 검증 로직
+    private void validateNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new GeneralException(ErrorStatus.INVALID_NICKNAME);
+        }
+        if (nickname.length() > 20) {
+            throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
+        }
+    }
 }

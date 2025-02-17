@@ -20,26 +20,29 @@ public class MemberRestController {
 
     private final MemberService memberService;
 
+    // 회원정보(닉네임) 설정
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse> registerMember(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.ProfileDto request) {
-        return memberService.registerMember(userPrincipal, request);
+    public ResponseEntity<ApiResponse> createProfile(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.CreateProfileDto request) {
+        return memberService.createProfile(userPrincipal, request);
     }
 
+    // 회원정보 변경
     @PatchMapping("/profile")
-    public ResponseEntity<ApiResponse> updateProfile(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.UpdateProfileDto request) {
+    public ResponseEntity<ApiResponse> updateProfile(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.UpdateProfileDto request) {
         return memberService.updateProfile(userPrincipal, request);
     }
 
-    @PostMapping("/logout")
+    // 회원정보 조회
+    @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> logout(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        return memberService.logout(userPrincipal);
+    public ResponseEntity<ApiResponse> getProfile(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.getProfile(userPrincipal);
     }
 
-    @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestHeader("Refresh-Token") String refreshToken) {
-        return memberService.refreshAccessToken(refreshToken);
-    }
+
 
     @PostMapping("/identity")
     @PreAuthorize("isAuthenticated()")
@@ -57,12 +60,6 @@ public class MemberRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
-    @DeleteMapping("/cancel")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> cancel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        return memberService.cancel(userPrincipal);
-    }
-
     @PatchMapping("/identity")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> updateIdentityTest(
@@ -72,11 +69,23 @@ public class MemberRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
 
-    @GetMapping
+
+
+    @PostMapping("/logout")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> getMember(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        return memberService.getMember(userPrincipal);
+    public ResponseEntity<ApiResponse> logout(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.logout(userPrincipal);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse> refreshAccessToken(@RequestHeader("Refresh-Token") String refreshToken) {
+        return memberService.refreshAccessToken(refreshToken);
+    }
+
+    @DeleteMapping("/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> cancel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return memberService.cancel(userPrincipal);
     }
 
     @PostMapping("/google")
