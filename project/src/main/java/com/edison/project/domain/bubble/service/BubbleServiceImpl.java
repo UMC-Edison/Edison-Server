@@ -51,22 +51,16 @@ public class BubbleServiceImpl implements BubbleService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    // Bubble -> BubbleResponseDto 변환 메서드 (공통 로직)
+    // Bubble → DTO 변환
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
-        List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                        .localIdx(bl.getLabel().getLocalIdx())
-                        .name(bl.getLabel().getName())
-                        .color(bl.getLabel().getColor())
-                        .build())
-                .collect(Collectors.toList());
-
         return BubbleResponseDto.SyncResultDto.builder()
                 .localIdx(bubble.getLocalIdx())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
-                .labels(labelDtos)
+                .labels(mapLabelsToDto(bubble.getLabels().stream()
+                        .map(BubbleLabel::getLabel)
+                        .collect(Collectors.toSet())))
                 .backlinkIdxs(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
                         .map(Bubble::getLocalIdx)
@@ -78,12 +72,11 @@ public class BubbleServiceImpl implements BubbleService {
                 .build();
     }
 
+    /** 전체 버블 목록 조회 */
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+        validateUser(userPrincipal);
 
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
 
@@ -98,15 +91,10 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
+    /** 휴지통 버블 목록 조회 */
     @Override
     public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        // Member 조회
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        validateUser(userPrincipal);
 
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
 
@@ -133,7 +121,7 @@ public class BubbleServiceImpl implements BubbleService {
                             .title(bubble.getTitle())
                             .content(bubble.getContent())
                             .mainImageUrl(bubble.getMainImg())
-                            .labels(labelDtos) // 라벨 정보 추가
+                            .labels(labelDtos)
                             .backlinkIdxs(bubble.getBacklinks().stream()
                                     .map(BubbleBacklink::getBacklinkBubble)
                                     .map(Bubble::getLocalIdx)
@@ -148,40 +136,31 @@ public class BubbleServiceImpl implements BubbleService {
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
-  
+
+  /** 최근 7일 내 버블 조회 */
   @Override
   public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-  
+
+        validateUser(userPrincipal);
         LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
 
-        // 7일 이내 버블 조회
         Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
 
-        // DTO로 변환
         List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
-        PageInfo pageInfo = new PageInfo(
-                bubblePage.getNumber(),
-                bubblePage.getSize(),
-                bubblePage.hasNext(),
-                bubblePage.getTotalElements(),
-                bubblePage.getTotalPages()
-        );
+        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
+                bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
 
+    /** 버블 상세 조회 */
     @Override
     public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long localIdx) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+        validateUser(userPrincipal);
 
         Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
@@ -190,12 +169,11 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
 
+    /** 버블 SYNC */
     @Override
     @Transactional
     public BubbleResponseDto.SyncResultDto syncBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.SyncDto request) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+        validateUser(userPrincipal);
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
@@ -330,9 +308,7 @@ public class BubbleServiceImpl implements BubbleService {
     private Set<Bubble> validateBacklinks(Set<Long> backlinkIdxs, Member member) {
         Set<Long> idxs = Optional.ofNullable(backlinkIdxs).orElse(Collections.emptySet());
 
-        if (idxs.isEmpty()) {
-            return Collections.emptySet();
-        }
+        if (idxs.isEmpty()) { return Collections.emptySet();}
         Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllByMemberAndLocalIdxIn(member, idxs));
 
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
@@ -343,26 +319,21 @@ public class BubbleServiceImpl implements BubbleService {
         if (!backlinks.stream().allMatch(bubble -> bubble.getMember().equals(member))) {
             throw new GeneralException(ErrorStatus.BACKLINK_FORBIDDEN);
         }
+
         return new HashSet<>(backlinks);
     }
 
     private Set<Label> validateLabels(Set<Long> labelIdxs, Member member) {
         Set<Long> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
 
-        if (idxs.isEmpty()) {
-            return Collections.emptySet(); // 빈 Set 반환
-        }
-        if (idxs.size() > 3) {
-            throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
-        }
+        if (idxs.isEmpty()) { return Collections.emptySet();}
+        if (idxs.size() > 3) { throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);}
 
         Set<Label> labels = new HashSet<>(labelRepository.findAllByMemberAndLocalIdxIn(member, idxs));
 
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
         Set<Long> foundIdxs = labels.stream().map(Label::getLocalIdx).collect(Collectors.toSet());
-        if (!foundIdxs.containsAll(idxs)) {
-            throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
-        }
+        if (!foundIdxs.containsAll(idxs)) { throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);}
 
         if (!labels.stream().allMatch(label -> label.getMember().equals(member))) {
             throw new GeneralException(ErrorStatus.LABELS_FORBIDDEN);
@@ -394,5 +365,12 @@ public class BubbleServiceImpl implements BubbleService {
                         .color(l.getColor())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    // 사용자 인증 정보 검증
+    private void validateUser(CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
     }
 }
