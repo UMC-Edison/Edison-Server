@@ -441,25 +441,13 @@ public class BubbleServiceImpl implements BubbleService {
         Set<Long> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
 
         if (idxs.isEmpty()) {
-            System.out.println("🔴 LabelIdxs가 비어 있음");
             return Collections.emptySet(); // 빈 Set 반환
         }
-
         if (idxs.size() > 3) {
             throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
         }
 
-        System.out.println("🟢 찾으려는 labelIdxs: " + idxs);
-        System.out.println("🟢 찾으려는 member: " + member.getMemberId());
-
         Set<Label> labels = new HashSet<>(labelRepository.findAllByMemberAndLocalIdxIn(member, idxs));
-
-        if (labels.isEmpty()) {
-            System.out.println("🔴 반환된 Label이 없음");
-        } else {
-            System.out.println("🟢 반환된 Labels: " + labels);
-        }
-
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
         Set<Long> foundIdxs = labels.stream().map(Label::getLocalIdx).collect(Collectors.toSet());
         if (!foundIdxs.containsAll(idxs)) {
