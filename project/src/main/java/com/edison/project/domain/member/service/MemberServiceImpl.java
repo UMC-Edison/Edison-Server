@@ -47,19 +47,16 @@ public class MemberServiceImpl implements MemberService{
     public ResponseEntity<ApiResponse> createProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.CreateProfileDto request) {
 
         Member member = validateMember(userPrincipal);
-
         validateNickname(request.getNickname());
+
         if (member.getNickname() != null) {
             throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
         }
 
-        member = member.registerProfile(request.getNickname());
+        member.setNickname(request.getNickname());
         memberRepository.save(member);
 
-        MemberResponseDto.CreateProfileResultDto response = MemberResponseDto.CreateProfileResultDto.builder()
-                .nickname(member.getNickname())
-                .build();
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+        return ApiResponse.onSuccess(SuccessStatus._OK, new MemberResponseDto.CreateProfileResultDto(member.getNickname()));
     }
 
 
@@ -70,28 +67,27 @@ public class MemberServiceImpl implements MemberService{
     public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
 
         Member member = validateMember(userPrincipal);
-
         validateNickname(request.getNickname());
+
         if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
             throw new GeneralException(ErrorStatus.PROFILE_NOT_CHANGED);
         }
 
-        MemberResponseDto.UpdateProfileResultDto response = updateNicknameOrProfile(member, request.getNickname(), request.getImageUrl());
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+        updateNicknameOrProfile(member, request.getNickname(), request.getImageUrl());
+        memberRepository.save(member);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, new MemberResponseDto.UpdateProfileResultDto(member.getNickname(), member.getProfileImg()));
 
     }
 
     // 개인정보 변경 API - 이미지 여부에 따른 빌드 로직 분리
-    private MemberResponseDto.UpdateProfileResultDto updateNicknameOrProfile(Member member, String nickname, String imageUrl) {
+    private void updateNicknameOrProfile(Member member, String nickname, String imageUrl) {
         if (imageUrl == null) {
-            member.updateNickname(nickname);
+            member.setNickname(nickname);
         } else {
-            member.updateProfile(nickname, imageUrl);
+            member.setNickname(nickname);
+            member.setProfileImg(imageUrl);
         }
-        return MemberResponseDto.UpdateProfileResultDto.builder()
-                .nickname(member.getNickname())
-                .imageUrl(member.getProfileImg())
-                .build();
     }
 
 
@@ -103,13 +99,13 @@ public class MemberServiceImpl implements MemberService{
 
         Member member = validateMember(userPrincipal);
 
-        MemberResponseDto.ProfileResultDto response = MemberResponseDto.ProfileResultDto.builder()
-                .email(userPrincipal.getEmail())
-                .nickname(member.getNickname())
-                .profileImg(member.getProfileImg())
-                .build();
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
+        return ApiResponse.onSuccess(SuccessStatus._OK,
+                new MemberResponseDto.ProfileResultDto(
+                        member.getEmail(),
+                        member.getNickname(),
+                        member.getProfileImg()
+                )
+        );
     }
 
 
