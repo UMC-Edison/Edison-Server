@@ -20,7 +20,7 @@ public class BubbleRequestDto {
     @AllArgsConstructor
     public static class SyncDto {
         @NotNull(message = "(DTO)버블 ID는 필수입니다.")
-        private Long BubbleId;
+        private Long localIdx;
 
         private String title;
         private String content;

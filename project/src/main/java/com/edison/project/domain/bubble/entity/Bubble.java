@@ -14,8 +14,7 @@ import java.util.Set;
 @Setter
 @Table(name = "Bubble", indexes = {
         @Index(name = "idx_bubble_member_id", columnList = "member_id"),
-        @Index(name = "idx_bubble_title", columnList = "title")})
-
+        @Index(name = "idx_localIdx", columnList = "local_idx")})
 public class Bubble {
 
     @Id
@@ -64,9 +63,9 @@ public class Bubble {
     private Set<BubbleBacklink> referencingBubbles = new HashSet<>();
 
     @Builder
-    public Bubble(Member member, Long bubbleId, String title, String content, String mainImg, Set<BubbleLabel> labels,
+    public Bubble(Member member, Long localIdx, String title, String content, String mainImg, Set<BubbleLabel> labels,
                   boolean isTrashed, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
-        this.bubbleId = bubbleId;
+        this.localIdx = localIdx;
         this.member = member;
         this.title = title;
         this.content = content;

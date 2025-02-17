@@ -15,6 +15,8 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
+@Table(name = "Label", indexes = {
+        @Index(name = "idx_localIdx", columnList = "local_idx")})
 public class Label {
 
     @Id

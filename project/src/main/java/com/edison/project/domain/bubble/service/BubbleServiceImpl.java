@@ -205,8 +205,9 @@ public class BubbleServiceImpl implements BubbleService {
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
+        // idx -> label Pk
         Set<Bubble> backlinks = validateBacklinks(request.getBacklinkIds(), member);
-        Set<Label> labels = validateLabels(request.getLabelIdxs(), member);  // idx -> label Pk
+        Set<Label> labels = validateLabels(request.getLabelIdxs(), member);
 
         Bubble bubble = processBubble(request, member, backlinks, labels);
         return buildSyncResultDto(request, bubble, member);
@@ -214,21 +215,17 @@ public class BubbleServiceImpl implements BubbleService {
 
     private Bubble processBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
         if (request.isDeleted()){
-            return bubbleRepository.existsById(request.getBubbleId()) ? hardDeleteBubble(request, member) : null;
+            return bubbleRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx()) ? hardDeleteBubble(request, member) : null;
         }
 
-        return bubbleRepository.existsById(request.getBubbleId())
+        return bubbleRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx())
                 ? updateExistingBubble(request, member, backlinks, labels)
                 : createNewBubble(request, member, backlinks, labels);
     }
 
     private Bubble updateExistingBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
-        Bubble bubble = bubbleRepository.findById(request.getBubbleId())
+        Bubble bubble = bubbleRepository.findByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        if(!bubble.getMember().getMemberId().equals(member.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
 
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
@@ -253,12 +250,8 @@ public class BubbleServiceImpl implements BubbleService {
 
     private Bubble hardDeleteBubble(BubbleRequestDto.SyncDto request, Member member) {
 
-        Bubble bubble = bubbleRepository.findById(request.getBubbleId())
+        Bubble bubble = bubbleRepository.findByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        if (!bubble.getMember().getMemberId().equals(member.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
 
         bubbleRepository.delete(bubble);
         return null;
@@ -266,7 +259,7 @@ public class BubbleServiceImpl implements BubbleService {
 
     private Bubble createNewBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
         Bubble newBubble = Bubble.builder()
-                .bubbleId(request.getBubbleId())
+                .localIdx(request.getLocalIdx())
                 .title(request.getTitle())
                 .content(request.getContent())
                 .mainImg(request.getMainImageUrl())
@@ -303,7 +296,7 @@ public class BubbleServiceImpl implements BubbleService {
     private BubbleResponseDto.SyncResultDto buildSyncResultDto(BubbleRequestDto.SyncDto request, Bubble bubble, Member member) {
         if (bubble == null) {
             return BubbleResponseDto.SyncResultDto.builder()
-                    .bubbleId(request.getBubbleId())
+                    .localIdx(request.getLocalIdx())
                     .title(request.getTitle())
                     .content(request.getContent())
                     .mainImageUrl(request.getMainImageUrl())
@@ -321,7 +314,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toSet());
 
         return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
+                .localIdx(bubble.getLocalIdx())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
@@ -339,19 +332,23 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     // 백링크 검증
-    private Set<Bubble> validateBacklinks(Set<Long> backlinkIds, Member member) {
-        if (backlinkIds == null || backlinkIds.isEmpty()) {
+    private Set<Bubble> validateBacklinks(Set<Long> backlinkIdxs, Member member) {
+        Set<Long> idxs = Optional.ofNullable(backlinkIdxs).orElse(Collections.emptySet());
+
+        if (idxs.isEmpty()) {
             return Collections.emptySet();
         }
+        Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllByMemberAndLocalIdxIn(member, idxs));
 
-        Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllById(backlinkIds));
-        if (backlinks.size() != backlinkIds.size()) {
+        // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
+        Set<Long> foundIdxs = backlinks.stream().map(Bubble::getLocalIdx).collect(Collectors.toSet());
+        if (!foundIdxs.containsAll(idxs)) {
             throw new GeneralException(ErrorStatus.BACKLINK_NOT_FOUND);
         }
-        if (!backlinks.stream().allMatch(backlink-> backlink.getMember().equals(member))) {
+        if (!backlinks.stream().allMatch(bubble -> bubble.getMember().equals(member))) {
             throw new GeneralException(ErrorStatus.BACKLINK_FORBIDDEN);
         }
-        return backlinks;
+        return new HashSet<>(backlinks);
     }
 
     private Set<Label> validateLabels(Set<Long> labelIdxs, Member member) {
@@ -365,6 +362,7 @@ public class BubbleServiceImpl implements BubbleService {
         }
 
         Set<Label> labels = new HashSet<>(labelRepository.findAllByMemberAndLocalIdxIn(member, idxs));
+
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
         Set<Long> foundIdxs = labels.stream().map(Label::getLocalIdx).collect(Collectors.toSet());
         if (!foundIdxs.containsAll(idxs)) {

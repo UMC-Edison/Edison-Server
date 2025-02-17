@@ -14,7 +14,7 @@ public class BubbleResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TrashedListResultDto {
-        private Long bubbleId;
+        private Long localIdx;
         private String title;
         private String content;
         private String mainImageUrl;
@@ -30,7 +30,7 @@ public class BubbleResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SyncResultDto {
-        private Long bubbleId;
+        private Long localIdx;
         private String title;
         private String content;
         private String mainImageUrl;
