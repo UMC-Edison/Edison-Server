@@ -161,7 +161,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         label.setUpdatedAt(request.getUpdatedAt());
 
         labelRepository.save(label);
-        return buildLabelResponse(label.getLabelId(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
+        return buildLabelResponse(label.getLocalIdx(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
     }
 
     // 라벨 생성 처리
@@ -170,7 +170,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         Label label = Label.builder()
-                .labelId(request.getLabelId())
+                .localIdx(request.getLabelId())
                 .name(request.getName())
                 .color(request.getColor())
                 .member(member)
@@ -181,12 +181,12 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
         labelRepository.save(label);
 
-        return buildLabelResponse(label.getLabelId(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
+        return buildLabelResponse(label.getLocalIdx(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
     }
 
-    private LabelResponseDTO.LabelSyncResponseDTO buildLabelResponse(Long labelId,String name, int color, boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+    private LabelResponseDTO.LabelSyncResponseDTO buildLabelResponse(Long localIdx, String name, int color, boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
         return LabelResponseDTO.LabelSyncResponseDTO.builder()
-                .labelId(labelId)
+                .localIdx(localIdx)
                 .name(name)
                 .color(color)
                 .isDeleted(isDeleted)

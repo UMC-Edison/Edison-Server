@@ -17,5 +17,7 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
             "GROUP BY l")
     List<Object[]> findLabelInfoByMemberId(@Param("memberId") Long memberId);
 
+    // 사용자 id와 local_idx로 버블 조회
+
     boolean existsByLabelId(Long labelId);
 }

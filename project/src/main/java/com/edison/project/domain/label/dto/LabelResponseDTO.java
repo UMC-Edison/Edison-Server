@@ -46,7 +46,7 @@ public class LabelResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LabelSyncResponseDTO {
-        private Long labelId;
+        private Long localIdx;
         private String name;
         private int color;
         private Boolean isDeleted;
