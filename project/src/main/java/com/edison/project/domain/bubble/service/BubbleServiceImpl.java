@@ -178,17 +178,13 @@ public class BubbleServiceImpl implements BubbleService {
 
 
     @Override
-    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
+    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long localIdx) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsTrashedFalse(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        // 조회 권한 확인
-        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
+        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         return convertToBubbleResponseDto(bubble);
     }

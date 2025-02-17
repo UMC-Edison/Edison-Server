@@ -21,7 +21,7 @@ import java.util.Set;
 public interface BubbleRepository extends JpaRepository<Bubble, Long> {
 
     // 삭제되지 않은 Bubble만 조회
-    Optional<Bubble> findByBubbleIdAndIsTrashedFalse(Long bubbleId);
+    Optional<Bubble> findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(Long memberId, Long localIdx);
 
     Page<Bubble> findByMember_MemberIdAndIsTrashedFalse(Long memberId, Pageable pageable);
     Page<Bubble> findByMember_MemberIdAndIsTrashedTrue(Long memberId, Pageable pageable);

@@ -54,12 +54,12 @@ public class BubbleRestController {
 
 
     // 버블 상세정보 조회
-    @GetMapping("/{bubbleId}")
+    @GetMapping("/{localIdx}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getBubble (
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId) {
-        BubbleResponseDto.SyncResultDto response = bubbleService.getBubble(userPrincipal, bubbleId);
+            @PathVariable Long localIdx) {
+        BubbleResponseDto.SyncResultDto response = bubbleService.getBubble(userPrincipal, localIdx);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
