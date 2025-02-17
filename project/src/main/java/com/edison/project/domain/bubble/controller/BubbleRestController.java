@@ -77,26 +77,6 @@ public class BubbleRestController {
 
     }
 
-    // 버블 검색
-    @GetMapping("/search")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> searchBubbles(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "false") boolean recent,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-
-        if (keyword == null || keyword.trim().isEmpty()) {
-            throw new GeneralException(ErrorStatus.INVALID_KEYWORD);
-        }
-
-        keyword = keyword.trim();
-
-        Pageable pageable = PageRequest.of(page, size);
-        return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
-    }
-
     // 버블 SYNC
     @PostMapping("/sync")
     @PreAuthorize("isAuthenticated()")

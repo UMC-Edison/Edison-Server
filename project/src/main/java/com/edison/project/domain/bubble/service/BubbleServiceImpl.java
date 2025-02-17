@@ -194,89 +194,6 @@ public class BubbleServiceImpl implements BubbleService {
         return convertToBubbleResponseDto(bubble);
     }
 
-    // 버블 검색
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, boolean recent, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-        memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        List<Bubble> bubbles = bubbleRepository.searchBubblesByKeyword(keyword);
-
-        // 7일 이내 필터링 조건
-        if (Boolean.TRUE.equals(recent)) {
-            ZonedDateTime sevenDaysAgoZoned = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).minusDays(7);
-            LocalDateTime sevenDaysAgo = sevenDaysAgoZoned.toLocalDateTime();
-
-            bubbles = bubbles.stream()
-                    .filter(bubble -> bubble.getUpdatedAt().isAfter(sevenDaysAgo))
-                    .collect(Collectors.toList());
-        }
-
-
-        // 검색어 정렬 : 제목, 본문, 오래된 순서 순
-        List<Bubble> sortedBubbles = bubbles.stream()
-                .sorted((b1, b2) -> {
-                    boolean b1TitleMatch = b1.getTitle().contains(keyword);
-                    boolean b2TitleMatch = b2.getTitle().contains(keyword);
-                    if (b1TitleMatch && !b2TitleMatch) return -1;
-                    if (!b1TitleMatch && b2TitleMatch) return 1;
-
-                    int b1ContentMatchCount = countOccurrences(b1.getContent(), keyword);
-                    int b2ContentMatchCount = countOccurrences(b2.getContent(), keyword);
-                    if (b1ContentMatchCount != b2ContentMatchCount) {
-                        return Integer.compare(b2ContentMatchCount, b1ContentMatchCount);
-                    }
-
-                    return b1.getUpdatedAt().compareTo(b2.getUpdatedAt());
-                })
-                .collect(Collectors.toList());
-
-        // 페이징 적용
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), sortedBubbles.size());
-        List<Bubble> paginatedBubbles = sortedBubbles.subList(start, end);
-
-        PageInfo pageInfo = new PageInfo(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                end < sortedBubbles.size(),
-                (long) sortedBubbles.size(),
-                (sortedBubbles.size() + pageable.getPageSize() - 1) / pageable.getPageSize()
-        );
-
-        List<BubbleResponseDto.SyncResultDto> results = paginatedBubbles.stream()
-                .map(this::convertToBubbleResponseDto)
-                .collect(Collectors.toList());
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
-    }
-
-    @Override
-    // @Scheduled(cron = "0 0 0 * * ?") // 매일 새벽 0시에 실행
-    @Scheduled(cron = "0 35 17 * * ?", zone = "Asia/Seoul") // 테스트할 시간
-    @Transactional
-    public void deleteExpiredBubble() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiryDate = now.minusDays(30);
-
-        List<Bubble> expiredBubbles = bubbleRepository.findAllByUpdatedAtBeforeAndIsTrashedTrue(expiryDate);
-
-        if (!expiredBubbles.isEmpty()) {
-            List<Long> bubbleIds = expiredBubbles.stream()
-                            .map(Bubble::getBubbleId)
-                                    .collect(Collectors.toList());
-
-            bubbleRepository.deleteAll(expiredBubbles);
-            log.info("Deleted {} expired bubbles", expiredBubbles.size());
-        } else {
-            log.info("No expired bubbles found for deletion");
-        }
-
-    }
 
     @Override
     @Transactional
@@ -484,16 +401,5 @@ public class BubbleServiceImpl implements BubbleService {
                         .color(l.getColor())
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    private int countOccurrences(String content, String keyword) {
-        if (content == null || keyword == null || keyword.isEmpty()) return 0;
-        int count = 0;
-        int idx = content.indexOf(keyword);
-        while (idx != -1) {
-            count++;
-            idx = content.indexOf(keyword, idx + keyword.length());
-        }
-        return count;
     }
 }

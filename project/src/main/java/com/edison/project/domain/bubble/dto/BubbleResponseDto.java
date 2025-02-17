@@ -13,24 +13,6 @@ public class BubbleResponseDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class TrashResultDto {
-        private Long bubbleId;
-        private boolean isTrashed;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RestoreResultDto {
-        private Long bubbleId;
-        private boolean isRestored;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class TrashedListResultDto {
         private Long bubbleId;
         private String title;

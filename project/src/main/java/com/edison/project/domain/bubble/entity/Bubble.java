@@ -19,9 +19,12 @@ import java.util.Set;
 public class Bubble {
 
     @Id
-    // @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "bubble_id")
     private Long bubbleId;
+
+    @Column(name = "local_idx")
+    private Long localIdx;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -36,7 +39,7 @@ public class Bubble {
     @Column(name = "main_img", length = 2083)
     private String mainImg;
 
-    @Column(name = "is_deleted", nullable = false)  //휴지통에도 없는!
+    @Column(name = "is_deleted", nullable = false)  //휴지통에도 없는
     private boolean isDeleted = false;
 
     @Column(name = "is_trashed", nullable = false)  //휴지통에 있는 지(soft_delete)
@@ -48,7 +51,7 @@ public class Bubble {
     @Column(name = "updated_at", nullable = false)
     protected LocalDateTime updatedAt;
 
-    @Column(name = "deleted_at", nullable = true)
+    @Column(name = "deleted_at", nullable = true)  // 휴지통에 들어간 시간
     protected LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -87,16 +90,9 @@ public class Bubble {
         this.labels.addAll(bubbleLabels);
     }
 
-    public void setLabels(Set<BubbleLabel> labels) {
-        this.labels = labels;
-    }
 
     public void setTrashed (boolean trashed) {
         this.isTrashed = trashed;
-    }
-
-    public boolean isTrashed() {
-        return isTrashed;
     }
 
 }

@@ -18,33 +18,6 @@ public class BubbleRequestDto {
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ListDto {
-        private String title;
-        private String content;
-        private String mainImageUrl;
-        private Set<Long> labelIdxSet;  // 중복 방지
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class DeleteDto {
-        private Long bubbleId;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class RestoreDto {
-        private Long bubbleId;
-    }
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class SyncDto {
         @NotNull(message = "(DTO)버블 ID는 필수입니다.")
         private Long BubbleId;
