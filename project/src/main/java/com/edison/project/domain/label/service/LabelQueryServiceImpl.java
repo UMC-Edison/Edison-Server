@@ -98,7 +98,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .collect(Collectors.toList());
 
         return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
+                .localIdx(bubble.getLocalIdx())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())

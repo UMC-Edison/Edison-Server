@@ -62,7 +62,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toList());
 
         return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
+                .localIdx(bubble.getLocalIdx())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
@@ -131,7 +131,7 @@ public class BubbleServiceImpl implements BubbleService {
                             .collect(Collectors.toList());
 
                     return BubbleResponseDto.TrashedListResultDto.builder()
-                            .bubbleId(bubble.getBubbleId())
+                            .localIdx(bubble.getLocalIdx())
                             .title(bubble.getTitle())
                             .content(bubble.getContent())
                             .mainImageUrl(bubble.getMainImg())
@@ -321,7 +321,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .labels(mapLabelsToDto(labels))
                 .backlinkIds(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
-                        .map(Bubble::getBubbleId)
+                        .map(Bubble::getLocalIdx)
                         .collect(Collectors.toSet()))
                 .isDeleted(false)
                 .isTrashed(bubble.isTrashed())
