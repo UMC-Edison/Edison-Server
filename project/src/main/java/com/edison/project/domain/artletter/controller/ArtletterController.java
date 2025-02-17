@@ -1,17 +1,15 @@
 package com.edison.project.domain.artletter.controller;
 
 import com.edison.project.common.response.ApiResponse;
-import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
-import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,14 +18,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/artletters")
 @RequiredArgsConstructor
+@Slf4j
 public class ArtletterController {
 
     private final ArtletterService artletterService;
@@ -108,57 +105,48 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
-    // GET: 전체 아트레터 조회
+    // 전체 아트레터 조회
     @GetMapping
     public ResponseEntity<ApiResponse> getAllArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "default") String sortType) {
 
-        Page<Artletter> artletters = artletterService.getAllArtletters(page, size);
+        if (page < 0 || size <= 0 || size > 100) {
+            return ApiResponse.onFailure(ErrorStatus.INVALID_PAGE_REQUEST);
+        }
 
-        // 필드(id, title)만 추출
-        List<Map<String, Object>> simplifiedResult = artletters.getContent().stream()
-                .map(artletter -> {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("id", artletter.getLetterId()); // letterId를 id로 변환
-                    map.put("title", artletter.getTitle());
-                    return map;
-                })
-                .collect(Collectors.toList());
+        if (!List.of("default", "likes", "scraps", "latest").contains(sortType)) {
+            sortType = "default";
+        }
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, new PageInfo(
-                artletters.getNumber(),
-                artletters.getSize(),
-                artletters.hasNext(),
-                artletters.getTotalElements(),
-                artletters.getTotalPages()
-        ), simplifiedResult);
+        return artletterService.getAllArtlettersResponse(userPrincipal, page, size, sortType);
     }
 
 
-    // GET: 키워드 기반 search
+    // 아트레터 검색
     @GetMapping("/search")
     public ResponseEntity<ApiResponse> searchArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "default") String sortType) {
 
-        if(keyword == null) {
-            // 키워드 비어있을 때 에러핸들링
+        if (page < 0 || size <= 0 || size > 100) {
+            return ApiResponse.onFailure(ErrorStatus.INVALID_PAGE_REQUEST);
+        }
+
+        if (keyword == null || keyword.trim().isEmpty()) {
             return ApiResponse.onFailure(ErrorStatus.KEYWORD_IS_EMPTY);
         }
 
-        if (keyword.trim().isEmpty()) {
-            // 검색 결과가 없을 때 처리
-            return ApiResponse.onFailure(ErrorStatus.RESULT_NOT_FOUND);
+        if (!List.of("default", "likes", "scraps", "latest").contains(sortType)) {
+            sortType = "default";
         }
 
-
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> results = artletterService.searchArtletters(keyword, pageable);
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, results.getContent());
+        return artletterService.searchArtletters(userPrincipal, keyword.trim(), page, size, sortType);
     }
 
 
@@ -188,7 +176,7 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
-
+    // 아트레터 상세 조회
     @GetMapping("/{letterId}")
     public ResponseEntity<ApiResponse> getArtletterInfo(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
