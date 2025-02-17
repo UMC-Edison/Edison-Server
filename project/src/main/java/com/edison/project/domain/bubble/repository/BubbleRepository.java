@@ -34,10 +34,6 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
             Pageable pageable
     );
 
-    // 30일 지난 휴지통 버블 목록
-    @Query("SELECT b from Bubble b where b.updatedAt < :expiryDate and b.isTrashed = true")
-    List<Bubble> findAllByUpdatedAtBeforeAndIsTrashedTrue(@Param("expiryDate") LocalDateTime expiryDate);
-
     Set<Bubble> findAllByMemberAndLocalIdxIn(Member member, Set<Long> localIdxs);
     Optional<Bubble> findByMemberAndLocalIdx(Member member, Long localIdx);
     Boolean existsByMemberAndLocalIdx(Member member, Long localIdx);

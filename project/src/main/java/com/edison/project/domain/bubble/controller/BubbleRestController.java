@@ -48,7 +48,7 @@ public class BubbleRestController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "deletedAt"));
         return bubbleService.getDeletedBubbles(userPrincipal, pageable);
     }
 

@@ -67,9 +67,9 @@ public class BubbleServiceImpl implements BubbleService {
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
                 .labels(labelDtos)
-                .backlinkIds(bubble.getBacklinks().stream()
+                .backlinkIdxs(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
-                        .map(Bubble::getBubbleId)
+                        .map(Bubble::getLocalIdx)
                         .collect(Collectors.toSet()))
                 .isTrashed(bubble.isTrashed())
                 .createdAt(bubble.getCreatedAt())
@@ -113,13 +113,11 @@ public class BubbleServiceImpl implements BubbleService {
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
-        // Bubble 데이터 변환
-        // Bubble -> DeletedListResultDto 변환
         List<BubbleResponseDto.TrashedListResultDto> bubbles = bubblePage.getContent().stream()
                 .map(bubble -> {
-                    LocalDateTime updatedAt = bubble.getUpdatedAt();
+                    LocalDateTime deletedAt = bubble.getDeletedAt();
                     LocalDateTime now = LocalDateTime.now();
-                    long remainDays = 30 - ChronoUnit.DAYS.between(updatedAt, now);
+                    long remainDays = 30 - ChronoUnit.DAYS.between(deletedAt, now);
 
                     // 라벨 정보 변환
                     List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
@@ -136,12 +134,13 @@ public class BubbleServiceImpl implements BubbleService {
                             .content(bubble.getContent())
                             .mainImageUrl(bubble.getMainImg())
                             .labels(labelDtos) // 라벨 정보 추가
-                            .backlinkIds(bubble.getBacklinks().stream()
+                            .backlinkIdxs(bubble.getBacklinks().stream()
                                     .map(BubbleBacklink::getBacklinkBubble)
-                                    .map(Bubble::getBubbleId)
+                                    .map(Bubble::getLocalIdx)
                                     .collect(Collectors.toSet()))
                             .createdAt(bubble.getCreatedAt())
-                            .updatedAt(updatedAt)
+                            .updatedAt(bubble.getUpdatedAt())
+                            .deletedAt(bubble.getDeletedAt())
                             .remainDay((int) Math.max(remainDays, 0)) // 남은 일수 계산
                             .build();
                 })
@@ -301,7 +300,7 @@ public class BubbleServiceImpl implements BubbleService {
                     .content(request.getContent())
                     .mainImageUrl(request.getMainImageUrl())
                     .labels(mapLabelsToDtoByLocalIdx(member, request.getLabelIdxs()))
-                    .backlinkIds(request.getBacklinkIds())
+                    .backlinkIdxs(request.getBacklinkIds())
                     .isDeleted(true)
                     .isTrashed(request.isTrashed())
                     .createdAt(request.getCreatedAt())
@@ -319,7 +318,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
                 .labels(mapLabelsToDto(labels))
-                .backlinkIds(bubble.getBacklinks().stream()
+                .backlinkIdxs(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
                         .map(Bubble::getLocalIdx)
                         .collect(Collectors.toSet()))
