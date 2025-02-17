@@ -82,12 +82,12 @@ public class ArtletterController {
 
         // category 검증
         if (categoryObj == null || !(categoryObj instanceof String)) {
-            return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category는 null일 수 없습니다.");
+            return ApiResponse.onFailure(ErrorStatus.INVALID_ARTLETTER_CATEGORY, "category는 null일 수 없습니다.");
         }
         try {
             ArtletterCategory category = ArtletterCategory.valueOf((String) categoryObj);
         } catch (IllegalArgumentException e) {
-            return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category 값이 유효하지 않습니다.");
+            return ApiResponse.onFailure(ErrorStatus.INVALID_ARTLETTER_CATEGORY, "category 값이 유효하지 않습니다.");
         }
 
         // DTO 생성
@@ -187,16 +187,14 @@ public class ArtletterController {
 
     @GetMapping("/recommend-bar/category")
     public ResponseEntity<ApiResponse> getRecommendCategory(
-            @RequestParam List<Long> artletterIds
-    ) {
+            @RequestParam List<Long> artletterIds) {
         List<ArtletterDTO.recommendCategoryDto> response = artletterService.getRecommendCategory(artletterIds);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
     @GetMapping("/recommend-bar/keyword")
     public ResponseEntity<ApiResponse> getRecommendKeywords(
-            @RequestParam List<Long> artletterIds
-    ) {
+            @RequestParam List<Long> artletterIds) {
         List<ArtletterDTO.recommendKeywordDto> response = artletterService.getRecommendKeyword(artletterIds);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
