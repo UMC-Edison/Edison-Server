@@ -125,52 +125,52 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         // 라벨 삭제
         if (Boolean.TRUE.equals(request.getIsDeleted())) {
-            return labelDeletion(request, userPrincipal);
+            return labelDeletion(request, member);
         }
 
         // 라벨 수정
-        if (labelRepository.existsById(request.getLabelId())) {
-            return labelUpdate(request, userPrincipal);
+        if (labelRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx())) {
+            return labelUpdate(request, member);
         }
 
         //라벨 생성
-        return labelCreation(request, userPrincipal);
+        return labelCreation(request, member);
     }
 
-    private LabelResponseDTO.LabelSyncResponseDTO labelDeletion(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
-        if (!labelRepository.existsByLabelId(request.getLabelId())) {
-            return buildLabelResponse(request.getLabelId(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
+    private LabelResponseDTO.LabelSyncResponseDTO labelDeletion(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {
+        if (!labelRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx())) {
+            return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
         }
 
-        Label label = labelRepository.findById(request.getLabelId()).orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
-        checkOwnership(label, userPrincipal);
+        Label label = labelRepository.findLabelByMemberAndLocalIdx(member, request.getLocalIdx())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
+
         labelRepository.delete(label);
-        return buildLabelResponse(request.getLabelId(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
+        return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
     }
 
-    private LabelResponseDTO.LabelSyncResponseDTO labelUpdate(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
-        Label label = labelRepository.findById(request.getLabelId()).orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
-        checkOwnership(label, userPrincipal);
+    private LabelResponseDTO.LabelSyncResponseDTO labelUpdate(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {
+        Label label = labelRepository.findLabelByMemberAndLocalIdx(member, request.getLocalIdx())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
         label.setName(request.getName());
         label.setColor(request.getColor());
         label.setCreatedAt(request.getCreatedAt());
         label.setUpdatedAt(request.getUpdatedAt());
 
-        labelRepository.save(label);
         return buildLabelResponse(label.getLocalIdx(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
     }
 
     // 라벨 생성 처리
-    private LabelResponseDTO.LabelSyncResponseDTO labelCreation(LabelRequestDTO.LabelSyncRequestDTO request, CustomUserPrincipal userPrincipal) {
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+    private LabelResponseDTO.LabelSyncResponseDTO labelCreation(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {
 
         Label label = Label.builder()
-                .localIdx(request.getLabelId())
+                .localIdx(request.getLocalIdx())
                 .name(request.getName())
                 .color(request.getColor())
                 .member(member)

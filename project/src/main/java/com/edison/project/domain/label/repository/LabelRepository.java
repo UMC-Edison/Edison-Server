@@ -1,11 +1,13 @@
 package com.edison.project.domain.label.repository;
 
 import com.edison.project.domain.label.entity.Label;
+import com.edison.project.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LabelRepository extends JpaRepository<Label, Long> {
 
@@ -17,7 +19,10 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
             "GROUP BY l")
     List<Object[]> findLabelInfoByMemberId(@Param("memberId") Long memberId);
 
-    // 사용자 id와 local_idx로 버블 조회
+
+    Optional<Label> findLabelByMemberAndLocalIdx(Member member, Long localIdx);
+
+    boolean existsByMemberAndLocalIdx(Member member, Long localIdx);
 
     boolean existsByLabelId(Long labelId);
 }
