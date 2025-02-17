@@ -33,12 +33,12 @@ public class LabelRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, labels);
     }
 
-    @GetMapping("/{labelId}")
+    @GetMapping("/{localIdx}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getLabelDetail(
-            @PathVariable Long labelId,
+            @PathVariable Long localIdx,
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        LabelResponseDTO.DetailResultDto details = labelQueryService.getLabelDetailInfoList(userPrincipal, labelId);
+        LabelResponseDTO.DetailResultDto details = labelQueryService.getLabelDetailInfoList(userPrincipal, localIdx);
         return ApiResponse.onSuccess(SuccessStatus._OK, details);
     }
 

@@ -23,6 +23,4 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
     Optional<Label> findLabelByMemberAndLocalIdx(Member member, Long localIdx);
 
     boolean existsByMemberAndLocalIdx(Member member, Long localIdx);
-
-    boolean existsByLabelId(Long labelId);
 }

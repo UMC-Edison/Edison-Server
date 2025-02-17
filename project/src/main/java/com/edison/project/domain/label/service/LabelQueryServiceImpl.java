@@ -38,18 +38,17 @@ public class LabelQueryServiceImpl implements LabelQueryService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
-        }
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(userPrincipal.getMemberId());
+        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(member.getMemberId());
 
         return labelInfoList.stream()
                 .map(result -> {
                     Label label = (Label) result[0];
                     Long bubbleCount = (Long) result[1];
                     return LabelResponseDTO.ListResultDto.builder()
-                            .labelId(label.getLabelId())
+                            .localIdx(label.getLocalIdx())
                             .name(label.getName())
                             .color(label.getColor())
                             .bubbleCount(bubbleCount != null ? bubbleCount : 0L) // 버블 없는 라벨은 0으로 처리
@@ -61,7 +60,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // 라벨 상세 조회
     @Override
-    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long labelId) {
+    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long localIdx) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -83,7 +82,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
         // BubbleDetailDto 변환
         return LabelResponseDTO.DetailResultDto.builder()
-                .labelId(label.getLabelId())
+                .localIdx(label.getLabelId())
                 .name(label.getName())
                 .color(label.getColor())
                 .bubbleCount((long) bubbleDetails.size())
