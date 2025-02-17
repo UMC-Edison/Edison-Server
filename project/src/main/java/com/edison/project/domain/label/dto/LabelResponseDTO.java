@@ -13,7 +13,7 @@ public class LabelResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LabelSimpleInfoDto {
-        private Long labelId;
+        private Long localIdx;
         private String name;
         private int color;
     }
@@ -23,7 +23,7 @@ public class LabelResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ListResultDto {
-        private Long labelId;
+        private Long localIdx;
         private String name;
         private int color;
         private Long bubbleCount;
@@ -34,7 +34,7 @@ public class LabelResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DetailResultDto {
-        private Long labelId;
+        private Long localIdx;
         private String name;
         private int color;
         private Long bubbleCount;
@@ -46,7 +46,7 @@ public class LabelResponseDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LabelSyncResponseDTO {
-        private Long labelId;
+        private Long localIdx;
         private String name;
         private int color;
         private Boolean isDeleted;

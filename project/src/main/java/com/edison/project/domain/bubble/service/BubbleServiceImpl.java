@@ -55,7 +55,7 @@ public class BubbleServiceImpl implements BubbleService {
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
         List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
                 .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                        .labelId(bl.getLabel().getLabelId())
+                        .localIdx(bl.getLabel().getLocalIdx())
                         .name(bl.getLabel().getName())
                         .color(bl.getLabel().getColor())
                         .build())
@@ -124,7 +124,7 @@ public class BubbleServiceImpl implements BubbleService {
                     // 라벨 정보 변환
                     List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
                             .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                                    .labelId(bl.getLabel().getLabelId())
+                                    .localIdx(bl.getLabel().getLocalIdx())
                                     .name(bl.getLabel().getName())
                                     .color(bl.getLabel().getColor())
                                     .build())
@@ -289,10 +289,10 @@ public class BubbleServiceImpl implements BubbleService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         Set<Bubble> backlinks = validateBacklinks(request.getBacklinkIds(), member);
-        Set<Label> labels = validateLabels(request.getLabelIds(), member);
+        Set<Label> labels = validateLabels(request.getLabelIdxs(), member);  // idx -> label Pk
 
         Bubble bubble = processBubble(request, member, backlinks, labels);
-        return buildSyncResultDto(request, bubble);
+        return buildSyncResultDto(request, bubble, member);
     }
 
     private Bubble processBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
@@ -363,6 +363,14 @@ public class BubbleServiceImpl implements BubbleService {
 
         Bubble savedBubble = bubbleRepository.save(newBubble);
 
+        Set<BubbleLabel> bubbleLabels = labels.stream()
+                .map(label -> BubbleLabel.builder().bubble(savedBubble).label(label).build())
+                .collect(Collectors.toSet());
+
+        bubbleLabelRepository.saveAll(bubbleLabels); // DB에 저장
+        savedBubble.getLabels().addAll(bubbleLabels); // Bubble에 추가
+        bubbleRepository.saveAndFlush(savedBubble); // 즉시 반영
+
         Set<BubbleBacklink> newbacklinks = backlinks.stream()
                 .map(backlink -> BubbleBacklink.builder()
                         .bubble(savedBubble)
@@ -371,28 +379,18 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toSet());
         savedBubble.getBacklinks().addAll(newbacklinks);
 
-        Set<BubbleLabel> bubbleLabels = labels.stream()
-                .map(label -> BubbleLabel.builder().bubble(savedBubble).label(label).build())
-                .collect(Collectors.toSet());
-
-        bubbleLabelRepository.saveAll(bubbleLabels);
-        savedBubble.getLabels().addAll(bubbleLabels);
-
         return savedBubble;
     }
 
     // SyncResultDto 생성
-    private BubbleResponseDto.SyncResultDto buildSyncResultDto(BubbleRequestDto.SyncDto request, Bubble bubble) {
+    private BubbleResponseDto.SyncResultDto buildSyncResultDto(BubbleRequestDto.SyncDto request, Bubble bubble, Member member) {
         if (bubble == null) {
             return BubbleResponseDto.SyncResultDto.builder()
                     .bubbleId(request.getBubbleId())
                     .title(request.getTitle())
                     .content(request.getContent())
                     .mainImageUrl(request.getMainImageUrl())
-                    .labels(mapLabelsToDto(request.getLabelIds().stream()
-                            .map(id -> labelRepository.findById(id)
-                                    .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))
-                            .collect(Collectors.toSet())))
+                    .labels(mapLabelsToDtoByLocalIdx(member, request.getLabelIdxs()))
                     .backlinkIds(request.getBacklinkIds())
                     .isDeleted(true)
                     .isTrashed(request.isTrashed())
@@ -422,17 +420,6 @@ public class BubbleServiceImpl implements BubbleService {
                 .deletedAt(bubble.getDeletedAt())
                 .build();
     }
-    // 라벨을 DTO로 변환
-    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDto(Set<Label> labels) {
-        return labels.stream()
-                .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                        .labelId(l.getLabelId())
-                        .name(l.getName())
-                        .color(l.getColor())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
 
     // 백링크 검증
     private Set<Bubble> validateBacklinks(Set<Long> backlinkIds, Member member) {
@@ -450,16 +437,53 @@ public class BubbleServiceImpl implements BubbleService {
         return backlinks;
     }
 
-    // 라벨 검증
-    private Set<Label> validateLabels(Set<Long> labelIds, Member member) {
-        Set<Long> Ids = Optional.ofNullable(labelIds).orElse(Collections.emptySet());
-        if (Ids.size() > 3) throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
+    private Set<Label> validateLabels(Set<Long> labelIdxs, Member member) {
+        Set<Long> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
 
-        Set<Label> labels = new HashSet<>(labelRepository.findAllById(Ids));
-        if (labels.size() != labelIds.size()) throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
-        if (!labels.stream().allMatch(label -> label.getMember().equals(member))) throw new GeneralException(ErrorStatus.LABELS_FORBIDDEN);
+        if (idxs.isEmpty()) {
+            return Collections.emptySet(); // 빈 Set 반환
+        }
+        if (idxs.size() > 3) {
+            throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
+        }
 
-        return labels;
+        Set<Label> labels = new HashSet<>(labelRepository.findAllByMemberAndLocalIdxIn(member, idxs));
+        // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
+        Set<Long> foundIdxs = labels.stream().map(Label::getLocalIdx).collect(Collectors.toSet());
+        if (!foundIdxs.containsAll(idxs)) {
+            throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
+        }
+
+        if (!labels.stream().allMatch(label -> label.getMember().equals(member))) {
+            throw new GeneralException(ErrorStatus.LABELS_FORBIDDEN);
+        }
+
+        return new HashSet<>(labels);
+    }
+
+
+    // 라벨을 DTO로 변환 (localIdx 기준)
+    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<Long> localIdxs) {
+        return localIdxs.stream()
+                .map(localIdx -> labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
+                        .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))
+                .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+                        .localIdx(l.getLocalIdx()) // labelId 대신 localIdx 사용
+                        .name(l.getName())
+                        .color(l.getColor())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // 라벨을 DTO로 변환
+    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDto(Set<Label> labels) {
+        return labels.stream()
+                .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+                        .localIdx(l.getLocalIdx())
+                        .name(l.getName())
+                        .color(l.getColor())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private int countOccurrences(String content, String keyword) {

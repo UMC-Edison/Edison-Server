@@ -22,7 +22,7 @@ public class BubbleRequestDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private Set<Long> labelIds;  // 중복 방지
+        private Set<Long> labelIdxSet;  // 중복 방지
     }
 
     @Getter
@@ -52,7 +52,7 @@ public class BubbleRequestDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private Set<Long> labelIds;
+        private Set<Long> labelIdxs;
         private Set<Long> backlinkIds;
 
         @NotNull(message = "(DTO)삭제 여부는 필수입니다.")

@@ -51,7 +51,7 @@ public class Bubble {
     @Column(name = "deleted_at", nullable = true)
     protected LocalDateTime deletedAt;
 
-    @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<BubbleLabel> labels = new HashSet<>();
 
     @OneToMany(mappedBy = "bubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

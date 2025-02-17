@@ -18,9 +18,12 @@ import java.util.*;
 public class Label {
 
     @Id
-    //@GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "label_id")
     private Long labelId;
+
+    @Column(name="local_idx")
+    private Long localIdx;
 
     @Column(name = "name")
     private String name;
@@ -48,7 +51,7 @@ public class Label {
     // 생성자 및 빌더 추가
     @Builder
     public Label(Long labelId, String name, int color, Member member, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
-        this.labelId = labelId;
+        this.localIdx = labelId;
         this.name = name;
         this.color = color;
         this.member = member;
