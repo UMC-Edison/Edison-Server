@@ -65,16 +65,13 @@ public class LabelQueryServiceImpl implements LabelQueryService {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        if (!memberRepository.existsById(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
-        }
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        Label label = labelRepository.findById(labelId)
+        Label label = labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
-        checkOwnership(label, userPrincipal);
-
-        List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(labelId);
+        List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(label.getLabelId());
 
         List<BubbleResponseDto.SyncResultDto> bubbleDetails = bubbles.stream()
                 .map(this::convertToBubbleResponseDto)
@@ -82,13 +79,12 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
         // BubbleDetailDto 변환
         return LabelResponseDTO.DetailResultDto.builder()
-                .localIdx(label.getLabelId())
+                .localIdx(label.getLocalIdx())
                 .name(label.getName())
                 .color(label.getColor())
                 .bubbleCount((long) bubbleDetails.size())
                 .bubbles(bubbleDetails)
                 .build();
-
         }
 
     // Bubble -> BubbleResponseDto 변환 함수 (중복 제거)
@@ -194,11 +190,4 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .deletedAt(deletedAt)
                 .build();
     }
-
-    private void checkOwnership(Label label, CustomUserPrincipal userPrincipal) {
-        if (!label.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
-    }
-
 }
