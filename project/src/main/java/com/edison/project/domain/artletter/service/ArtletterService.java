@@ -20,7 +20,7 @@ public interface ArtletterService {
 
     ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto);
     List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds);
-    List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds);
+    List<String> getRecommendCategory();
 
     ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable);
     ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable);

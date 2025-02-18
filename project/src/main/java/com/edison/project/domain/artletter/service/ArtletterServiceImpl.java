@@ -304,16 +304,13 @@ public class ArtletterServiceImpl implements ArtletterService {
     // 추천바 - 카테고리 조회 api
     @Override
     @Transactional
-    public List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds) {
-        List<Artletter> artletters = validateArtletterIds(artletterIds);
+    public List<String> getRecommendCategory() {
+        List<ArtletterCategory> allCategories = Arrays.asList(ArtletterCategory.values());
 
-        return artletters.stream()
-                .map(artletter -> {
-                    if (artletter.getCategory() == null) {
-                        throw new GeneralException(ErrorStatus.INVALID_ARTLETTER_CATEGORY);
-                    }
-                    return new ArtletterDTO.recommendCategoryDto(artletter.getLetterId(), artletter.getCategory());
-                })
+        Collections.shuffle(allCategories);
+        return allCategories.stream()
+                .limit(3)
+                .map(Enum::name)
                 .collect(Collectors.toList());
     }
 

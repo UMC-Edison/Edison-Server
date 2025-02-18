@@ -186,10 +186,9 @@ public class ArtletterController {
     }
 
     @GetMapping("/recommend-bar/category")
-    public ResponseEntity<ApiResponse> getRecommendCategory(
-            @RequestParam List<Long> artletterIds) {
-        List<ArtletterDTO.recommendCategoryDto> response = artletterService.getRecommendCategory(artletterIds);
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    public ResponseEntity<ApiResponse> getRecommendCategory() {
+        List<String> categories = artletterService.getRecommendCategory();
+        return ApiResponse.onSuccess(SuccessStatus._OK, new ArtletterDTO.RecommendCategoryResponse(categories));
     }
 
     @GetMapping("/recommend-bar/keyword")
