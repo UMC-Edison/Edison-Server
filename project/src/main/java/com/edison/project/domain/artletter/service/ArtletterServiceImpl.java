@@ -40,9 +40,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ScrapRepository scrapRepository;
 
 
-
-
-
     // 전체 아트레터 조회 API
     @Override
     public ResponseEntity<ApiResponse> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType) {
@@ -86,9 +83,11 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ArtletterDTO.CreateResponseDto.builder()
                 .artletterId(savedArtletter.getLetterId())
                 .title(savedArtletter.getTitle())
-                .likes(artletterLikesRepository.countByArtletter(artletter))
-                .scraps(scrapRepository.countByArtletter(artletter))
-                .isScrap(scrapRepository.existsByMemberAndArtletter(member, artletter))
+                .thumbnail(savedArtletter.getThumbnail())
+                .readTime(savedArtletter.getReadTime())
+                .category(savedArtletter.getCategory())
+                .tag(savedArtletter.getTag())
+                .createdAt(savedArtletter.getCreatedAt())
                 .build();
     }
 
