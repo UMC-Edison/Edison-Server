@@ -143,7 +143,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         RefreshToken storedRefreshToken = refreshTokenRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
 
-        if (!jwtUtil.isTokenExpired(token)) {
+        if (!jwtUtil.isTokenExpired(token) && !redisTokenService.isTokenBlacklisted(token)) {
             throw new GeneralException(ErrorStatus.ACCESS_TOKEN_VALID);
         }
 
