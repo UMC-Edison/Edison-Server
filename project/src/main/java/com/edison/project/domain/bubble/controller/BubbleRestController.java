@@ -48,18 +48,18 @@ public class BubbleRestController {
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "20") int size) {
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "deletedAt"));
         return bubbleService.getDeletedBubbles(userPrincipal, pageable);
     }
 
 
     // 버블 상세정보 조회
-    @GetMapping("/{bubbleId}")
+    @GetMapping("/{localIdx}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getBubble (
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long bubbleId) {
-        BubbleResponseDto.SyncResultDto response = bubbleService.getBubble(userPrincipal, bubbleId);
+            @PathVariable Long localIdx) {
+        BubbleResponseDto.SyncResultDto response = bubbleService.getBubble(userPrincipal, localIdx);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
@@ -75,26 +75,6 @@ public class BubbleRestController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return bubbleService.getRecentBubblesByMember(userPrincipal, pageable);
 
-    }
-
-    // 버블 검색
-    @GetMapping("/search")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> searchBubbles(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "false") boolean recent,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-
-        if (keyword == null || keyword.trim().isEmpty()) {
-            throw new GeneralException(ErrorStatus.INVALID_KEYWORD);
-        }
-
-        keyword = keyword.trim();
-
-        Pageable pageable = PageRequest.of(page, size);
-        return bubbleService.searchBubbles(userPrincipal, keyword, recent, pageable);
     }
 
     // 버블 SYNC
