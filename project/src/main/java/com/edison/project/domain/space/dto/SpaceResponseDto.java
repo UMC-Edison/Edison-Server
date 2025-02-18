@@ -6,17 +6,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties ({"hibernateLazyInitializer", "handler"})
 public class SpaceResponseDto {
     private Long id;
-    private String content;
     private double x;
     private double y;
-    private Integer group = 0;
 
     // 올바른 생성자 추가
-    public SpaceResponseDto(Bubble bubble, double x, double y, Integer group) {
+    public SpaceResponseDto(Bubble bubble, double x, double y) {
         this.id = bubble.getBubbleId();
         this.x = x;
         this.y = y;
-        this.group = group;
     }
 
     // Getters and Setters
@@ -44,11 +41,4 @@ public class SpaceResponseDto {
         this.y = y;
     }
 
-    public int getGroup() {
-        return this.group != null ? this.group : 0;  // ✅ null이면 0 반환
-    }
-
-    public void setGroup(int group) {
-        this.group = group;
-    }
 }

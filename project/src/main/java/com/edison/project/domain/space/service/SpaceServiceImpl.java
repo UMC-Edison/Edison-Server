@@ -5,7 +5,6 @@ import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.repository.MemberRepository;
-import com.edison.project.domain.space.dto.SpaceInfoResponseDto;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
 import com.edison.project.domain.space.entity.Space;
 import com.edison.project.domain.space.repository.SpaceRepository;
@@ -103,8 +102,7 @@ public class SpaceServiceImpl implements SpaceService {
                 .map(space -> new SpaceResponseDto(
                         space.getBubble(),    // ✅ Bubble 객체 전달
                         space.getX(),
-                        space.getY(),
-                        space.getGroup()
+                        space.getY()
                 ))
                 .collect(Collectors.toList());
 
@@ -125,7 +123,6 @@ public class SpaceServiceImpl implements SpaceService {
             spaceToUpdate.setX(newSpace.getX());
             spaceToUpdate.setY(newSpace.getY());
             spaceToUpdate.setContent(newSpace.getContent());
-            spaceToUpdate.setGroup(newSpace.getGroup());
             spaceRepository.save(spaceToUpdate);
             System.out.println("🔄 기존 Space 업데이트 완료! ID: " + spaceToUpdate.getId());
         } else {
@@ -226,9 +223,8 @@ public class SpaceServiceImpl implements SpaceService {
                 String content = (String) item.get("content");
                 double x = ((Number) item.get("x")).doubleValue();
                 double y = ((Number) item.get("y")).doubleValue();
-                int group = item.get("group") != null ? ((Number) item.get("group")).intValue() : 1;  // ✅ 기본 그룹 1
 
-                spaces.add(new Space(content, x, y, group, bubble, memberId));
+                spaces.add(new Space(content, x, y, bubble, memberId));
             }
             return spaces;
 
@@ -248,7 +244,6 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
         promptBuilder.append("- x: A unique floating-point number for the x-coordinate (spread across four quadrants).\n");
         promptBuilder.append("- y: A unique floating-point number for the y-coordinate (spread across four quadrants).\n");
-        promptBuilder.append("- group: An integer representing the item's group ID, starting from 1. If an item does not belong to any group, set this to `null`.\n\n");
 
         promptBuilder.append("### Rules:\n");
         promptBuilder.append("1. Each item must have a unique (x, y) coordinate, with a minimum Euclidean distance of 0.5 between any two items.\n");
@@ -257,12 +252,11 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("4. **❗ Each group MUST contain between 5 and 8 items. This is MANDATORY. ❗**\n");
         promptBuilder.append("5. **If any group contains fewer than 5 or more than 8 items, YOU MUST re-cluster that group into smaller sub-groups, each containing 5-8 items.**\n");
         promptBuilder.append("6. **Continue re-clustering until ALL groups satisfy the 5-8 item rule. This process must be repeated as many times as necessary.**\n");
-        promptBuilder.append("7. Groups must start with number 1 and increment sequentially (1, 2, 3, ...).\n");
-        promptBuilder.append("8. The number of groups should be minimized, ideally around 1/4 of the total number of items.\n");
-        promptBuilder.append("9. **Items do NOT have to belong to a group. However, if possible, items should be grouped based on topic similarity.**\n");
-        promptBuilder.append("10. Extract the core meaning of each content item, reducing it to 1 or 2 essential words.\n");
-        promptBuilder.append("11. The output MUST strictly include the `group` field for ALL items, even if it's `null`.\n");
-        promptBuilder.append("12. The output MUST be valid JSON format as shown below, with NO explanations or extra text.\n\n");
+        promptBuilder.append("7. The number of groups should be minimized, ideally around 1/4 of the total number of items.\n");
+        promptBuilder.append("8. **Items do NOT have to belong to a group. However, if possible, items should be grouped based on topic similarity.**\n");
+        promptBuilder.append("9. Extract the core meaning of each content item, reducing it to 1 or 2 essential words.\n");
+        promptBuilder.append("10. The output MUST strictly include the `group` field for ALL items, even if it's `null`.\n");
+        promptBuilder.append("11. The output MUST be valid JSON format as shown below, with NO explanations or extra text.\n\n");
 
         promptBuilder.append("### Response Format:\n");
         promptBuilder.append("[\n");
@@ -278,7 +272,6 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("    \"content\": \"Topic\",\n");
         promptBuilder.append("    \"x\": -1.0,\n");
         promptBuilder.append("    \"y\": 0.8,\n");
-        promptBuilder.append("    \"group\": null  // ✅ Example of an ungrouped item\n");
         promptBuilder.append("  }\n");
         promptBuilder.append("]\n\n");
 
@@ -299,48 +292,6 @@ public class SpaceServiceImpl implements SpaceService {
         }
 
         return promptBuilder.toString();
-    }
-
-    public ResponseEntity<ApiResponse> getSpaceInfo() {
-        List<Space> spaces = spaceRepository.findAll();
-        System.out.println("Fetched Spaces: " + spaces.size());
-
-        if (spaces.isEmpty()) {
-            return ApiResponse.onFailure(ErrorStatus.NO_SPACES_FOUND);
-        }
-
-        Map<Integer, List<Space>> groupedSpaces = spaces.stream()
-                .collect(Collectors.groupingBy(Space::getGroup));
-        System.out.println("Grouped Spaces: " + groupedSpaces.keySet());
-
-        int maxGroupId = groupedSpaces.keySet().stream().max(Integer::compareTo).orElse(0);
-        System.out.println("Max Group ID: " + maxGroupId);
-
-        List<SpaceInfoResponseDto> responseList = new ArrayList<>();
-
-        for (int groupId = 1; groupId <= maxGroupId; groupId++) {
-            List<Space> groupSpaces = groupedSpaces.getOrDefault(groupId, new ArrayList<>());
-            System.out.println("Processing Group ID: " + groupId + ", Spaces: " + groupSpaces.size());
-
-            if (groupSpaces.isEmpty()) {
-                continue;
-            }
-
-            double minX = groupSpaces.stream().mapToDouble(Space::getX).min().orElse(0);
-            double maxX = groupSpaces.stream().mapToDouble(Space::getX).max().orElse(0);
-            double minY = groupSpaces.stream().mapToDouble(Space::getY).min().orElse(0);
-            double maxY = groupSpaces.stream().mapToDouble(Space::getY).max().orElse(0);
-
-            double centerX = (minX + maxX) / 2;
-            double centerY = (minY + maxY) / 2;
-
-            double radius = Math.sqrt(Math.pow(maxX - centerX, 2) + Math.pow(maxY - centerY, 2));
-
-            responseList.add(new SpaceInfoResponseDto(groupId, centerX, centerY, radius));
-        }
-
-        System.out.println("Response List Size: " + responseList.size());
-        return ApiResponse.onSuccess(SuccessStatus._OK, responseList);
     }
 
 }
