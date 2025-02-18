@@ -47,7 +47,9 @@ public class ArtletterDTO {
         @Size(max = 50, message = "tag는 최대 50자까지 허용됩니다.")
         private String tag;
 
+        @NotNull(message = "thumbnail은 null일 수 없습니다.")
         private String thumbnail;
+
     }
 
     @Data

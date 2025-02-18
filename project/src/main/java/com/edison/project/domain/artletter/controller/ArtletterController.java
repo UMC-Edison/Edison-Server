@@ -8,6 +8,7 @@ import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -35,7 +36,7 @@ public class ArtletterController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> createArtletter(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestBody ArtletterDTO.CreateRequestDto requestDto) {
+            @Valid @RequestBody ArtletterDTO.CreateRequestDto requestDto) {
         ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(userPrincipal, requestDto);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
