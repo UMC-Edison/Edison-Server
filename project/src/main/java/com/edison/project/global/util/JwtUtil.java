@@ -47,7 +47,7 @@ public class JwtUtil {
         return JWT.create()
                 .withSubject(String.valueOf(memberId))
                 .withClaim("email", email)
-                .withExpiresAt(new Date(System.currentTimeMillis() + refreshTokenExpiration))
+                .withExpiresAt(new Date(System.currentTimeMillis() + refreshTokenExpiration *1000))
                 .sign(Algorithm.HMAC256(secretKey));
     }
 
