@@ -90,6 +90,11 @@ public class ArtletterController {
             return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category 값이 유효하지 않습니다.");
         }
 
+        // thumbnail 검증
+        if (thumbnailObj == null || !(thumbnailObj instanceof String)) {
+            return ApiResponse.onFailure(ErrorStatus.THUMBNAIL_VALIDATION);
+        }
+
         // DTO 생성
         ArtletterDTO.CreateRequestDto dto = new ArtletterDTO.CreateRequestDto();
         dto.setReadTime((Integer) readTimeObj);
