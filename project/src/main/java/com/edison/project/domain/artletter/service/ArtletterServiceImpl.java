@@ -65,7 +65,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         return artletterRepository.findAll(pageable);
     }
 
-
+    // 아트레터 등록 api
     @Override
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
 
@@ -78,6 +78,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .readTime(request.getReadTime())
                 .tag(request.getTag())
                 .category(request.getCategory())
+                .thumbnail(request.getThumbnail())
                 .build();
 
         Artletter savedArtletter = artletterRepository.save(artletter);

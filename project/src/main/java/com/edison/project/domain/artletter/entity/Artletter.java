@@ -43,11 +43,13 @@ public class Artletter extends BaseEntity {
     @Column(name = "category", nullable = false)
     private ArtletterCategory category;
 
+    // thumbnail은 not null
+    @Column(name = "thumbnail", nullable = false)
     private String thumbnail;
 
     // Builder 패턴 적용
     @Builder
-    public Artletter(Long letterId, String title, String content, String writer, int readTime, String tag, ArtletterCategory category) {
+    public Artletter(Long letterId, String title, String content, String writer, int readTime, String tag, ArtletterCategory category, String thumbnail) {
         this.letterId = letterId;
         this.title = title;
         this.content = content;
