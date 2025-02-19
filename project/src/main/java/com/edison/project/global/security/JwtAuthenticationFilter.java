@@ -40,8 +40,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String method = request.getMethod();
             String authHeader = request.getHeader("Authorization");
 
-            System.out.println(authHeader);
-
             // 로그인 없이 접근 가능한 경로 리스트
             List<String> openEndpoints = List.of(
                     "/members/google",
@@ -74,7 +72,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             String token = authHeader.substring(7);
-            System.out.println(token);
 
             if (request.getRequestURI().equals("/members/refresh")) {
                 handleRefreshRequest(request, token);

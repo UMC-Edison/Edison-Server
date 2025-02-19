@@ -6,7 +6,6 @@ import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.service.CustomOidcUserService;
 import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.global.security.CustomAuthenticationEntryPoint;
-import com.edison.project.global.security.CustomUserPrincipal;
 import com.edison.project.global.security.JwtAuthenticationFilter;
 import com.edison.project.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,13 +17,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
@@ -90,19 +86,7 @@ public class SecurityConfig {
         //JWT 토큰 발급
         MemberResponseDto.LoginResultDto dto = memberService.generateTokensForOidcUser(email);
 
-        // SecurityContextHolder에 인증 정보 저장
-        Long userId = jwtUtil.extractUserId(dto.getAccessToken());
-        CustomUserPrincipal customUserPrincipal = new CustomUserPrincipal(userId, email);
-
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                customUserPrincipal,
-                dto.getAccessToken(),
-                List.of(new SimpleGrantedAuthority("ROLE_USER"))
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
-        // ✅ 성공 응답 반환
+        // 성공 응답 반환
         sendSuccessResponse(response, dto);
     }
 
