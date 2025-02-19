@@ -76,7 +76,6 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        validateUser(userPrincipal);
 
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
 
@@ -94,7 +93,6 @@ public class BubbleServiceImpl implements BubbleService {
     /** 휴지통 버블 목록 조회 */
     @Override
     public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        validateUser(userPrincipal);
 
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
 
@@ -103,7 +101,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         List<BubbleResponseDto.TrashedListResultDto> bubbles = bubblePage.getContent().stream()
                 .map(bubble -> {
-                    LocalDateTime deletedAt = bubble.getDeletedAt();
+                    LocalDateTime deletedAt = Optional.ofNullable(bubble.getDeletedAt()).orElse(LocalDateTime.now());
                     LocalDateTime now = LocalDateTime.now();
                     long remainDays = 30 - ChronoUnit.DAYS.between(deletedAt, now);
 
@@ -141,7 +139,6 @@ public class BubbleServiceImpl implements BubbleService {
   @Override
   public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        validateUser(userPrincipal);
         LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
 
         Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
@@ -160,7 +157,6 @@ public class BubbleServiceImpl implements BubbleService {
     /** 버블 상세 조회 */
     @Override
     public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long localIdx) {
-        validateUser(userPrincipal);
 
         Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
@@ -173,7 +169,6 @@ public class BubbleServiceImpl implements BubbleService {
     @Override
     @Transactional
     public BubbleResponseDto.SyncResultDto syncBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.SyncDto request) {
-        validateUser(userPrincipal);
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
@@ -367,10 +362,4 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toList());
     }
 
-    // 사용자 인증 정보 검증
-    private void validateUser(CustomUserPrincipal userPrincipal) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-    }
 }

@@ -44,6 +44,7 @@ public class MemberServiceImpl implements MemberService{
 
     // idToken으로 회원가입/로그인 API
     @Override
+    @Transactional
     public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
 
         // Google idToken에서 사용자 정보 추출
