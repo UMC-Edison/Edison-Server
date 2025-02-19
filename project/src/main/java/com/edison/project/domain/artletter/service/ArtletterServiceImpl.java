@@ -241,6 +241,8 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
+
+
     @Override
     public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto) {
 
@@ -297,29 +299,35 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ApiResponse.onSuccess(SuccessStatus._OK, artletterList);
     }
 
-    @Override
-    public List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds) {
-        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
 
-        if (artletters.size() != artletterIds.size()) {
-            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
-        }
-        return artletters.stream()
-                .map(artletter -> new ArtletterDTO.recommendCategoryDto(artletter.getLetterId(), artletter.getCategory()))
-                .collect(Collectors.toList());
+
+    // 추천바 - 카테고리 조회 api
+    @Override
+    @Transactional
+    public List<String> getRecommendCategory() {
+        return Arrays.asList("기술과학", "자연과학", "교육");
     }
 
+
+
+    // 추천바 - 키워드 조회 api
     @Override
+    @Transactional
     public List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds) {
-        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+        List<Artletter> artletters = validateArtletterIds(artletterIds);
 
-        if (artletters.size() != artletterIds.size()) {
-            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
-        }
         return artletters.stream()
-                .map(artletter -> new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(),artletter.getKeyword()))
+                .map(artletter -> {
+                    if (artletter.getKeyword() == null) {
+                        throw new GeneralException(ErrorStatus.KEYWORD_IS_EMPTY);
+                    }
+                    return new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(), artletter.getKeyword());
+                })
                 .collect(Collectors.toList());
     }
+
+
+
 
     @Override
     public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {
@@ -481,5 +489,23 @@ public class ArtletterServiceImpl implements ArtletterService {
         };
     }
 
+    // 추천바 - 아트레터 요청 검증
+    private List<Artletter> validateArtletterIds(List<Long> artletterIds) {
+        if (artletterIds == null || artletterIds.isEmpty() || artletterIds.size() > 3) {
+            throw new GeneralException(ErrorStatus.INVALID_ARTLETTER_REQUEST);
+        }
+
+        Set<Long> uniqueIds = new HashSet<>(artletterIds);
+        if (uniqueIds.size() != artletterIds.size()) {
+            throw new GeneralException(ErrorStatus.DUPLICATE_ARTLETTER_IDS);
+        }
+
+        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+        if (artletters.size() != artletterIds.size()) {
+            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
+        }
+
+        return artletters;
+    }
 
 }

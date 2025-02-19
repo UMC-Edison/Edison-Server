@@ -42,7 +42,7 @@ public class Artletter extends BaseEntity {
     @Column(name = "category", nullable = false)
     private ArtletterCategory category;
 
-    @Column(name = "thumbnail", nullable = false)
+    @Column(name = "thumbnail", columnDefinition = "TEXT", nullable = false)
     private String thumbnail;
 
     public ArtletterCategory getCategory() {

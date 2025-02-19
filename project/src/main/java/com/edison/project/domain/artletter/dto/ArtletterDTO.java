@@ -137,13 +137,11 @@ public class ArtletterDTO {
         private String keyword;
     }
 
-    @Data
-    @Builder
-    @AllArgsConstructor
+    @Getter
     @NoArgsConstructor
-    public static class recommendCategoryDto {
-        private Long artletterId;
-        private ArtletterCategory category;
+    @AllArgsConstructor
+    public static class RecommendCategoryResponse {
+        private List<String> categories;
     }
 
     @Data
