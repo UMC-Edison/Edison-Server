@@ -21,9 +21,6 @@ public class Space {
     @JoinColumn(name = "bubble_id", nullable = false) // 🚨 `NOT NULL` 적용
     private Bubble bubble;
 
-    @Column(name = "group_id")
-    private Integer group;
-
     @Column(nullable = false) // member_id 추가
     private Long memberId;
 
@@ -31,11 +28,10 @@ public class Space {
     public Space() {}
 
     // ✅ memberId와 Bubble 포함한 생성자
-    public Space(String content, double x, double y, int group, Bubble bubble, Long memberId) {
+    public Space(String content, double x, double y, Bubble bubble, Long memberId) {
         this.content = content;
         this.x = x;
         this.y = y;
-        this.group = group;
         this.bubble = bubble; // ✅ `bubble_id` 설정
         this.memberId = memberId;
     }
@@ -75,14 +71,6 @@ public class Space {
 
     public void setBubble(Bubble bubble) { // ✅ Bubble 관련 Setter 추가
         this.bubble = bubble;
-    }
-
-    public int getGroup() {
-        return this.group != null ? this.group : 0;  // ✅ null이면 0 반환
-    }
-
-    public void setGroup(int group) { // ✅ 변경된 필드명 반영
-        this.group = group;
     }
 
     public Long getMemberId() {

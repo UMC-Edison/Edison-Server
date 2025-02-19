@@ -2,8 +2,7 @@ package com.edison.project.domain.artletter.dto;
 
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import com.edison.project.domain.artletter.entity.Artletter;
 
@@ -21,20 +20,36 @@ public class ArtletterDTO {
     private int likes;
     private int scraps;
 
-    @Data
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CreateRequestDto {
-        @NotBlank
+
+        @NotBlank(message = "title은 비어있을 수 없습니다.")
+        @Size(max = 20, message = "title은 최대 20자까지 허용됩니다.")
         private String title;
-        @NotBlank
+
+        @NotBlank(message = "content는 비어있을 수 없습니다.")
         private String content;
-        @NotNull
+
+        @NotNull(message = "category는 null일 수 없습니다.")
         private ArtletterCategory category;
-        @NotBlank
+
+        @NotBlank(message = "writer는 비어있을 수 없습니다.")
+        @Pattern(regexp = "^[a-zA-Z가-힣\\s]+$", message = "writer는 문자만 허용됩니다.")
         private String writer;
-        @NotNull
+
+        @NotNull(message = "readTime은 0보다 큰 정수여야 합니다.")
+        @Min(value = 1, message = "readTime은 0보다 큰 정수여야 합니다.")
         private Integer readTime;
+
+        @Size(max = 50, message = "tag는 최대 50자까지 허용됩니다.")
         private String tag;
+
+        @NotNull(message = "thumbnail은 null일 수 없습니다.")
         private String thumbnail;
+
     }
 
     @Data
@@ -52,9 +67,11 @@ public class ArtletterDTO {
     public static class CreateResponseDto {
         private Long artletterId;
         private String title;
-        private int likes;
-        private int scraps;
-        private boolean isScrap;
+        private String thumbnail;
+        private ArtletterCategory category;
+        private int readTime;
+        private String tag;
+        private LocalDateTime createdAt;
     }
 
     @Data
@@ -120,13 +137,11 @@ public class ArtletterDTO {
         private String keyword;
     }
 
-    @Data
-    @Builder
-    @AllArgsConstructor
+    @Getter
     @NoArgsConstructor
-    public static class recommendCategoryDto {
-        private Long artletterId;
-        private ArtletterCategory category;
+    @AllArgsConstructor
+    public static class RecommendCategoryResponse {
+        private List<String> categories;
     }
 
     @Data
