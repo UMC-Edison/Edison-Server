@@ -6,6 +6,7 @@ import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
+import com.edison.project.domain.artletter.dto.CountDto;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.entity.ArtletterLikes;
@@ -241,60 +242,64 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
-
-
     @Override
     public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto) {
-
         if (editorRequestDto == null || editorRequestDto.getArtletterIds() == null || editorRequestDto.getArtletterIds().isEmpty()) {
             throw new GeneralException(ErrorStatus.ARTLETTER_ID_REQUIRED);
         }
 
-        Member member;
-        if (userPrincipal != null) { //로그인한 경우에만 member 조회
-            member = findMemberById(userPrincipal.getMemberId());
-        } else {
-            member = null;
-        }
+        Member member = Optional.ofNullable(userPrincipal)
+                .map(up -> findMemberById(up.getMemberId()))
+                .orElse(null);
 
         List<Long> artletterIds = editorRequestDto.getArtletterIds();
         List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
 
-        Set<Long> foundArtletterIds = artletters.stream()
-                .map(Artletter::getLetterId)
-                .collect(Collectors.toSet());
+        if (artletters.size() < artletterIds.size()) {
+            Set<Long> foundArtletterIds = artletters.stream()
+                    .map(Artletter::getLetterId)
+                    .collect(Collectors.toSet());
 
-        for (Long artletterId : artletterIds) {
-            if (!foundArtletterIds.contains(artletterId)) {
-                throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND, "요청된 아트레터가 존재하지 않습니다. (ID: " + artletterId + ")");
+            for (Long artletterId : artletterIds) {
+                if (!foundArtletterIds.contains(artletterId)) {
+                    throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND, "요청된 아트레터가 존재하지 않습니다. (ID: " + artletterId + ")");
+                }
             }
         }
 
-        List<ArtletterDTO.ListResponseDto> artletterList = artletterRepository.findByLetterIdIn(editorRequestDto.getArtletterIds()).stream()
-                .map(artletter -> {
-                    boolean isLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
-                    boolean isScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
-                    int likesCnt = artletterLikesRepository.countByArtletter(artletter);
-                    int scrapsCnt = scrapRepository.countByArtletter(artletter);
+        Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, artletters)
+                .stream().collect(Collectors.toMap(al -> al.getArtletter().getLetterId(), al -> true));
 
-                    return ArtletterDTO.ListResponseDto.builder()
-                            .artletterId(artletter.getLetterId())
-                            .title(artletter.getTitle())
-                            .content(artletter.getContent())
-                            .tags(artletter.getTag())
-                            .writer(artletter.getWriter())
-                            .category(artletter.getCategory())
-                            .readTime(artletter.getReadTime())
-                            .thumbnail(artletter.getThumbnail())
-                            .likesCnt(likesCnt)
-                            .scrapsCnt(scrapsCnt)
-                            .isLiked(isLiked)
-                            .isScraped(isScrapped)
-                            .createdAt(artletter.getCreatedAt())
-                            .updatedAt(artletter.getUpdatedAt())
-                            .build();
-                })
+        Map<Long, Boolean> scrappedMap = scrapRepository.findByMemberAndArtletterIn(member, artletters)
+                .stream().collect(Collectors.toMap(sc -> sc.getArtletter().getLetterId(), sc -> true));
+
+        Map<Long, Integer> likesCountMap = artletterLikesRepository.countByArtletterIn(artletters)
+                .stream()
+                .collect(Collectors.toMap(CountDto::getArtletterId, countDto -> countDto.getCount().intValue()));
+
+        Map<Long, Integer> scrapsCountMap = scrapRepository.countByArtletterIn(artletters)
+                .stream()
+                .collect(Collectors.toMap(CountDto::getArtletterId, countDto -> countDto.getCount().intValue()));
+
+        List<ArtletterDTO.ListResponseDto> artletterList = artletters.stream()
+                .map(artletter -> ArtletterDTO.ListResponseDto.builder()
+                        .artletterId(artletter.getLetterId())
+                        .title(artletter.getTitle())
+                        .content(artletter.getContent())
+                        .tags(artletter.getTag())
+                        .writer(artletter.getWriter())
+                        .category(artletter.getCategory())
+                        .readTime(artletter.getReadTime())
+                        .thumbnail(artletter.getThumbnail())
+                        .likesCnt(likesCountMap.getOrDefault(artletter.getLetterId(), 0))
+                        .scrapsCnt(scrapsCountMap.getOrDefault(artletter.getLetterId(), 0))
+                        .isLiked(likedMap.getOrDefault(artletter.getLetterId(), false))
+                        .isScraped(scrappedMap.getOrDefault(artletter.getLetterId(), false))
+                        .createdAt(artletter.getCreatedAt())
+                        .updatedAt(artletter.getUpdatedAt())
+                        .build())
                 .collect(Collectors.toList());
+
 
         return ApiResponse.onSuccess(SuccessStatus._OK, artletterList);
     }

@@ -5,7 +5,6 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
-import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.validation.Valid;
@@ -29,7 +28,6 @@ import java.util.Map;
 public class ArtletterController {
 
     private final ArtletterService artletterService;
-    private final ArtletterRepository artletterRepository;
 
     // 아트레터 등록
     @PostMapping

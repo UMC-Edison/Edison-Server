@@ -18,8 +18,15 @@ public class RefreshToken {
     @Column(nullable = false)
     private String refreshToken;
 
-    public static RefreshToken create(String email, String refreshToken) {
-        return new RefreshToken(email, refreshToken);
+    public static RefreshToken create(String email, String token) {
+        RefreshToken refreshToken = new RefreshToken(email, token);
+        refreshToken.email = email;
+        refreshToken.refreshToken = token;
+        return refreshToken;
+    }
+
+    public void updateToken(String newToken) {
+        this.refreshToken = newToken;
     }
 
     public void updateToken(String newToken) {
