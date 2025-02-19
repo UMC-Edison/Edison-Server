@@ -305,13 +305,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     @Transactional
     public List<String> getRecommendCategory() {
-        List<ArtletterCategory> allCategories = Arrays.asList(ArtletterCategory.values());
-
-        Collections.shuffle(allCategories);
-        return allCategories.stream()
-                .limit(3)
-                .map(Enum::name)
-                .collect(Collectors.toList());
+        return Arrays.asList("기술과학", "자연과학", "교육");
     }
 
 
