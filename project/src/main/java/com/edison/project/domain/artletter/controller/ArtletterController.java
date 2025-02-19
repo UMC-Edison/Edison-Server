@@ -7,6 +7,7 @@ import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -28,80 +29,16 @@ public class ArtletterController {
 
     private final ArtletterService artletterService;
 
-    // POST: 아트레터 등록
+    // 아트레터 등록
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> createArtletter(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody Map<String, Object> request) {
-        // 필드 값 추출
-        Object readTimeObj = request.get("readTime");
-        Object titleObj = request.get("title");
-        Object writerObj = request.get("writer");
-        Object contentObj = request.get("content");
-        Object tagObj = request.get("tag");
-        Object categoryObj = request.get("category");
-        Object thumbnailObj = request.get("thumbnail");
-
-        // readTime 검증
-        if (readTimeObj == null || !(readTimeObj instanceof Integer) || (Integer) readTimeObj <= 0) {
-            return ApiResponse.onFailure(ErrorStatus.READTIME_VALIDATION, "readTime은 0보다 큰 정수여야 합니다.");
-        }
-
-        // title 검증
-        if (titleObj == null || !(titleObj instanceof String) || ((String) titleObj).isBlank()) {
-            return ApiResponse.onFailure(ErrorStatus.TITLE_VALIDATION, "title은 비어있을 수 없습니다.");
-        }
-        if (((String) titleObj).length() > 20) {
-            return ApiResponse.onFailure(ErrorStatus.TITLE_VALIDATION, "title은 최대 20자까지 허용됩니다.");
-        }
-
-        // writer 검증
-        if (writerObj == null || !(writerObj instanceof String)) {
-            return ApiResponse.onFailure(ErrorStatus.WRITER_VALIDATION, "writer는 null일 수 없으며 문자열이어야 합니다.");
-        }
-        if (((String) writerObj).isBlank()) {
-            return ApiResponse.onFailure(ErrorStatus.WRITER_VALIDATION, "writer는 비어있을 수 없습니다.");
-        }
-        if (!((String) writerObj).matches("^[a-zA-Z가-힣\\s]+$")) {
-            return ApiResponse.onFailure(ErrorStatus.WRITER_VALIDATION, "writer는 문자만 허용됩니다.");
-        }
-
-        // content 검증
-        if (contentObj == null || !(contentObj instanceof String) || ((String) contentObj).isBlank()) {
-            return ApiResponse.onFailure(ErrorStatus.CONTENT_VALIDATION, "content는 비어있을 수 없습니다.");
-        }
-
-        // tag 검증
-        if (tagObj == null || !(tagObj instanceof String) || ((String) tagObj).isBlank()) {
-            return ApiResponse.onFailure(ErrorStatus.TAG_VALIDATION, "tag는 비어있을 수 없습니다.");
-        }
-        if (((String) tagObj).length() > 50) {
-            return ApiResponse.onFailure(ErrorStatus.TAG_VALIDATION, "tag는 최대 50자까지 허용됩니다.");
-        }
-
-        // category 검증
-        if (categoryObj == null || !(categoryObj instanceof String)) {
-            return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category는 null일 수 없습니다.");
-        }
-        try {
-            ArtletterCategory category = ArtletterCategory.valueOf((String) categoryObj);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.onFailure(ErrorStatus.CATEGORY_VALIDATION, "category 값이 유효하지 않습니다.");
-        }
-
-        // DTO 생성
-        ArtletterDTO.CreateRequestDto dto = new ArtletterDTO.CreateRequestDto();
-        dto.setReadTime((Integer) readTimeObj);
-        dto.setTitle((String) titleObj);
-        dto.setWriter((String) writerObj);
-        dto.setContent((String) contentObj);
-        dto.setTag((String) tagObj);
-        dto.setCategory(ArtletterCategory.valueOf((String) categoryObj));
-        dto.setThumbnail((String) thumbnailObj);
-
-        // Service 호출
-        ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(userPrincipal, dto);
+    public ResponseEntity<ApiResponse> createArtletter(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @Valid @RequestBody ArtletterDTO.CreateRequestDto requestDto) {
+        ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(userPrincipal, requestDto);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
+
 
     // 전체 아트레터 조회
     @GetMapping
@@ -184,17 +121,14 @@ public class ArtletterController {
     }
 
     @GetMapping("/recommend-bar/category")
-    public ResponseEntity<ApiResponse> getRecommendCategory(
-            @RequestParam List<Long> artletterIds
-    ) {
-        List<ArtletterDTO.recommendCategoryDto> response = artletterService.getRecommendCategory(artletterIds);
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    public ResponseEntity<ApiResponse> getRecommendCategory() {
+        List<String> categories = artletterService.getRecommendCategory();
+        return ApiResponse.onSuccess(SuccessStatus._OK, new ArtletterDTO.RecommendCategoryResponse(categories));
     }
 
     @GetMapping("/recommend-bar/keyword")
     public ResponseEntity<ApiResponse> getRecommendKeywords(
-            @RequestParam List<Long> artletterIds
-    ) {
+            @RequestParam List<Long> artletterIds) {
         List<ArtletterDTO.recommendKeywordDto> response = artletterService.getRecommendKeyword(artletterIds);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }

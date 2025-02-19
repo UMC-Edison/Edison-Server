@@ -41,9 +41,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ScrapRepository scrapRepository;
 
 
-
-
-
     // 전체 아트레터 조회 API
     @Override
     public ResponseEntity<ApiResponse> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType) {
@@ -66,7 +63,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         return artletterRepository.findAll(pageable);
     }
 
-
+    // 아트레터 등록 api
     @Override
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
 
@@ -79,6 +76,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .readTime(request.getReadTime())
                 .tag(request.getTag())
                 .category(request.getCategory())
+                .thumbnail(request.getThumbnail())
                 .build();
 
         Artletter savedArtletter = artletterRepository.save(artletter);
@@ -86,9 +84,11 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ArtletterDTO.CreateResponseDto.builder()
                 .artletterId(savedArtletter.getLetterId())
                 .title(savedArtletter.getTitle())
-                .likes(artletterLikesRepository.countByArtletter(artletter))
-                .scraps(scrapRepository.countByArtletter(artletter))
-                .isScrap(scrapRepository.existsByMemberAndArtletter(member, artletter))
+                .thumbnail(savedArtletter.getThumbnail())
+                .readTime(savedArtletter.getReadTime())
+                .category(savedArtletter.getCategory())
+                .tag(savedArtletter.getTag())
+                .createdAt(savedArtletter.getCreatedAt())
                 .build();
     }
 
@@ -305,29 +305,34 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
-    @Override
-    public List<ArtletterDTO.recommendCategoryDto> getRecommendCategory(List<Long> artletterIds) {
-        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
 
-        if (artletters.size() != artletterIds.size()) {
-            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
-        }
-        return artletters.stream()
-                .map(artletter -> new ArtletterDTO.recommendCategoryDto(artletter.getLetterId(), artletter.getCategory()))
-                .collect(Collectors.toList());
+    // 추천바 - 카테고리 조회 api
+    @Override
+    @Transactional
+    public List<String> getRecommendCategory() {
+        return Arrays.asList("기술과학", "자연과학", "교육");
     }
 
+
+
+    // 추천바 - 키워드 조회 api
     @Override
+    @Transactional
     public List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds) {
-        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+        List<Artletter> artletters = validateArtletterIds(artletterIds);
 
-        if (artletters.size() != artletterIds.size()) {
-            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
-        }
         return artletters.stream()
-                .map(artletter -> new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(),artletter.getKeyword()))
+                .map(artletter -> {
+                    if (artletter.getKeyword() == null) {
+                        throw new GeneralException(ErrorStatus.KEYWORD_IS_EMPTY);
+                    }
+                    return new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(), artletter.getKeyword());
+                })
                 .collect(Collectors.toList());
     }
+
+
+
 
     @Override
     public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {

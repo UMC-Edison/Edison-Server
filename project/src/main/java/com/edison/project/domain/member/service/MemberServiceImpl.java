@@ -32,7 +32,6 @@ import static com.edison.project.common.status.SuccessStatus._OK;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MemberServiceImpl implements MemberService{
 
     private final MemberRepository memberRepository;
@@ -41,114 +40,6 @@ public class MemberServiceImpl implements MemberService{
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
     private final RedisTokenService redisTokenService;
-
-    // idToken으로 회원가입/로그인 API
-    @Override
-    public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
-
-        // Google idToken에서 사용자 정보 추출
-        GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
-        String email = payload.getEmail();
-
-        MemberResponseDto.LoginResultDto dto = generateTokensForOidcUser(email);
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, dto);
-    }
-
-    // 토큰 생성 API
-    @Override
-    @Transactional
-    public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
-
-        AtomicReference<Boolean> isNew = new AtomicReference<>(false);
-        Member member = memberRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    isNew.set(true);
-                    Member newMember = Member.builder()
-                            .email(email)
-                            .role("ROLE_USER")
-                            .build();
-                    return memberRepository.save(newMember);
-                });
-
-        String accessToken = jwtUtil.generateAccessToken(member.getMemberId(), member.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(member.getMemberId(), member.getEmail());
-
-        Optional<RefreshToken> existingToken = refreshTokenRepository.findByEmail(email);
-
-        if (existingToken.isPresent()) {
-            // 기존 토큰이 있으면 업데이트
-            RefreshToken tokenEntity = existingToken.get();
-            tokenEntity.updateToken(refreshToken);
-            refreshTokenRepository.save(tokenEntity);
-        } else {
-            // 기존 토큰이 없으면 새로 저장
-            RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
-            refreshTokenRepository.save(tokenEntity);
-        }
-
-        return MemberResponseDto.LoginResultDto.builder()
-                .isNewMember(isNew)
-                .memberId(member.getMemberId())
-                .email(member.getEmail())
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
-    }
-
-    // 로그아웃 API
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String token = (String) authentication.getCredentials();
-
-        long ttl = jwtUtil.getRemainingTime(token);
-
-        // access토큰 블랙리스트에 추가
-        redisTokenService.addToBlacklist(token, ttl);
-        // refresh 토큰 삭제
-        refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
-
-        return ApiResponse.onSuccess(_OK);
-    }
-
-    // 액세스토큰 재발급 API
-    @Override
-    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshToken) {
-
-        Long memberId = jwtUtil.extractUserId(refreshToken);
-        String email = jwtUtil.extractEmail(refreshToken);
-
-        String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
-
-        MemberResponseDto.RefreshResultDto response = MemberResponseDto.RefreshResultDto.builder()
-                .accessToken(newAccessToken)
-                .build();
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
-
-    }
-
-    // 회원 탈퇴 API
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // access토큰 블랙리스트에 추가
-        String token = (String) authentication.getCredentials();
-        redisTokenService.addToBlacklist(token,jwtUtil.getRemainingTime(token));
-
-        // refresh토큰 삭제
-        refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
-
-        //member 삭제
-        memberRepository.deleteByMemberId(userPrincipal.getMemberId());
-
-        return ApiResponse.onSuccess(_OK);
-    }
-
 
     // 개인정보 설정 API
     @Override
@@ -167,6 +58,7 @@ public class MemberServiceImpl implements MemberService{
 
         return ApiResponse.onSuccess(SuccessStatus._OK, new MemberResponseDto.CreateProfileResultDto(member.getNickname()));
     }
+
 
 
     // 개인정보 변경 API
@@ -188,7 +80,6 @@ public class MemberServiceImpl implements MemberService{
 
     }
 
-
     // 개인정보 변경 API - 이미지 여부에 따른 빌드 로직 분리
     private void updateNicknameOrProfile(Member member, String nickname, String imageUrl) {
         if (imageUrl == null) {
@@ -200,8 +91,10 @@ public class MemberServiceImpl implements MemberService{
     }
 
 
+
     // 개인정보 조회 API
     @Override
+    @Transactional
     public ResponseEntity<ApiResponse> getProfile(CustomUserPrincipal userPrincipal) {
 
         Member member = validateMember(userPrincipal);
@@ -213,6 +106,93 @@ public class MemberServiceImpl implements MemberService{
                         member.getProfileImg()
                 )
         );
+    }
+
+
+    @Override
+    @Transactional
+    public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
+
+        AtomicReference<Boolean> isNew = new AtomicReference<>(false);
+        Member member = memberRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    isNew.set(true);
+                    Member newMember = Member.builder()
+                            .email(email)
+                            .role("ROLE_USER")
+                            .build();
+                    return memberRepository.save(newMember);
+                });
+
+        String accessToken = jwtUtil.generateAccessToken(member.getMemberId(), member.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(member.getMemberId(), member.getEmail());
+
+        refreshTokenRepository.deleteByEmail(email);
+        RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
+        refreshTokenRepository.save(tokenEntity);
+
+        return MemberResponseDto.LoginResultDto.builder()
+                .isNewMember(isNew)
+                .memberId(member.getMemberId())
+                .email(member.getEmail())
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+
+    @Override
+    @Transactional
+    public Long createUserIfNotExist(String email) {
+        return memberRepository.findByEmail(email)
+                .map(Member::getMemberId)
+                .orElseGet(() -> {
+                    Member member = Member.builder()
+                            .email(email)
+                            .build();
+                    memberRepository.save(member);
+                    return member.getMemberId();
+                });
+    }
+
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        String token = (String) authentication.getCredentials();
+        long ttl = jwtUtil.getRemainingTime(token);
+
+        // 블랙리스트에 추가
+        redisTokenService.addToBlacklist(token, ttl);
+
+        refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
+
+        return ApiResponse.onSuccess(_OK);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshtoken) {
+
+        Long memberId = jwtUtil.extractUserId(refreshtoken);
+        String email = jwtUtil.extractEmail(refreshtoken);
+
+        String newAccessToken = jwtUtil.generateAccessToken(memberId, email);
+
+        MemberResponseDto.RefreshResultDto response = MemberResponseDto.RefreshResultDto.builder()
+                .accessToken(newAccessToken)
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
     }
 
     @Override
@@ -261,6 +241,7 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
+    @Transactional(readOnly = true)
     public MemberResponseDto.IdentityKeywordsResultDto getIdentityKeywords(CustomUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
@@ -289,6 +270,32 @@ public class MemberServiceImpl implements MemberService{
         return MemberResponseDto.IdentityKeywordsResultDto.builder()
                 .categories(categoryKeywords)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Long memberId = userPrincipal.getMemberId();
+        memberRepository.findById(memberId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // access토큰 블랙리스트에 추가
+        String token = (String) authentication.getCredentials();
+        redisTokenService.addToBlacklist(token,jwtUtil.getRemainingTime(token));
+
+        // refresh토큰 삭제
+        refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
+
+        //member 삭제
+        memberRepository.deleteByMemberId(memberId);
+
+        return ApiResponse.onSuccess(_OK);
     }
 
     @Transactional
@@ -359,6 +366,22 @@ public class MemberServiceImpl implements MemberService{
                 .keywords(request.getKeywords())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
+
+        // Google idToken에서 사용자 정보 추출
+        GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
+        String email = payload.getEmail();
+
+        MemberResponseDto.LoginResultDto dto = generateTokensForOidcUser(email);
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, dto);
+    }
+
+
+
 
 
     /*

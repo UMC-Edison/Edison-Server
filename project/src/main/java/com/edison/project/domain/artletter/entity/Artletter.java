@@ -2,14 +2,13 @@ package com.edison.project.domain.artletter.entity;
 
 import com.edison.project.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Getter
 @Entity
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Table(name = "Artletter", indexes = {
         @Index(name = "idx_artletter_title", columnList = "title"),
         @Index(name = "idx_artletter_writer", columnList = "writer")
@@ -27,7 +26,7 @@ public class Artletter extends BaseEntity {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "writer", nullable = false, length = 100)
+    @Column(name = "writer", length = 100)
     private String writer;
 
     @Column(name = "read_time", nullable = false)
@@ -43,24 +42,10 @@ public class Artletter extends BaseEntity {
     @Column(name = "category", nullable = false)
     private ArtletterCategory category;
 
-
+    @Column(name = "thumbnail", columnDefinition = "TEXT", nullable = false)
     private String thumbnail;
-
-    // Builder 패턴 적용
-    @Builder
-    public Artletter(Long letterId, String title, String content, String writer, int readTime, String tag, ArtletterCategory category, String thumbnail) {
-        this.letterId = letterId;
-        this.title = title;
-        this.content = content;
-        this.writer = writer;
-        this.readTime = readTime;
-        this.tag = tag;
-        this.category = category;
-        this.thumbnail = thumbnail;
-    }
 
     public ArtletterCategory getCategory() {
         return this.category;
     }
-    public long getLetterId() { return this.letterId; }
 }
