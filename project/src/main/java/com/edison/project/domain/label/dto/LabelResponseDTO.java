@@ -27,6 +27,8 @@ public class LabelResponseDTO {
         private String name;
         private int color;
         private Long bubbleCount;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
     }
 
     @Getter

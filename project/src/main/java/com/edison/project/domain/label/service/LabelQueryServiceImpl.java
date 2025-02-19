@@ -52,6 +52,8 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                             .name(label.getName())
                             .color(label.getColor())
                             .bubbleCount(bubbleCount != null ? bubbleCount : 0L) // 버블 없는 라벨은 0으로 처리
+                            .createdAt(label.getCreatedAt())
+                            .updatedAt(label.getUpdatedAt())
                             .build();
                 })
                 .collect(Collectors.toList());
