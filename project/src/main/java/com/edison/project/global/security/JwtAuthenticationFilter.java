@@ -97,12 +97,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Long userId = jwtUtil.extractUserId(token);
             String email = jwtUtil.extractEmail(token);
 
-            if (redisTokenService.isTokenBlacklisted(token)) {
-                throw new GeneralException(ErrorStatus.ACCESSTOKEN_EXPIRED);
-            }
-
             if (!memberRepository.existsByMemberId(userId)) {
                 throw new GeneralException(ErrorStatus.MEMBER_NOT_FOUND);
+            }
+
+            if (redisTokenService.isTokenBlacklisted(token)) {
+                throw new GeneralException(ErrorStatus.ACCESSTOKEN_EXPIRED);
             }
 
             RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
@@ -143,7 +143,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         RefreshToken storedRefreshToken = refreshTokenRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LOGIN_REQUIRED));
 
-        if (!jwtUtil.isTokenExpired(token)) {
+        if (!jwtUtil.isTokenExpired(token) && !redisTokenService.isTokenBlacklisted(token)) {
             throw new GeneralException(ErrorStatus.ACCESS_TOKEN_VALID);
         }
 
