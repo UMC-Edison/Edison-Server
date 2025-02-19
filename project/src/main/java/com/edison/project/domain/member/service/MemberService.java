@@ -16,7 +16,6 @@ public interface MemberService {
     MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request);
 
     MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email);
-    Long createUserIfNotExist(String email);
     ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> refreshAccessToken(String token);
     ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal);
