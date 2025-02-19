@@ -2,7 +2,6 @@ package com.edison.project.domain.space.controller;
 
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.SuccessStatus;
-import com.edison.project.domain.space.dto.SpaceInfoResponseDto;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
 import com.edison.project.domain.space.service.SpaceService;
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -31,13 +30,6 @@ public class SpaceController {
         ResponseEntity<ApiResponse> response = spaceService.processSpaces(userPrincipal, pageable);
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
-    }
-
-    @GetMapping("/cluster") // 클러스터의 중심, 반지름 반환
-    public ResponseEntity<?> clusterSpaces() {
-        ResponseEntity<ApiResponse> response = spaceService.getSpaceInfo();
-        List<SpaceInfoResponseDto> spaceInfoList = (List<SpaceInfoResponseDto>) response.getBody().getResult();
-        return ApiResponse.onSuccess(SuccessStatus._OK, spaceInfoList);
     }
 
 }

@@ -51,25 +51,19 @@ public class BubbleServiceImpl implements BubbleService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    // Bubble -> BubbleResponseDto 변환 메서드 (공통 로직)
+    // Bubble → DTO 변환
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
-        List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                        .localIdx(bl.getLabel().getLocalIdx())
-                        .name(bl.getLabel().getName())
-                        .color(bl.getLabel().getColor())
-                        .build())
-                .collect(Collectors.toList());
-
         return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
+                .localIdx(bubble.getLocalIdx())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
-                .labels(labelDtos)
-                .backlinkIds(bubble.getBacklinks().stream()
+                .labels(mapLabelsToDto(bubble.getLabels().stream()
+                        .map(BubbleLabel::getLabel)
+                        .collect(Collectors.toSet())))
+                .backlinkIdxs(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
-                        .map(Bubble::getBubbleId)
+                        .map(Bubble::getLocalIdx)
                         .collect(Collectors.toSet()))
                 .isTrashed(bubble.isTrashed())
                 .createdAt(bubble.getCreatedAt())
@@ -78,12 +72,11 @@ public class BubbleServiceImpl implements BubbleService {
                 .build();
     }
 
+    /** 전체 버블 목록 조회 */
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+        validateUser(userPrincipal);
 
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
 
@@ -98,28 +91,21 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
+    /** 휴지통 버블 목록 조회 */
     @Override
     public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        // Member 조회
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        validateUser(userPrincipal);
 
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
-        // Bubble 데이터 변환
-        // Bubble -> DeletedListResultDto 변환
         List<BubbleResponseDto.TrashedListResultDto> bubbles = bubblePage.getContent().stream()
                 .map(bubble -> {
-                    LocalDateTime updatedAt = bubble.getUpdatedAt();
+                    LocalDateTime deletedAt = bubble.getDeletedAt();
                     LocalDateTime now = LocalDateTime.now();
-                    long remainDays = 30 - ChronoUnit.DAYS.between(updatedAt, now);
+                    long remainDays = 30 - ChronoUnit.DAYS.between(deletedAt, now);
 
                     // 라벨 정보 변환
                     List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
@@ -131,17 +117,18 @@ public class BubbleServiceImpl implements BubbleService {
                             .collect(Collectors.toList());
 
                     return BubbleResponseDto.TrashedListResultDto.builder()
-                            .bubbleId(bubble.getBubbleId())
+                            .localIdx(bubble.getLocalIdx())
                             .title(bubble.getTitle())
                             .content(bubble.getContent())
                             .mainImageUrl(bubble.getMainImg())
-                            .labels(labelDtos) // 라벨 정보 추가
-                            .backlinkIds(bubble.getBacklinks().stream()
+                            .labels(labelDtos)
+                            .backlinkIdxs(bubble.getBacklinks().stream()
                                     .map(BubbleBacklink::getBacklinkBubble)
-                                    .map(Bubble::getBubbleId)
+                                    .map(Bubble::getLocalIdx)
                                     .collect(Collectors.toSet()))
                             .createdAt(bubble.getCreatedAt())
-                            .updatedAt(updatedAt)
+                            .updatedAt(bubble.getUpdatedAt())
+                            .deletedAt(bubble.getDeletedAt())
                             .remainDay((int) Math.max(remainDays, 0)) // 남은 일수 계산
                             .build();
                 })
@@ -149,147 +136,51 @@ public class BubbleServiceImpl implements BubbleService {
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
-  
+
+  /** 최근 7일 내 버블 조회 */
   @Override
   public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-  
+
+        validateUser(userPrincipal);
         LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
 
-        // 7일 이내 버블 조회
         Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
 
-        // DTO로 변환
         List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
-        PageInfo pageInfo = new PageInfo(
-                bubblePage.getNumber(),
-                bubblePage.getSize(),
-                bubblePage.hasNext(),
-                bubblePage.getTotalElements(),
-                bubblePage.getTotalPages()
-        );
+        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
+                bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
 
+    /** 버블 상세 조회 */
     @Override
-    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long localIdx) {
+        validateUser(userPrincipal);
 
-        Bubble bubble = bubbleRepository.findByBubbleIdAndIsTrashedFalse(bubbleId).orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        // 조회 권한 확인
-        if (!bubble.getMember().getMemberId().equals(userPrincipal.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
+        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         return convertToBubbleResponseDto(bubble);
     }
 
-    // 버블 검색
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> searchBubbles(CustomUserPrincipal userPrincipal, String keyword, boolean recent, Pageable pageable) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-        memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        List<Bubble> bubbles = bubbleRepository.searchBubblesByKeyword(keyword);
-
-        // 7일 이내 필터링 조건
-        if (Boolean.TRUE.equals(recent)) {
-            ZonedDateTime sevenDaysAgoZoned = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).minusDays(7);
-            LocalDateTime sevenDaysAgo = sevenDaysAgoZoned.toLocalDateTime();
-
-            bubbles = bubbles.stream()
-                    .filter(bubble -> bubble.getUpdatedAt().isAfter(sevenDaysAgo))
-                    .collect(Collectors.toList());
-        }
-
-
-        // 검색어 정렬 : 제목, 본문, 오래된 순서 순
-        List<Bubble> sortedBubbles = bubbles.stream()
-                .sorted((b1, b2) -> {
-                    boolean b1TitleMatch = b1.getTitle().contains(keyword);
-                    boolean b2TitleMatch = b2.getTitle().contains(keyword);
-                    if (b1TitleMatch && !b2TitleMatch) return -1;
-                    if (!b1TitleMatch && b2TitleMatch) return 1;
-
-                    int b1ContentMatchCount = countOccurrences(b1.getContent(), keyword);
-                    int b2ContentMatchCount = countOccurrences(b2.getContent(), keyword);
-                    if (b1ContentMatchCount != b2ContentMatchCount) {
-                        return Integer.compare(b2ContentMatchCount, b1ContentMatchCount);
-                    }
-
-                    return b1.getUpdatedAt().compareTo(b2.getUpdatedAt());
-                })
-                .collect(Collectors.toList());
-
-        // 페이징 적용
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), sortedBubbles.size());
-        List<Bubble> paginatedBubbles = sortedBubbles.subList(start, end);
-
-        PageInfo pageInfo = new PageInfo(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                end < sortedBubbles.size(),
-                (long) sortedBubbles.size(),
-                (sortedBubbles.size() + pageable.getPageSize() - 1) / pageable.getPageSize()
-        );
-
-        List<BubbleResponseDto.SyncResultDto> results = paginatedBubbles.stream()
-                .map(this::convertToBubbleResponseDto)
-                .collect(Collectors.toList());
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, results);
-    }
-
-    @Override
-    // @Scheduled(cron = "0 0 0 * * ?") // 매일 새벽 0시에 실행
-    @Scheduled(cron = "0 35 17 * * ?", zone = "Asia/Seoul") // 테스트할 시간
-    @Transactional
-    public void deleteExpiredBubble() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiryDate = now.minusDays(30);
-
-        List<Bubble> expiredBubbles = bubbleRepository.findAllByUpdatedAtBeforeAndIsTrashedTrue(expiryDate);
-
-        if (!expiredBubbles.isEmpty()) {
-            List<Long> bubbleIds = expiredBubbles.stream()
-                            .map(Bubble::getBubbleId)
-                                    .collect(Collectors.toList());
-
-            bubbleRepository.deleteAll(expiredBubbles);
-            log.info("Deleted {} expired bubbles", expiredBubbles.size());
-        } else {
-            log.info("No expired bubbles found for deletion");
-        }
-
-    }
-
+    /** 버블 SYNC */
     @Override
     @Transactional
     public BubbleResponseDto.SyncResultDto syncBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.SyncDto request) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
+        validateUser(userPrincipal);
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
+        // idx -> label Pk
         Set<Bubble> backlinks = validateBacklinks(request.getBacklinkIds(), member);
-        Set<Label> labels = validateLabels(request.getLabelIdxs(), member);  // idx -> label Pk
+        Set<Label> labels = validateLabels(request.getLabelIdxs(), member);
 
         Bubble bubble = processBubble(request, member, backlinks, labels);
         return buildSyncResultDto(request, bubble, member);
@@ -297,21 +188,17 @@ public class BubbleServiceImpl implements BubbleService {
 
     private Bubble processBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
         if (request.isDeleted()){
-            return bubbleRepository.existsById(request.getBubbleId()) ? hardDeleteBubble(request, member) : null;
+            return bubbleRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx()) ? hardDeleteBubble(request, member) : null;
         }
 
-        return bubbleRepository.existsById(request.getBubbleId())
+        return bubbleRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx())
                 ? updateExistingBubble(request, member, backlinks, labels)
                 : createNewBubble(request, member, backlinks, labels);
     }
 
     private Bubble updateExistingBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
-        Bubble bubble = bubbleRepository.findById(request.getBubbleId())
+        Bubble bubble = bubbleRepository.findByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        if(!bubble.getMember().getMemberId().equals(member.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
 
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
@@ -336,12 +223,8 @@ public class BubbleServiceImpl implements BubbleService {
 
     private Bubble hardDeleteBubble(BubbleRequestDto.SyncDto request, Member member) {
 
-        Bubble bubble = bubbleRepository.findById(request.getBubbleId())
+        Bubble bubble = bubbleRepository.findByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
-
-        if (!bubble.getMember().getMemberId().equals(member.getMemberId())) {
-            throw new GeneralException(ErrorStatus._FORBIDDEN);
-        }
 
         bubbleRepository.delete(bubble);
         return null;
@@ -349,7 +232,7 @@ public class BubbleServiceImpl implements BubbleService {
 
     private Bubble createNewBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
         Bubble newBubble = Bubble.builder()
-                .bubbleId(request.getBubbleId())
+                .localIdx(request.getLocalIdx())
                 .title(request.getTitle())
                 .content(request.getContent())
                 .mainImg(request.getMainImageUrl())
@@ -386,12 +269,12 @@ public class BubbleServiceImpl implements BubbleService {
     private BubbleResponseDto.SyncResultDto buildSyncResultDto(BubbleRequestDto.SyncDto request, Bubble bubble, Member member) {
         if (bubble == null) {
             return BubbleResponseDto.SyncResultDto.builder()
-                    .bubbleId(request.getBubbleId())
+                    .localIdx(request.getLocalIdx())
                     .title(request.getTitle())
                     .content(request.getContent())
                     .mainImageUrl(request.getMainImageUrl())
                     .labels(mapLabelsToDtoByLocalIdx(member, request.getLabelIdxs()))
-                    .backlinkIds(request.getBacklinkIds())
+                    .backlinkIdxs(request.getBacklinkIds())
                     .isDeleted(true)
                     .isTrashed(request.isTrashed())
                     .createdAt(request.getCreatedAt())
@@ -404,14 +287,14 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toSet());
 
         return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
+                .localIdx(bubble.getLocalIdx())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
                 .labels(mapLabelsToDto(labels))
-                .backlinkIds(bubble.getBacklinks().stream()
+                .backlinkIdxs(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
-                        .map(Bubble::getBubbleId)
+                        .map(Bubble::getLocalIdx)
                         .collect(Collectors.toSet()))
                 .isDeleted(false)
                 .isTrashed(bubble.isTrashed())
@@ -422,37 +305,35 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     // 백링크 검증
-    private Set<Bubble> validateBacklinks(Set<Long> backlinkIds, Member member) {
-        if (backlinkIds == null || backlinkIds.isEmpty()) {
-            return Collections.emptySet();
-        }
+    private Set<Bubble> validateBacklinks(Set<Long> backlinkIdxs, Member member) {
+        Set<Long> idxs = Optional.ofNullable(backlinkIdxs).orElse(Collections.emptySet());
 
-        Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllById(backlinkIds));
-        if (backlinks.size() != backlinkIds.size()) {
+        if (idxs.isEmpty()) { return Collections.emptySet();}
+        Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllByMemberAndLocalIdxIn(member, idxs));
+
+        // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
+        Set<Long> foundIdxs = backlinks.stream().map(Bubble::getLocalIdx).collect(Collectors.toSet());
+        if (!foundIdxs.containsAll(idxs)) {
             throw new GeneralException(ErrorStatus.BACKLINK_NOT_FOUND);
         }
-        if (!backlinks.stream().allMatch(backlink-> backlink.getMember().equals(member))) {
+        if (!backlinks.stream().allMatch(bubble -> bubble.getMember().equals(member))) {
             throw new GeneralException(ErrorStatus.BACKLINK_FORBIDDEN);
         }
-        return backlinks;
+
+        return new HashSet<>(backlinks);
     }
 
     private Set<Label> validateLabels(Set<Long> labelIdxs, Member member) {
         Set<Long> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
 
-        if (idxs.isEmpty()) {
-            return Collections.emptySet(); // 빈 Set 반환
-        }
-        if (idxs.size() > 3) {
-            throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);
-        }
+        if (idxs.isEmpty()) { return Collections.emptySet();}
+        if (idxs.size() > 3) { throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);}
 
         Set<Label> labels = new HashSet<>(labelRepository.findAllByMemberAndLocalIdxIn(member, idxs));
+
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
         Set<Long> foundIdxs = labels.stream().map(Label::getLocalIdx).collect(Collectors.toSet());
-        if (!foundIdxs.containsAll(idxs)) {
-            throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
-        }
+        if (!foundIdxs.containsAll(idxs)) { throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);}
 
         if (!labels.stream().allMatch(label -> label.getMember().equals(member))) {
             throw new GeneralException(ErrorStatus.LABELS_FORBIDDEN);
@@ -486,14 +367,10 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toList());
     }
 
-    private int countOccurrences(String content, String keyword) {
-        if (content == null || keyword == null || keyword.isEmpty()) return 0;
-        int count = 0;
-        int idx = content.indexOf(keyword);
-        while (idx != -1) {
-            count++;
-            idx = content.indexOf(keyword, idx + keyword.length());
+    // 사용자 인증 정보 검증
+    private void validateUser(CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
-        return count;
     }
 }

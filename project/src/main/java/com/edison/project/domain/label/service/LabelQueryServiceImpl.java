@@ -98,12 +98,12 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .collect(Collectors.toList());
 
         return BubbleResponseDto.SyncResultDto.builder()
-                .bubbleId(bubble.getBubbleId())
+                .localIdx(bubble.getLocalIdx())
                 .title(bubble.getTitle())
                 .content(bubble.getContent())
                 .mainImageUrl(bubble.getMainImg())
                 .labels(labelDtos) // 라벨 정보 리스트
-                .backlinkIds(bubble.getBacklinks().stream()
+                .backlinkIdxs(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
                         .map(Bubble::getBubbleId)
                         .collect(Collectors.toSet()))
