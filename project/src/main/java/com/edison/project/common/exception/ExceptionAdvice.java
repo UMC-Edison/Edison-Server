@@ -43,8 +43,7 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse> handleException(Exception e) {
-        e.printStackTrace();
-
+        log.error("Unhandled Exception: ", e);
         return ApiResponse.onFailure((ErrorStatus._INTERNAL_SERVER_ERROR));
     }
 
