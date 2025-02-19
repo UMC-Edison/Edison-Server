@@ -77,7 +77,7 @@ public class BubbleServiceImpl implements BubbleService {
     @Transactional
     public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberId(userPrincipal.getMemberId(), pageable);
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
