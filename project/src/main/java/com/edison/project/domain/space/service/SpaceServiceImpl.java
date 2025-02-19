@@ -31,6 +31,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class SpaceServiceImpl implements SpaceService {
 
+    @Value("${openai_key}")
+    private String secretKey;
+
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
     private final SpaceRepository spaceRepository;
@@ -150,7 +153,7 @@ public class SpaceServiceImpl implements SpaceService {
 
     // ✅ GPT 호출하여 Space 좌표 변환
     private String callGPTForGrouping(Map<Long, String> requestData) {
-        String openaiApiKey = System.getenv("openai_key");
+        String openaiApiKey = secretKey;
         if (openaiApiKey == null || openaiApiKey.isEmpty()) {
             throw new RuntimeException("OpenAI API 키가 환경변수에 설정되어 있지 않습니다.");
         }
