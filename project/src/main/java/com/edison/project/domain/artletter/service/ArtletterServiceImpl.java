@@ -494,5 +494,23 @@ public class ArtletterServiceImpl implements ArtletterService {
         };
     }
 
+    // 추천바 - 아트레터 요청 검증
+    private List<Artletter> validateArtletterIds(List<Long> artletterIds) {
+        if (artletterIds == null || artletterIds.isEmpty() || artletterIds.size() > 3) {
+            throw new GeneralException(ErrorStatus.INVALID_ARTLETTER_REQUEST);
+        }
+
+        Set<Long> uniqueIds = new HashSet<>(artletterIds);
+        if (uniqueIds.size() != artletterIds.size()) {
+            throw new GeneralException(ErrorStatus.DUPLICATE_ARTLETTER_IDS);
+        }
+
+        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+        if (artletters.size() != artletterIds.size()) {
+            throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND);
+        }
+
+        return artletters;
+    }
 
 }

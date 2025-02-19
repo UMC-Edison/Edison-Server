@@ -140,22 +140,6 @@ public class MemberServiceImpl implements MemberService{
                 .build();
     }
 
-
-    @Override
-    @Transactional
-    public Long createUserIfNotExist(String email) {
-        return memberRepository.findByEmail(email)
-                .map(Member::getMemberId)
-                .orElseGet(() -> {
-                    Member member = Member.builder()
-                            .email(email)
-                            .build();
-                    memberRepository.save(member);
-                    return member.getMemberId();
-                });
-    }
-
-
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
