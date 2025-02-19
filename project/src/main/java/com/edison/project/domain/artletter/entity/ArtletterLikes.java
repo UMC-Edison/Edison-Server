@@ -1,13 +1,8 @@
 package com.edison.project.domain.artletter.entity;
 
-import com.edison.project.domain.bubble.entity.Bubble;
-import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.member.entity.Member;
-import com.edison.project.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.Set;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
