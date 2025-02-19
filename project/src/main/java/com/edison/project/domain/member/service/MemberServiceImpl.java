@@ -90,8 +90,6 @@ public class MemberServiceImpl implements MemberService{
         }
     }
 
-
-
     // 개인정보 조회 API
     @Override
     @Transactional
@@ -108,7 +106,7 @@ public class MemberServiceImpl implements MemberService{
         );
     }
 
-
+    // JWT 액세스 토큰 & 리프레시 토큰 생성
     @Override
     @Transactional
     public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
@@ -140,22 +138,7 @@ public class MemberServiceImpl implements MemberService{
                 .build();
     }
 
-
-    @Override
-    @Transactional
-    public Long createUserIfNotExist(String email) {
-        return memberRepository.findByEmail(email)
-                .map(Member::getMemberId)
-                .orElseGet(() -> {
-                    Member member = Member.builder()
-                            .email(email)
-                            .build();
-                    memberRepository.save(member);
-                    return member.getMemberId();
-                });
-    }
-
-
+    // 로그아웃 API
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
@@ -292,7 +275,7 @@ public class MemberServiceImpl implements MemberService{
         // refresh토큰 삭제
         refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
 
-        //member 삭제
+        // member 삭제
         memberRepository.deleteByMemberId(memberId);
 
         return ApiResponse.onSuccess(_OK);
@@ -316,34 +299,25 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.INVALID_CATEGORY);
         }
 
-        // 카테고리-키워드 맵핑 검증
+        // 요청된 키워드 조회 및 검증 (한 번만 조회)
         List<Keywords> keywords = keywordsRepository.findAllById(request.getKeywords());
-        if (!keywords.stream().allMatch(keyword -> category.equals(keyword.getCategory()))) {
+
+        // 존재하지 않는 키워드가 있는지 확인
+        if (keywords.size() != request.getKeywords().size()) {
+            throw new GeneralException(ErrorStatus.NOT_EXISTS_KEYWORD);
+        }
+
+        // 요청된 키워드가 모두 해당 카테고리에 속하는지 확인
+        Set<String> keywordCategories = keywords.stream().map(Keywords::getCategory).collect(Collectors.toSet());
+        if (keywordCategories.size() != 1 || !keywordCategories.contains(category)) {
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
 
-        // 요청된 키워드 ID를 가져옵니다.
-        List<Integer> requestedKeywordIds = request.getKeywords();
-
-        // 데이터베이스에서 해당 카테고리에 속하는 모든 키워드 ID를 조회합니다.
-        List<Integer> validKeywordIds = keywordsRepository.findAllByCategory(request.getCategory()).stream()
-                .map(Keywords::getKeywordId)
-                .collect(Collectors.toList());
-
-        // 요청된 키워드 ID 중에서 존재하지 않는 키워드 ID를 필터링합니다.
-        List<Integer> invalidKeywordIds = requestedKeywordIds.stream()
-                .filter(keywordId -> !validKeywordIds.contains(keywordId))
-                .collect(Collectors.toList());
-
-        // 존재하지 않는 키워드가 있다면 에러를 throw 합니다.
-        if (!invalidKeywordIds.isEmpty()) {
-            throw new GeneralException(ErrorStatus.NOT_EXISTS_KEYWORD);
-        }
 
         List<MemberKeyword> existingMemberKeywords = memberKeywordRepository.findByMember_MemberIdAndKeywordCategory(member.getMemberId(), request.getCategory());
         List<Integer> existingKeywordIds = existingMemberKeywords.stream()
                 .map(memberKeyword -> memberKeyword.getKeyword().getKeywordId())
-                .collect(Collectors.toList());
+                .toList();
 
         // 이전 키워드와 비교하여 동일한지 확인
         if (new HashSet<>(existingKeywordIds).equals(new HashSet<>(request.getKeywords()))) {
@@ -379,7 +353,6 @@ public class MemberServiceImpl implements MemberService{
 
         return ApiResponse.onSuccess(SuccessStatus._OK, dto);
     }
-
 
 
 
