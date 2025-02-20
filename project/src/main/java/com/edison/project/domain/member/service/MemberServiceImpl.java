@@ -382,16 +382,16 @@ public class MemberServiceImpl implements MemberService{
         }
     }
 
-    // 아이덴티티 키워드를 카테고리별로 가져오는 API
+    // 아이덴티티 키워드를 카테고리별로 가져와 스트링으로 반환
     @Override
-    public MemberResponseDto.CategorizedIdentityKeywordsDto getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal) {
+    public String getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
         Long memberId = userPrincipal.getMemberId();
 
-        // 해당 멤버의 키워드를 가져와 카테고리별로 그룹화
+        // 멤버의 카테고리별 키워드 가져오기
         List<MemberKeyword> memberKeywords = memberKeywordRepository.findByMember_MemberId(memberId);
         Map<String, List<String>> categorizedKeywords = memberKeywords.stream()
                 .collect(Collectors.groupingBy(
@@ -399,8 +399,15 @@ public class MemberServiceImpl implements MemberService{
                         Collectors.mapping(mk -> mk.getKeyword().getName(), Collectors.toList())
                 ));
 
-        return new MemberResponseDto.CategorizedIdentityKeywordsDto(categorizedKeywords);
-    }
+        // 각 카테고리에 대한 값을 가져오고, 없으면 빈 문자열 처리
+        String category1 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY1", new ArrayList<>()));
+        String category2 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY2", new ArrayList<>()));
+        String category3 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY3", new ArrayList<>()));
+        String category4 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY4", new ArrayList<>()));
 
+        // 최종 문자열 포맷팅
+        return String.format("category1: %s / category2: %s / category3: %s / category4: %s",
+                category1, category2, category3, category4);
+    }
 
 }

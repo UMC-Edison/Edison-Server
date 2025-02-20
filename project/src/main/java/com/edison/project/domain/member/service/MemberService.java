@@ -21,6 +21,6 @@ public interface MemberService {
     ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> processGoogleLogin(String authorizationCode);
 
-    MemberResponseDto.CategorizedIdentityKeywordsDto getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal);
+    String getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal);
 
 }

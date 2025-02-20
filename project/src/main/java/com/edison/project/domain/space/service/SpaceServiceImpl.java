@@ -5,6 +5,7 @@ import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.repository.MemberRepository;
+import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
 import com.edison.project.domain.space.entity.Space;
 import com.edison.project.domain.space.repository.SpaceRepository;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class SpaceServiceImpl implements SpaceService {
 
+    private final MemberService memberService;
     @Value("${openai_key}")
     private String secretKey;
 
@@ -43,15 +45,16 @@ public class SpaceServiceImpl implements SpaceService {
     private final MemberRepository memberRepository;
 
     public SpaceServiceImpl(SpaceRepository spaceRepository,
-                            BubbleRepository bubbleRepository, MemberRepository memberRepository) {
+                            BubbleRepository bubbleRepository, MemberRepository memberRepository, MemberService memberService) {
         this.spaceRepository = spaceRepository;
         this.bubbleRepository = bubbleRepository;
         this.memberRepository = memberRepository;
+        this.memberService = memberService;
     }
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
         Long memberId = userPrincipal.getMemberId();
 
         System.out.println("🔍 [Process Spaces] 실행 - 사용자 ID: " + memberId);
@@ -87,7 +90,7 @@ public class SpaceServiceImpl implements SpaceService {
         Map<Long, String> requestData = createRequestDataWithId(bubbles);
 
         // ✅ GPT 호출하여 Space 좌표 변환
-        String gptResponse = callGPTForGrouping(requestData);
+        String gptResponse = callGPTForGrouping(requestData, userIdentityKeywords);
         System.out.println("🛠 GPT 응답: " + gptResponse);
 
         List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
@@ -153,13 +156,13 @@ public class SpaceServiceImpl implements SpaceService {
     }
 
     // ✅ GPT 호출하여 Space 좌표 변환
-    private String callGPTForGrouping(Map<Long, String> requestData) {
+    private String callGPTForGrouping(Map<Long, String> requestData, String userIdentityKeywords) {
         String openaiApiKey = secretKey;
         if (openaiApiKey == null || openaiApiKey.isEmpty()) {
             throw new RuntimeException("OpenAI API 키가 환경변수에 설정되어 있지 않습니다.");
         }
 
-        Map<String, Object> message = Map.of("role", "system", "content", buildPromptWithId(requestData));
+        Map<String, Object> message = Map.of("role", "system", "content", buildPromptWithId(requestData, userIdentityKeywords));
         Map<String, Object> requestBody = Map.of("model", "gpt-3.5-turbo", "messages", List.of(message));
 
         try {
@@ -238,7 +241,7 @@ public class SpaceServiceImpl implements SpaceService {
     }
 
     // ✅ GPT 요청 프롬프트 생성
-    private String buildPromptWithId(Map<Long, String> requestData) {
+    private String buildPromptWithId(Map<Long, String> requestData, String userIdentityKeywords) {
         StringBuilder promptBuilder = new StringBuilder();
 
         promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
@@ -280,6 +283,22 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("]\n\n");
 
         promptBuilder.append("⚠️ **DO NOT** include any explanations, comments, or extra formatting. Respond ONLY with the JSON array. ⚠️\n");
+
+        // 🔹 사용자 프로필 정보 추가
+        promptBuilder.append("\n### 사용자 프로필 정보:\n");
+        promptBuilder.append("The user has the following identity characteristics that should influence content positioning:\n");
+
+        // 🔹 카테고리별 설명 추가
+        promptBuilder.append("- **CATEGORY1 (Words that describe the user)**: These keywords define the user's personality, traits, and strengths.\n");
+        promptBuilder.append("- **CATEGORY2 (User's future field)**: These keywords represent the user's aspirations, career, or areas of interest for the future.\n");
+        promptBuilder.append("- **CATEGORY3 (Most inspiring environment for the user)**: These words describe places, situations, or conditions where the user feels most inspired and productive.\n");
+        promptBuilder.append("- **CATEGORY4 (Fields that stimulate the user's imagination)**: These keywords show which fields, subjects, or themes spark the user's creativity.\n");
+
+        promptBuilder.append("\nThe user's identity profile based on these categories:\n");
+        promptBuilder.append(userIdentityKeywords).append("\n");
+
+        promptBuilder.append("Consider this information when determining relationships and positions between items.\n\n");
+
 
         Long lastKey = null;
         for (Long key : requestData.keySet()) {
