@@ -93,4 +93,11 @@ public class MemberRestController {
         return memberService.processGoogleLogin(request.getIdToken());
     }
 
+    @GetMapping("/spaces/identity")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getCategorizedIdentityKeywords(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        String formattedResult = memberService.getCategorizedIdentityKeywords(userPrincipal);
+        return ApiResponse.onSuccess(SuccessStatus._OK, formattedResult);
+    }
+
 }

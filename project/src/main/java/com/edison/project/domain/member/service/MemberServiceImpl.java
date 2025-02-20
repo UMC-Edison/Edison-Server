@@ -381,4 +381,33 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
         }
     }
+
+    // 아이덴티티 키워드를 카테고리별로 가져와 스트링으로 반환
+    @Override
+    public String getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Long memberId = userPrincipal.getMemberId();
+
+        // 멤버의 카테고리별 키워드 가져오기
+        List<MemberKeyword> memberKeywords = memberKeywordRepository.findByMember_MemberId(memberId);
+        Map<String, List<String>> categorizedKeywords = memberKeywords.stream()
+                .collect(Collectors.groupingBy(
+                        mk -> mk.getKeyword().getCategory(),
+                        Collectors.mapping(mk -> mk.getKeyword().getName(), Collectors.toList())
+                ));
+
+        // 각 카테고리에 대한 값을 가져오고, 없으면 빈 문자열 처리
+        String category1 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY1", new ArrayList<>()));
+        String category2 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY2", new ArrayList<>()));
+        String category3 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY3", new ArrayList<>()));
+        String category4 = String.join(", ", categorizedKeywords.getOrDefault("CATEGORY4", new ArrayList<>()));
+
+        // 최종 문자열 포맷팅
+        return String.format("category1: %s / category2: %s / category3: %s / category4: %s",
+                category1, category2, category3, category4);
+    }
+
 }
