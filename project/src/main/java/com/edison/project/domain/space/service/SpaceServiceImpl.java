@@ -133,7 +133,7 @@ public class SpaceServiceImpl implements SpaceService {
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
-                    .readTimeadut(60, TimeUnit.SECONDS)
+                    .readTimeout(60, TimeUnit.SECONDS)
                     .build();
 
             RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
