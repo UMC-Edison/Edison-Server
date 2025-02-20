@@ -153,4 +153,19 @@ public class ArtletterController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return artletterService.getScrapCategoryArtletters(userPrincipal, category, pageable);
     }
+
+    // 최근 검색어 조회
+    @GetMapping("/search-memory")
+    public ResponseEntity<ApiResponse> getMemoryMemory(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return artletterService.getMemoryKeyword(userPrincipal);
+    }
+
+    // 최근 검색어 삭제
+    @DeleteMapping("/search-memory")
+    public ResponseEntity<ApiResponse> deleteMemoryKeyword(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestBody ArtletterDTO.MemoryKeywordRequestDto request) {
+        return artletterService.deleteMemoryKeyword(userPrincipal, request);
+    }
 }

@@ -169,5 +169,19 @@ public class ArtletterDTO {
         private LocalDateTime updatedAt;
     }
 
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MemoryKeywordRequestDto {
+        private String keyword;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MemoryKeywordResponseDto {
+        private List<String> keywords;
+    }
+
 }
 

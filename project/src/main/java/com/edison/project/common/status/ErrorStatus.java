@@ -74,6 +74,7 @@ public enum ErrorStatus {
     INVALID_ARTLETTER_REQUEST(HttpStatus.BAD_REQUEST, "LETTER4014", "아트레터 ID는 1~3개만 요청할 수 있습니다."),
     DUPLICATE_ARTLETTER_IDS(HttpStatus.BAD_REQUEST, "LETTER4015", "중복된 아트레터 요청입니다."),
     THUMBNAIL_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4016", "썸네일은 null일 수 없습니다."),
+    MEMORY_KEYWORD_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4017", "존재하지 않는 검색어 입니다."),
 
     // 검색 관련 에러
     INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다."),
