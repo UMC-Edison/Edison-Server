@@ -56,6 +56,6 @@ public class ExceptionAdvice {
 
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, ConversionFailedException.class})
     public ResponseEntity<ApiResponse> handleConversionFailedException(Exception e) {
-        return ApiResponse.onFailure((ErrorStatus.NOT_EXISTS_CATEGORY));
+        return ApiResponse.onFailure((ErrorStatus._BAD_REQUEST));
     }
 }

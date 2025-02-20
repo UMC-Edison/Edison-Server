@@ -51,7 +51,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         Page<Artletter> artletters = getPaginatedArtletters(page, size);
         PageInfo pageInfo = buildPageInfo(artletters);
 
-        Member member = getMemberIfAuthenticated(userPrincipal);
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         List<ArtletterDTO.SimpleArtletterResponseDto> response = artletters.getContent().stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
@@ -70,8 +70,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     // 아트레터 등록 api
     @Override
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
-
-        Member member = findMemberById(userPrincipal.getMemberId());
 
         Artletter artletter = Artletter.builder()
                 .title(request.getTitle())
@@ -103,7 +101,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Transactional
     public ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         Artletter artletter = findArtletterById(letterId);
         boolean alreadyLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
 
@@ -141,7 +139,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Transactional
     public ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         Artletter artletter = findArtletterById(letterId);
         boolean alreadyScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
 
@@ -175,7 +173,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
-        Member member = getMemberIfAuthenticated(userPrincipal);
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
@@ -327,7 +325,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         }
 
         Member member = Optional.ofNullable(userPrincipal)
-                .map(up -> findMemberById(up.getMemberId()))
+                .map(up -> memberRepository.findByMemberId(up.getMemberId()))
                 .orElse(null);
 
         List<Long> artletterIds = editorRequestDto.getArtletterIds();
@@ -415,7 +413,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         Page<Scrap> scraps = scrapRepository.findByMember(member, pageable);
 
@@ -456,7 +454,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         try {
             ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
@@ -498,20 +496,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     /*
     공통 메서드 모음
     */
-
-    // 로그인 여부 확인 후 Member 조회
-    private Member getMemberIfAuthenticated(CustomUserPrincipal userPrincipal) {
-        if (userPrincipal == null) {
-            return null;
-        }
-        return memberRepository.findById(userPrincipal.getMemberId()).orElse(null);
-    }
-
-    // Member 존재 여부 조회
-    private Member findMemberById(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-    }
 
     // Artletter 존재 여부 조회
     private Artletter findArtletterById(Long letterId) {
