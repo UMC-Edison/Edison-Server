@@ -584,11 +584,11 @@ public class ArtletterServiceImpl implements ArtletterService {
                 artletters.getTotalPages()
         );
 
-        List<ArtletterDTO.ListResponseDto> response = artletters.getContent().stream()
+        List<ArtletterDTO.CategoryResponseDto> response = artletters.getContent().stream()
                 .map(artletter -> {
-                    boolean isScrapped = (member != null)git && scrapRepository.existsByMemberAndArtletter(member, artletter);
+                    boolean isScrapped = (member != null) && scrapRepository.existsByMemberAndArtletter(member, artletter);
 
-                    return ArtletterDTO.ListResponseDto.builder()
+                    return ArtletterDTO.CategoryResponseDto.builder()
                             .artletterId(artletter.getLetterId())
                             .title(artletter.getTitle())
                             .thumbnail(artletter.getThumbnail())
