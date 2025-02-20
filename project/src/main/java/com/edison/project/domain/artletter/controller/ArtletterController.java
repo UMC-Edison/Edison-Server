@@ -168,4 +168,16 @@ public class ArtletterController {
             @RequestBody ArtletterDTO.MemoryKeywordRequestDto request) {
         return artletterService.deleteMemoryKeyword(userPrincipal, request);
     }
+
+    // 카테고리별 아트레터 조회
+    @GetMapping("/category")
+    public ResponseEntity<ApiResponse> getArtlettersByCategory(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam("category") ArtletterCategory category,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return artletterService.getArtlettersByCategory(userPrincipal, category, pageable);
+    }
 }

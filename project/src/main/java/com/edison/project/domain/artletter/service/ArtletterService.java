@@ -3,6 +3,7 @@ package com.edison.project.domain.artletter.service;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
+import com.edison.project.domain.member.entity.Member;
 import com.edison.project.global.security.CustomUserPrincipal;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -29,5 +30,5 @@ public interface ArtletterService {
     ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable);
 
     ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request);
-
+    ResponseEntity<ApiResponse> getArtlettersByCategory(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable);
 }

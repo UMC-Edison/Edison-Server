@@ -95,7 +95,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
-
     // 아트레터 좋아요 토글 api
     @Override
     @Transactional
@@ -168,7 +167,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
-
     // 아트레터 검색 api
     @Override
     @Transactional
@@ -233,8 +231,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
-
-
     // 최근 검색어 조회
     @Override
     @Transactional
@@ -269,9 +265,6 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         return ApiResponse.onSuccess(SuccessStatus._OK);
     }
-
-
-
 
 
     // 아트레터 상세조회 api
@@ -381,14 +374,12 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
-
     // 추천바 - 카테고리 조회 api
     @Override
     @Transactional
     public List<String> getRecommendCategory() {
         return Arrays.asList("기술과학", "자연과학", "교육");
     }
-
 
 
     // 추천바 - 키워드 조회 api
@@ -406,8 +397,6 @@ public class ArtletterServiceImpl implements ArtletterService {
                 })
                 .collect(Collectors.toList());
     }
-
-
 
 
     @Override
@@ -575,4 +564,39 @@ public class ArtletterServiceImpl implements ArtletterService {
         return artletters;
     }
 
+    @Override
+    public ResponseEntity<ApiResponse> getArtlettersByCategory(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
+        Member member = (userPrincipal != null) ? memberRepository.findByMemberId(userPrincipal.getMemberId()) : null;
+
+        // 카테고리 유효성 확인
+        if (category == null) {
+            throw new GeneralException(ErrorStatus.NOT_EXISTS_CATEGORY);
+        }
+
+        // 카테고리별 아트레터 조회
+        Page<Artletter> artletters = artletterRepository.findByCategory(category, pageable);
+
+        PageInfo pageInfo = new PageInfo(
+                artletters.getNumber(),
+                artletters.getSize(),
+                artletters.hasNext(),
+                artletters.getTotalElements(),
+                artletters.getTotalPages()
+        );
+
+        List<ArtletterDTO.ListResponseDto> response = artletters.getContent().stream()
+                .map(artletter -> {
+                    boolean isScrapped = (member != null)git && scrapRepository.existsByMemberAndArtletter(member, artletter);
+
+                    return ArtletterDTO.ListResponseDto.builder()
+                            .artletterId(artletter.getLetterId())
+                            .title(artletter.getTitle())
+                            .thumbnail(artletter.getThumbnail())
+                            .tags(artletter.getTag())
+                            .isScraped(isScrapped)
+                            .build();
+                }).toList();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
+    }
 }
