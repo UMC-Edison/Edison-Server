@@ -3,7 +3,8 @@
 
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FUMC-Edison%2FEdison-Server&count_bg=%23B0F7D0&title_bg=%238E9398&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
 
-<img width="687" alt="스크린샷 2025-01-06 오후 2 56 52" src="https://github.com/user-attachments/assets/58ffa566-1db5-4aa1-b2c1-39c0ff1f82ca" />
+![Image](https://github.com/user-attachments/assets/51b59160-34cd-4432-8907-8193effc78d2)
+
 </div>
 
 **세상을 바꿀 아이디어를 가장 혁신적으로 담는 방법, 에디슨**
