@@ -381,4 +381,26 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.NICKNAME_TOO_LONG);
         }
     }
+
+    // 아이덴티티 키워드를 카테고리별로 가져오는 API
+    @Override
+    public MemberResponseDto.CategorizedIdentityKeywordsDto getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
+        }
+
+        Long memberId = userPrincipal.getMemberId();
+
+        // 해당 멤버의 키워드를 가져와 카테고리별로 그룹화
+        List<MemberKeyword> memberKeywords = memberKeywordRepository.findByMember_MemberId(memberId);
+        Map<String, List<String>> categorizedKeywords = memberKeywords.stream()
+                .collect(Collectors.groupingBy(
+                        mk -> mk.getKeyword().getCategory(),
+                        Collectors.mapping(mk -> mk.getKeyword().getName(), Collectors.toList())
+                ));
+
+        return new MemberResponseDto.CategorizedIdentityKeywordsDto(categorizedKeywords);
+    }
+
+
 }

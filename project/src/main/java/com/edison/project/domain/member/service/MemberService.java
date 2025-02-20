@@ -20,4 +20,7 @@ public interface MemberService {
     ResponseEntity<ApiResponse> refreshAccessToken(String token);
     ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> processGoogleLogin(String authorizationCode);
+
+    MemberResponseDto.CategorizedIdentityKeywordsDto getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal);
+
 }
