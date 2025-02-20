@@ -13,6 +13,8 @@ import com.edison.project.domain.artletter.entity.ArtletterLikes;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.member.entity.Member;
+import com.edison.project.domain.member.entity.MemberMemory;
+import com.edison.project.domain.member.repository.MemberMemoryRepository;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.scrap.entity.Scrap;
 import com.edison.project.domain.scrap.repository.ScrapRepository;
@@ -37,8 +39,10 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     private final ArtletterRepository artletterRepository;
     private final MemberRepository memberRepository;
+    private final MemberMemoryRepository memberMemoryRepository;
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
+    private final Map<Long, LinkedList<String>> recentSearchKeywords = new HashMap<>();
 
 
     // 전체 아트레터 조회 API
@@ -47,7 +51,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         Page<Artletter> artletters = getPaginatedArtletters(page, size);
         PageInfo pageInfo = buildPageInfo(artletters);
 
-        Member member = getMemberIfAuthenticated(userPrincipal);
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         List<ArtletterDTO.SimpleArtletterResponseDto> response = artletters.getContent().stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
@@ -66,8 +70,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     // 아트레터 등록 api
     @Override
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
-
-        Member member = findMemberById(userPrincipal.getMemberId());
 
         Artletter artletter = Artletter.builder()
                 .title(request.getTitle())
@@ -93,12 +95,13 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
 
+
     // 아트레터 좋아요 토글 api
     @Override
     @Transactional
     public ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         Artletter artletter = findArtletterById(letterId);
         boolean alreadyLiked = artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
 
@@ -136,7 +139,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Transactional
     public ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         Artletter artletter = findArtletterById(letterId);
         boolean alreadyScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
 
@@ -168,20 +171,27 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 아트레터 검색 api
     @Override
+    @Transactional
     public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
-        Member member = getMemberIfAuthenticated(userPrincipal);
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
 
         PageInfo pageInfo = buildPageInfo(resultPage);
 
-        List<Artletter> sortedResults = sortSearchResults(resultPage.getContent(), keyword); // ✅ 키워드 기반 정렬 유지
+        List<Artletter> sortedResults = sortSearchResults(resultPage.getContent(), keyword);
         List<ArtletterDTO.SimpleArtletterResponseDto> response = sortedResults.stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
         response = sortArtletters(response, sortType);
+
+        // 🔥 추가된 부분: 최근 검색어 저장
+        if (member != null && keyword != null && !keyword.trim().isEmpty()) {
+            saveMemoryKeyword(member, keyword);
+        }
+
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
@@ -195,6 +205,72 @@ public class ArtletterServiceImpl implements ArtletterService {
                 )
                 .collect(Collectors.toList());
     }
+
+    // 최근 검색어 자동 저장 메서드
+    private void saveMemoryKeyword(Member member, String memory) {
+        // 올바른 메서드 사용
+        List<MemberMemory> memories = memberMemoryRepository.findMemberMemoriesByMemberId(member.getMemberId());
+
+        // 이미 존재하는 메모리 삭제
+        memories.stream()
+                .filter(existingMemory -> existingMemory.getMemory().equals(memory))
+                .findFirst()
+                .ifPresent(memberMemoryRepository::delete);
+
+        // 최대 3개 유지, 오래된 것부터 삭제
+        if (memories.size() >= 3) {
+            memories.sort(Comparator.comparing(MemberMemory::getCreatedAt));
+            memberMemoryRepository.delete(memories.get(0));
+        }
+
+        // 새로운 메모리 추가
+        MemberMemory newMemory = MemberMemory.builder()
+                .member(member)
+                .memory(memory)
+                .build();
+
+        memberMemoryRepository.save(newMemory);
+    }
+
+
+
+
+    // 최근 검색어 조회
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> getMemoryKeyword(CustomUserPrincipal userPrincipal) {
+        Long memberId = userPrincipal.getMemberId();
+
+        List<String> memories = memberMemoryRepository.findMemoriesByMemberId(memberId);
+
+        ArtletterDTO.MemoryKeywordResponseDto response = new ArtletterDTO.MemoryKeywordResponseDto(memories);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+
+    // 최근 검색어 삭제
+// 최근 검색어 삭제
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, ArtletterDTO.MemoryKeywordRequestDto request) {
+        Long memberId = userPrincipal.getMemberId();
+        String keyword = request.getKeyword() != null ? request.getKeyword().trim() : null;
+
+        if (keyword == null || keyword.isEmpty()) {
+            throw new GeneralException(ErrorStatus.MEMORY_KEYWORD_NOT_FOUND);
+        }
+
+        // 데이터베이스를 통해 검색어 존재 여부 확인
+        int deletedCount = memberMemoryRepository.deleteByMemberIdAndMemory(memberId, keyword);
+
+        if (deletedCount == 0) {
+            throw new GeneralException(ErrorStatus.MEMORY_KEYWORD_NOT_FOUND);
+        }
+
+        return ApiResponse.onSuccess(SuccessStatus._OK);
+    }
+
+
 
 
 
@@ -249,7 +325,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         }
 
         Member member = Optional.ofNullable(userPrincipal)
-                .map(up -> findMemberById(up.getMemberId()))
+                .map(up -> memberRepository.findByMemberId(up.getMemberId()))
                 .orElse(null);
 
         List<Long> artletterIds = editorRequestDto.getArtletterIds();
@@ -337,7 +413,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         Page<Scrap> scraps = scrapRepository.findByMember(member, pageable);
 
@@ -378,7 +454,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
 
-        Member member = findMemberById(userPrincipal.getMemberId());
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         try {
             ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
@@ -420,20 +496,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     /*
     공통 메서드 모음
     */
-
-    // 로그인 여부 확인 후 Member 조회
-    private Member getMemberIfAuthenticated(CustomUserPrincipal userPrincipal) {
-        if (userPrincipal == null) {
-            return null;
-        }
-        return memberRepository.findById(userPrincipal.getMemberId()).orElse(null);
-    }
-
-    // Member 존재 여부 조회
-    private Member findMemberById(Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-    }
 
     // Artletter 존재 여부 조회
     private Artletter findArtletterById(Long letterId) {

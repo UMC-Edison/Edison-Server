@@ -50,7 +50,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
 
             if (authHeader == null){
-                if (method.equals("GET") && requestURI.startsWith("/artletters")&& !requestURI.contains("scrap")) {
+                if (method.equals("GET") && requestURI.startsWith("/artletters")
+                        && !requestURI.contains("scrap") && !requestURI.contains("search-memory")) {
                     filterChain.doFilter(request, response);
                     return;
                 }

@@ -15,6 +15,9 @@ public interface ArtletterService {
     ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType);
     ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId);
 
+    ResponseEntity<ApiResponse> getMemoryKeyword(CustomUserPrincipal userPrincipal);
+    ResponseEntity<ApiResponse> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, ArtletterDTO.MemoryKeywordRequestDto request);
+
     ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
     ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
 
