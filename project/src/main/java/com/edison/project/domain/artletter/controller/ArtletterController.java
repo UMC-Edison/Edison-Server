@@ -19,7 +19,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/artletters")
@@ -165,7 +164,7 @@ public class ArtletterController {
     @DeleteMapping("/search-memory")
     public ResponseEntity<ApiResponse> deleteMemoryKeyword(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestBody ArtletterDTO.MemoryKeywordRequestDto request) {
-        return artletterService.deleteMemoryKeyword(userPrincipal, request);
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        return artletterService.deleteMemoryKeyword(userPrincipal, keyword);
     }
 }
