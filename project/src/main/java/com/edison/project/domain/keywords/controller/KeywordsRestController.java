@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/identity/")
+@RequestMapping("/identity")
 @RequiredArgsConstructor
 public class KeywordsRestController {
 

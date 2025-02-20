@@ -156,7 +156,7 @@ public class MemberServiceImpl implements MemberService{
     @Transactional
     public ResponseEntity<ApiResponse> createProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.CreateProfileDto request) {
 
-        Member member = validateMember(userPrincipal);
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         validateNickname(request.getNickname());
 
         if (member.getNickname() != null) {
@@ -175,7 +175,7 @@ public class MemberServiceImpl implements MemberService{
     @Transactional
     public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
 
-        Member member = validateMember(userPrincipal);
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         validateNickname(request.getNickname());
 
         if(Objects.equals(member.getNickname(), request.getNickname()) && Objects.equals(member.getProfileImg(), request.getImageUrl())){
@@ -206,8 +206,7 @@ public class MemberServiceImpl implements MemberService{
     @Override
     public ResponseEntity<ApiResponse> getProfile(CustomUserPrincipal userPrincipal) {
 
-        Member member = validateMember(userPrincipal);
-
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         return ApiResponse.onSuccess(SuccessStatus._OK,
                 new MemberResponseDto.ProfileResultDto(
                         member.getEmail(),
@@ -220,14 +219,8 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
     public MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
 
-        // 사용자 인증 확인
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
+        Long memberId = userPrincipal.getMemberId();
         // 존재하지 않는 카테고리 검증
         List<String> validCategories = keywordsRepository.findDistinctCategories();
         String category = request.getCategory();
@@ -236,7 +229,7 @@ public class MemberServiceImpl implements MemberService{
         }
 
         // 카테고리별로 최초 설정 여부 검증
-        boolean isCategorySet = memberKeywordRepository.existsByMember_MemberIdAndKeyword_Category(member.getMemberId(), category);
+        boolean isCategorySet = memberKeywordRepository.existsByMember_MemberIdAndKeyword_Category(memberId, category);
         if (isCategorySet) {
             throw new GeneralException(ErrorStatus.IDENTITY_ALREADY_SET);
         }
@@ -247,6 +240,7 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.INVALID_IDENTITY_MAPPING);
         }
 
+        Member member = memberRepository.findByMemberId(memberId);
         // 새로운 키워드 저장
         List<MemberKeyword> memberKeywords = keywords.stream()
                 .map(keyword -> MemberKeyword.builder()
@@ -264,18 +258,13 @@ public class MemberServiceImpl implements MemberService{
 
     @Override
     public MemberResponseDto.IdentityKeywordsResultDto getIdentityKeywords(CustomUserPrincipal userPrincipal) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
-
-        Long memberId = userPrincipal.getMemberId();
 
         // 키워드 테이블에서, 저장된 순서대로 모든 카테고리를 가져옴
         List<Keywords> keywords = keywordsRepository.findAllByOrderByCategoryAsc();
 
         // 사용자가 설정한 키워드만 필터링 -> 카테고리별로 그룹화
         Map<String, List<MemberResponseDto.IdentityKeywordDto>> categoryKeywords = keywords.stream()
-                .filter(keyword -> memberKeywordRepository.existsByMember_MemberIdAndKeyword_KeywordId(memberId, keyword.getKeywordId()))
+                .filter(keyword -> memberKeywordRepository.existsByMember_MemberIdAndKeyword_KeywordId(userPrincipal.getMemberId(), keyword.getKeywordId()))
                 .collect(Collectors.groupingBy(
                         Keywords::getCategory,
                         LinkedHashMap::new,
@@ -296,13 +285,8 @@ public class MemberServiceImpl implements MemberService{
     @Transactional
     @Override
     public MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
 
-        // 사용자 인증 확인
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+        Long memberId = userPrincipal.getMemberId();
 
         // 존재하지 않는 카테고리 검증
         String category = request.getCategory();
@@ -335,7 +319,7 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.NOT_EXISTS_KEYWORD);
         }
 
-        List<MemberKeyword> existingMemberKeywords = memberKeywordRepository.findByMember_MemberIdAndKeywordCategory(member.getMemberId(), request.getCategory());
+        List<MemberKeyword> existingMemberKeywords = memberKeywordRepository.findByMember_MemberIdAndKeywordCategory(memberId, request.getCategory());
         List<Integer> existingKeywordIds = existingMemberKeywords.stream()
                 .map(memberKeyword -> memberKeyword.getKeyword().getKeywordId())
                 .collect(Collectors.toList());
@@ -345,9 +329,10 @@ public class MemberServiceImpl implements MemberService{
             throw new GeneralException(ErrorStatus.NO_CHANGES_IN_KEYWORDS);
         }
 
-        memberKeywordRepository.deleteByMember_MemberIdAndKeywordCategory(member.getMemberId(), category);
+        memberKeywordRepository.deleteByMember_MemberIdAndKeywordCategory(memberId, category);
 
 
+        Member member = memberRepository.findByMemberId(memberId);
         List<MemberKeyword> memberKeywords = keywords.stream()
                 .map(keyword -> MemberKeyword.builder()
                         .member(member)
@@ -366,12 +351,6 @@ public class MemberServiceImpl implements MemberService{
     공통 메서드 모음
      */
 
-    // 멤버 검증 로직
-    private Member validateMember(CustomUserPrincipal userPrincipal) {
-        return memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-    }
-
     // 닉네임 검증 로직
     private void validateNickname(String nickname) {
         if (nickname == null || nickname.isBlank()) {
@@ -385,9 +364,6 @@ public class MemberServiceImpl implements MemberService{
     // 아이덴티티 키워드를 카테고리별로 가져와 스트링으로 반환
     @Override
     public String getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal) {
-        if (userPrincipal == null) {
-            throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
-        }
 
         Long memberId = userPrincipal.getMemberId();
 
