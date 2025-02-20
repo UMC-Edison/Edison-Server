@@ -183,5 +183,17 @@ public class ArtletterDTO {
         private List<String> keywords;
     }
 
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class CategoryResponseDto {
+        private Long artletterId;
+        private String title;
+        private String thumbnail;
+        private String tags;
+        private boolean isScraped;
+    }
+
 }
 
