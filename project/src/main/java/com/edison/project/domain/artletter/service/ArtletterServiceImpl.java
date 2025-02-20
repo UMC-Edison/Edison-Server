@@ -249,12 +249,12 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
     // 최근 검색어 삭제
-// 최근 검색어 삭제
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, ArtletterDTO.MemoryKeywordRequestDto request) {
+    public ResponseEntity<ApiResponse> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, String keyword) {
         Long memberId = userPrincipal.getMemberId();
-        String keyword = request.getKeyword() != null ? request.getKeyword().trim() : null;
+
+        keyword = keyword != null ? keyword.trim() : null;
 
         if (keyword == null || keyword.isEmpty()) {
             throw new GeneralException(ErrorStatus.MEMORY_KEYWORD_NOT_FOUND);
