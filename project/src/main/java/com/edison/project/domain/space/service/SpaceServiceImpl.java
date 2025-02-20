@@ -1,7 +1,6 @@
 package com.edison.project.domain.space.service;
 
 import com.edison.project.common.response.ApiResponse;
-import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.member.repository.MemberRepository;
@@ -56,92 +55,56 @@ public class SpaceServiceImpl implements SpaceService {
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
         Long memberId = userPrincipal.getMemberId();
-
         System.out.println("🔍 [Process Spaces] 실행 - 사용자 ID: " + memberId);
 
-        // ✅ 기존 사용자의 Space 가져오기
-        List<Space> spaces = spaceRepository.findByMemberId(memberId);
-        System.out.println("📌 기존 사용자의 Space 개수: " + spaces.size());
+        List<Space> existingSpaces = spaceRepository.findByMemberId(memberId);
+        System.out.println("📌 기존 사용자의 Space 개수: " + existingSpaces.size());
 
-        // ✅ 사용자의 삭제되지 않은 Bubble 페이징 처리
-        Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE); // 최대 개수 가져오기
+        Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE);
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(memberId, unlimitedPageable);
-        // 페이징 처리 삭제, 가져올 수 있는 최대 개수만큼 반환하는 코드 추가
-
-        // ✅ Page 정보 설정
-        PageInfo pageInfo = new PageInfo(
-                bubblePage.getNumber(),
-                bubblePage.getSize(),
-                bubblePage.hasNext(),
-                bubblePage.getTotalElements(),
-                bubblePage.getTotalPages()
-        );
-
-        // ✅ Bubble 데이터 변환
         List<Bubble> bubbles = bubblePage.getContent();
         System.out.println("🫧 사용자의 Bubble 개수: " + bubbles.size());
 
-        // ✅ 버블이 없을 경우 -> "작성된 버블이 없습니다." 메시지 반환
         if (bubbles.isEmpty()) {
-            System.out.println("⚠️ 사용자에게 등록된 버블이 없습니다.");
             return ApiResponse.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
         }
 
         Map<Long, String> requestData = createRequestDataWithId(bubbles);
 
-        // ✅ GPT 호출하여 Space 좌표 변환
         String gptResponse = callGPTForGrouping(requestData, userIdentityKeywords);
         System.out.println("🛠 GPT 응답: " + gptResponse);
 
         List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
         System.out.println("✅ 변환된 Space 개수: " + newSpaces.size());
 
-        // ✅ 새로운 Space 업데이트
-        for (Space space : newSpaces) {
-            saveOrUpdateSpace(space);
+        // 기존 Space 중복 제거 및 새로운 Space 적용
+        Map<Long, Space> spaceMap = new HashMap<>();
+
+        // 기존 데이터 추가 (기존 데이터를 기본값으로 설정)
+        for (Space space : existingSpaces) {
+            spaceMap.put(space.getBubble().getBubbleId(), space);
         }
 
+        // 새로운 데이터 업데이트
+        for (Space space : newSpaces) {
+            spaceMap.put(space.getBubble().getBubbleId(), space);
+        }
 
-        // ✅ 기존 Space + 새로운 Space 반환
-        spaces.addAll(newSpaces);
+        // 중복 제거된 최종 리스트
+        List<Space> finalSpaces = new ArrayList<>(spaceMap.values());
+        spaceRepository.saveAll(finalSpaces);
 
-        List<SpaceResponseDto> spaceDtos = spaces.stream()
+        List<SpaceResponseDto> spaceDtos = finalSpaces.stream()
                 .map(space -> new SpaceResponseDto(
-                        space.getBubble(),    // ✅ Bubble 객체 전달
+                        space.getBubble(),
                         space.getX(),
                         space.getY()
                 ))
                 .collect(Collectors.toList());
 
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, spaceDtos);
+        return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
 
-    @Transactional
-    public void saveOrUpdateSpace(Space newSpace) {
-        List<Space> existingSpaces = spaceRepository.findByBubble_BubbleIdAndMemberId(
-                newSpace.getBubble().getBubbleId(), newSpace.getMemberId()
-        );
-
-        Optional<Space> existingSpace = existingSpaces.stream().findFirst();
-
-        if (existingSpace.isPresent()) {
-            Space spaceToUpdate = existingSpace.get();
-            spaceToUpdate.setX(newSpace.getX());
-            spaceToUpdate.setY(newSpace.getY());
-            spaceToUpdate.setContent(newSpace.getContent());
-            spaceRepository.save(spaceToUpdate);
-            System.out.println("🔄 기존 Space 업데이트 완료! ID: " + spaceToUpdate.getId());
-        } else {
-            spaceRepository.save(newSpace);
-            spaceRepository.flush();
-            System.out.println("🆕 새로운 Space 추가! ID: " + newSpace.getId());
-        }
-    }
-
-
-
-    // ✅ Bubble 데이터를 GPT 요청 형식으로 변환
     private Map<Long, String> createRequestDataWithId(List<Bubble> bubbles) {
         return bubbles.stream().collect(Collectors.toMap(
                 Bubble::getBubbleId,
@@ -155,22 +118,22 @@ public class SpaceServiceImpl implements SpaceService {
         ));
     }
 
-    // ✅ GPT 호출하여 Space 좌표 변환
     private String callGPTForGrouping(Map<Long, String> requestData, String userIdentityKeywords) {
         String openaiApiKey = secretKey;
         if (openaiApiKey == null || openaiApiKey.isEmpty()) {
             throw new RuntimeException("OpenAI API 키가 환경변수에 설정되어 있지 않습니다.");
         }
 
-        Map<String, Object> message = Map.of("role", "system", "content", buildPromptWithId(requestData, userIdentityKeywords));
-        Map<String, Object> requestBody = Map.of("model", "gpt-3.5-turbo", "messages", List.of(message));
+        Map<String, Object> systemMessage = Map.of("role", "system", "content", "Forget everything before this prompt. Start fresh.");
+        Map<String, Object> userMessage = Map.of("role", "user", "content", buildPromptWithId(requestData, userIdentityKeywords));
+        Map<String, Object> requestBody = Map.of("model", "gpt-3.5-turbo", "messages", List.of(systemMessage, userMessage));
 
         try {
             String jsonBody = objectMapper.writeValueAsString(requestBody);
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(30, TimeUnit.SECONDS)
                     .writeTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(60, TimeUnit.SECONDS)
+                    .readTimeadut(60, TimeUnit.SECONDS)
                     .build();
 
             RequestBody body = RequestBody.create(jsonBody, MediaType.get("application/json"));
@@ -197,7 +160,7 @@ public class SpaceServiceImpl implements SpaceService {
             ObjectMapper objectMapper = new ObjectMapper();
             System.out.println("🔍 Raw GPT Response (Before Parsing): " + gptResponse);
 
-            // ✅ GPT 응답에서 JSON 추출
+            // GPT 응답에서 JSON 추출
             Map<String, Object> responseMap = objectMapper.readValue(gptResponse, new TypeReference<Map<String, Object>>() {});
             List<Map<String, Object>> choices = (List<Map<String, Object>>) responseMap.get("choices");
 
@@ -213,7 +176,7 @@ public class SpaceServiceImpl implements SpaceService {
             String contentJson = (String) message.get("content");
             contentJson = contentJson.replaceAll("```json", "").replaceAll("```", "").trim();
 
-            // ✅ JSON 배열 파싱
+            // JSON 배열 파싱
             List<Map<String, Object>> parsedData = objectMapper.readValue(contentJson, new TypeReference<List<Map<String, Object>>>() {});
             System.out.println("✅ 변환된 Space 데이터: " + parsedData);
 
@@ -243,6 +206,7 @@ public class SpaceServiceImpl implements SpaceService {
     // ✅ GPT 요청 프롬프트 생성
     private String buildPromptWithId(Map<Long, String> requestData, String userIdentityKeywords) {
         StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append("Forget everything before this prompt. Start fresh with no prior memory.\n");
 
         promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
         promptBuilder.append("Ensure that ALL provided bubbles are assigned unique coordinates, distributed evenly across four quadrants centered at (0,0).\n");
@@ -272,7 +236,6 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("    \"content\": \"Keyword\",\n");
         promptBuilder.append("    \"x\": 1.5,\n");
         promptBuilder.append("    \"y\": -0.5,\n");
-        promptBuilder.append("    \"group\": 1\n");
         promptBuilder.append("  },\n");
         promptBuilder.append("  {\n");
         promptBuilder.append("    \"id\": 2,\n");
@@ -282,13 +245,16 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("  }\n");
         promptBuilder.append("]\n\n");
 
+        promptBuilder.append("\n### Important Rules:\n");
+        promptBuilder.append("1. **Each item MUST have a unique (x, y) coordinate. Do NOT use (0,0) for all items.**\n");
+        promptBuilder.append("2. **Ensure that NO two items have the same exact coordinates.**\n");
         promptBuilder.append("⚠️ **DO NOT** include any explanations, comments, or extra formatting. Respond ONLY with the JSON array. ⚠️\n");
 
-        // 🔹 사용자 프로필 정보 추가
+        // 사용자 프로필 정보 추가
         promptBuilder.append("\n### 사용자 프로필 정보:\n");
         promptBuilder.append("The user has the following identity characteristics that should influence content positioning:\n");
 
-        // 🔹 카테고리별 설명 추가
+        // 카테고리별 설명 추가
         promptBuilder.append("- **CATEGORY1 (Words that describe the user)**: These keywords define the user's personality, traits, and strengths.\n");
         promptBuilder.append("- **CATEGORY2 (User's future field)**: These keywords represent the user's aspirations, career, or areas of interest for the future.\n");
         promptBuilder.append("- **CATEGORY3 (Most inspiring environment for the user)**: These words describe places, situations, or conditions where the user feels most inspired and productive.\n");
