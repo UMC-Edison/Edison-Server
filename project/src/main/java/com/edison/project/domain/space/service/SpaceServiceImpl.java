@@ -61,6 +61,16 @@ public class SpaceServiceImpl implements SpaceService {
         System.out.println("📌 기존 사용자의 Space 개수: " + existingSpaces.size());
 
         Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE);
+
+        // isTrashed=true인 Bubble과 연관된 Space 제거
+        List<Long> trashedBubbleIds = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(memberId, unlimitedPageable)
+                .stream().map(Bubble::getBubbleId).collect(Collectors.toList());
+
+        if (!trashedBubbleIds.isEmpty()) {
+            System.out.println("🗑 삭제할 Space 개수: " + trashedBubbleIds.size());
+            spaceRepository.deleteByBubble_BubbleIdIn(trashedBubbleIds);
+        }
+
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(memberId, unlimitedPageable);
         List<Bubble> bubbles = bubblePage.getContent();
         System.out.println("🫧 사용자의 Bubble 개수: " + bubbles.size());
