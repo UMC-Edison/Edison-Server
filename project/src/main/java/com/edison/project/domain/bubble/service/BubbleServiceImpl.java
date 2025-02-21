@@ -10,6 +10,7 @@ import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.entity.BubbleBacklink;
 import com.edison.project.domain.bubble.entity.BubbleLabel;
+import com.edison.project.domain.bubble.repository.BubbleBacklinkRepository;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
@@ -32,11 +33,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -47,6 +47,7 @@ public class BubbleServiceImpl implements BubbleService {
     private final BubbleLabelRepository bubbleLabelRepository;
     private final LabelRepository labelRepository;
     private final MemberRepository memberRepository;
+    private final BubbleBacklinkRepository bubbleBacklinkRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -194,6 +195,18 @@ public class BubbleServiceImpl implements BubbleService {
     private Bubble updateExistingBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
         Bubble bubble = bubbleRepository.findByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        // 버블 삭제할 경우 해당 버블을 백링크로 가지고 버블의 백링크 삭제
+        if(request.isTrashed()){
+            List<BubbleBacklink> backlinksDelete = bubbleBacklinkRepository.findByBubble_BubbleId(bubble.getBubbleId());
+            List<BubbleBacklink> backlinksDeleteByBacklink = bubbleBacklinkRepository.findByBacklinkBubble_BubbleId(bubble.getBubbleId());
+
+            Set<BubbleBacklink> allBacklinksToDelete = new HashSet<>();
+            allBacklinksToDelete.addAll(backlinksDelete);
+            allBacklinksToDelete.addAll(backlinksDeleteByBacklink);
+
+            bubbleBacklinkRepository.deleteAll(allBacklinksToDelete);
+        }
 
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())

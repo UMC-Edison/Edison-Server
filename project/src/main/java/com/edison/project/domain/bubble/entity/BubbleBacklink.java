@@ -23,4 +23,7 @@ public class BubbleBacklink {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "backlink_bubble_id", nullable = false)
     private Bubble backlinkBubble;
+
+    @Column(name = "is_trashed", nullable = false)  //휴지통에 있는 지(soft_delete)
+    private boolean isTrashed = false;
 }
