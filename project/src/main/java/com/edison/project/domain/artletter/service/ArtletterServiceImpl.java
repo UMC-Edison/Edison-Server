@@ -51,7 +51,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         Page<Artletter> artletters = getPaginatedArtletters(page, size);
         PageInfo pageInfo = buildPageInfo(artletters);
 
-        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
+        Member member = getMemberIfAuthenticated(userPrincipal);
 
         List<ArtletterDTO.SimpleArtletterResponseDto> response = artletters.getContent().stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
@@ -171,7 +171,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
-        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
+        Member member = getMemberIfAuthenticated(userPrincipal);
 
         Pageable pageable = PageRequest.of(page, size);
         Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
@@ -245,12 +245,12 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
     // 최근 검색어 삭제
-// 최근 검색어 삭제
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, ArtletterDTO.MemoryKeywordRequestDto request) {
+    public ResponseEntity<ApiResponse> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, String keyword) {
         Long memberId = userPrincipal.getMemberId();
-        String keyword = request.getKeyword() != null ? request.getKeyword().trim() : null;
+
+        keyword = keyword != null ? keyword.trim() : null;
 
         if (keyword == null || keyword.isEmpty()) {
             throw new GeneralException(ErrorStatus.MEMORY_KEYWORD_NOT_FOUND);
@@ -485,6 +485,13 @@ public class ArtletterServiceImpl implements ArtletterService {
     /*
     공통 메서드 모음
     */
+
+    private Member getMemberIfAuthenticated(CustomUserPrincipal userPrincipal) {
+        if (userPrincipal == null) {
+            return null;
+        }
+        return memberRepository.findById(userPrincipal.getMemberId()).orElse(null);
+    }
 
     // Artletter 존재 여부 조회
     private Artletter findArtletterById(Long letterId) {
