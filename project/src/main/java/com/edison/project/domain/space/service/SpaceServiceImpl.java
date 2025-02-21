@@ -57,20 +57,7 @@ public class SpaceServiceImpl implements SpaceService {
         Long memberId = userPrincipal.getMemberId();
         System.out.println("🔍 [Process Spaces] 실행 - 사용자 ID: " + memberId);
 
-        List<Space> existingSpaces = spaceRepository.findByMemberId(memberId);
-        System.out.println("📌 기존 사용자의 Space 개수: " + existingSpaces.size());
-
         Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE);
-
-        // isTrashed=true인 Bubble과 연관된 Space 제거
-        List<Long> trashedBubbleIds = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(memberId, unlimitedPageable)
-                .stream().map(Bubble::getBubbleId).collect(Collectors.toList());
-
-        if (!trashedBubbleIds.isEmpty()) {
-            System.out.println("🗑 삭제할 Space 개수: " + trashedBubbleIds.size());
-            spaceRepository.deleteByBubble_BubbleIdIn(trashedBubbleIds);
-        }
-
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(memberId, unlimitedPageable);
         List<Bubble> bubbles = bubblePage.getContent();
         System.out.println("🫧 사용자의 Bubble 개수: " + bubbles.size());
@@ -90,15 +77,10 @@ public class SpaceServiceImpl implements SpaceService {
         // 기존 Space 중복 제거 및 새로운 Space 적용
         Map<Long, Space> spaceMap = new HashMap<>();
 
-        // 기존 데이터 추가 (기존 데이터를 기본값으로 설정)
-        for (Space space : existingSpaces) {
-            spaceMap.put(space.getBubble().getBubbleId(), space);
-        }
-
-        // 새로운 데이터 업데이트
-        for (Space space : newSpaces) {
-            spaceMap.put(space.getBubble().getBubbleId(), space);
-        }
+        // 기존 데이터를 저장하지 않고 새로운 데이터만 저장
+        spaceRepository.deleteByMemberId(memberId); // 기존 데이터 삭제
+        spaceRepository.flush(); // Hibernate 세션 정리 후 새로운 데이터 저장
+        spaceRepository.saveAll(newSpaces);
 
         // 중복 제거된 최종 리스트
         List<Space> finalSpaces = new ArrayList<>(spaceMap.values());

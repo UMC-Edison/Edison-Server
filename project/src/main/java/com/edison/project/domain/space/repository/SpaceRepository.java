@@ -16,7 +16,7 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
     @Query("SELECT s FROM Space s WHERE s.memberId = :memberId")
     List<Space> findByMemberId(@Param("memberId") Long memberId);
 
-    void deleteByBubble_BubbleIdIn(List<Long> bubbleIds);
+    void deleteByMemberId(@Param("memberId") Long memberId);
 
 }
 
