@@ -74,19 +74,14 @@ public class SpaceServiceImpl implements SpaceService {
         List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
         System.out.println("✅ 변환된 Space 개수: " + newSpaces.size());
 
-        // 기존 Space 중복 제거 및 새로운 Space 적용
-        Map<Long, Space> spaceMap = new HashMap<>();
+        // ✅ 기존 데이터 삭제 후 새로운 데이터만 저장
+        spaceRepository.deleteByMemberId(memberId);
+        spaceRepository.flush(); // Hibernate 세션 정리
 
-        // 기존 데이터를 저장하지 않고 새로운 데이터만 저장
-        spaceRepository.deleteByMemberId(memberId); // 기존 데이터 삭제
-        spaceRepository.flush(); // Hibernate 세션 정리 후 새로운 데이터 저장
-        spaceRepository.saveAll(newSpaces);
+        spaceRepository.saveAll(newSpaces); // ✅ newSpaces만 저장
 
-        // 중복 제거된 최종 리스트
-        List<Space> finalSpaces = new ArrayList<>(spaceMap.values());
-        spaceRepository.saveAll(finalSpaces);
-
-        List<SpaceResponseDto> spaceDtos = finalSpaces.stream()
+        // ✅ 저장한 newSpaces를 직접 반환
+        List<SpaceResponseDto> spaceDtos = newSpaces.stream()
                 .map(space -> new SpaceResponseDto(
                         space.getBubble(),
                         space.getX(),
