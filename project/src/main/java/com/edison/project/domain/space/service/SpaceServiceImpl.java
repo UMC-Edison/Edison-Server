@@ -57,9 +57,6 @@ public class SpaceServiceImpl implements SpaceService {
         Long memberId = userPrincipal.getMemberId();
         System.out.println("🔍 [Process Spaces] 실행 - 사용자 ID: " + memberId);
 
-        List<Space> existingSpaces = spaceRepository.findByMemberId(memberId);
-        System.out.println("📌 기존 사용자의 Space 개수: " + existingSpaces.size());
-
         Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE);
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(memberId, unlimitedPageable);
         List<Bubble> bubbles = bubblePage.getContent();
@@ -77,24 +74,14 @@ public class SpaceServiceImpl implements SpaceService {
         List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
         System.out.println("✅ 변환된 Space 개수: " + newSpaces.size());
 
-        // 기존 Space 중복 제거 및 새로운 Space 적용
-        Map<Long, Space> spaceMap = new HashMap<>();
+        // ✅ 기존 데이터 삭제 후 새로운 데이터만 저장
+        spaceRepository.deleteByMemberId(memberId);
+        spaceRepository.flush(); // Hibernate 세션 정리
 
-        // 기존 데이터 추가 (기존 데이터를 기본값으로 설정)
-        for (Space space : existingSpaces) {
-            spaceMap.put(space.getBubble().getBubbleId(), space);
-        }
+        spaceRepository.saveAll(newSpaces); // ✅ newSpaces만 저장
 
-        // 새로운 데이터 업데이트
-        for (Space space : newSpaces) {
-            spaceMap.put(space.getBubble().getBubbleId(), space);
-        }
-
-        // 중복 제거된 최종 리스트
-        List<Space> finalSpaces = new ArrayList<>(spaceMap.values());
-        spaceRepository.saveAll(finalSpaces);
-
-        List<SpaceResponseDto> spaceDtos = finalSpaces.stream()
+        // ✅ 저장한 newSpaces를 직접 반환
+        List<SpaceResponseDto> spaceDtos = newSpaces.stream()
                 .map(space -> new SpaceResponseDto(
                         space.getBubble(),
                         space.getX(),
