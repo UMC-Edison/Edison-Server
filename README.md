@@ -5,6 +5,8 @@
 
 ![Image](https://github.com/user-attachments/assets/51b59160-34cd-4432-8907-8193effc78d2)
 
+🔗 **🚀 [Landing Page](https://makeus-challenge.notion.site/EDISON-5cbd09e9625a4619952c24af08dfbcae)**
+
 </div>
 
 **세상을 바꿀 아이디어를 가장 혁신적으로 담는 방법, 에디슨**
