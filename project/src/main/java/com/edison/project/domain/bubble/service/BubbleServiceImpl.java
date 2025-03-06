@@ -13,21 +13,17 @@ import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.bubble.repository.BubbleBacklinkRepository;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
-import com.edison.project.domain.label.dto.LabelResponseDTO;
+import com.edison.project.domain.label.dto.LabelResponseDto;
 import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.label.repository.LabelRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
@@ -48,9 +44,6 @@ public class BubbleServiceImpl implements BubbleService {
     private final LabelRepository labelRepository;
     private final MemberRepository memberRepository;
     private final BubbleBacklinkRepository bubbleBacklinkRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     // Bubble → DTO 변환
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
@@ -107,8 +100,8 @@ public class BubbleServiceImpl implements BubbleService {
                     long remainDays = 30 - ChronoUnit.DAYS.between(deletedAt, now);
 
                     // 라벨 정보 변환
-                    List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
-                            .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+                    List<LabelResponseDto.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                            .map(bl -> LabelResponseDto.LabelSimpleInfoDto.builder()
                                     .localIdx(bl.getLabel().getLocalIdx())
                                     .name(bl.getLabel().getName())
                                     .color(bl.getLabel().getColor())
@@ -352,11 +345,11 @@ public class BubbleServiceImpl implements BubbleService {
 
 
     // 라벨을 DTO로 변환 (localIdx 기준)
-    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<Long> localIdxs) {
+    public List<LabelResponseDto.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<Long> localIdxs) {
         return localIdxs.stream()
                 .map(localIdx -> labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
                         .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))
-                .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+                .map(l -> LabelResponseDto.LabelSimpleInfoDto.builder()
                         .localIdx(l.getLocalIdx()) // labelId 대신 localIdx 사용
                         .name(l.getName())
                         .color(l.getColor())
@@ -365,9 +358,9 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     // 라벨을 DTO로 변환
-    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDto(Set<Label> labels) {
+    public List<LabelResponseDto.LabelSimpleInfoDto> mapLabelsToDto(Set<Label> labels) {
         return labels.stream()
-                .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+                .map(l -> LabelResponseDto.LabelSimpleInfoDto.builder()
                         .localIdx(l.getLocalIdx())
                         .name(l.getName())
                         .color(l.getColor())

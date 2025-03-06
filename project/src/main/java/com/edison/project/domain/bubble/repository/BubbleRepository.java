@@ -40,7 +40,4 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     Set<Bubble> findAllByMemberAndLocalIdxIn(Member member, Set<Long> localIdxs);
     Optional<Bubble> findByMemberAndLocalIdx(Member member, Long localIdx);
     Boolean existsByMemberAndLocalIdx(Member member, Long localIdx);
-
-    List<Bubble> findByMember_MemberIdAndIsTrashedTrue(Long memberId);
-
 }

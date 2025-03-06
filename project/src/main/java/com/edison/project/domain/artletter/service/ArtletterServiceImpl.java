@@ -5,7 +5,7 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
-import com.edison.project.domain.artletter.dto.ArtletterDTO;
+import com.edison.project.domain.artletter.dto.ArtletterDto;
 import com.edison.project.domain.artletter.dto.CountDto;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
@@ -26,7 +26,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -53,7 +52,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         Member member = getMemberIfAuthenticated(userPrincipal);
 
-        List<ArtletterDTO.SimpleArtletterResponseDto> response = artletters.getContent().stream()
+        List<ArtletterDto.SimpleArtletterResponseDto> response = artletters.getContent().stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
@@ -69,7 +68,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 아트레터 등록 api
     @Override
-    public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
+    public ArtletterDto.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDto.CreateRequestDto request) {
 
         Artletter artletter = Artletter.builder()
                 .title(request.getTitle())
@@ -83,7 +82,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         Artletter savedArtletter = artletterRepository.save(artletter);
 
-        return ArtletterDTO.CreateResponseDto.builder()
+        return ArtletterDto.CreateResponseDto.builder()
                 .artletterId(savedArtletter.getLetterId())
                 .title(savedArtletter.getTitle())
                 .thumbnail(savedArtletter.getThumbnail())
@@ -98,7 +97,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     // 아트레터 좋아요 토글 api
     @Override
     @Transactional
-    public ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
+    public ArtletterDto.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         Artletter artletter = findArtletterById(letterId);
@@ -124,8 +123,8 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     // 아트레터 좋아요 토글 api - 결과 생성 메서드 분리
-    private ArtletterDTO.LikeResponseDto buildLikeResponseDto(Long letterId, int likeCnt, boolean isLiked) {
-        return ArtletterDTO.LikeResponseDto.builder()
+    private ArtletterDto.LikeResponseDto buildLikeResponseDto(Long letterId, int likeCnt, boolean isLiked) {
+        return ArtletterDto.LikeResponseDto.builder()
                 .artletterId(letterId)
                 .likesCnt(likeCnt)
                 .isLiked(isLiked)
@@ -136,7 +135,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     // 아트레터 스크랩 토글 api
     @Override
     @Transactional
-    public ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
+    public ArtletterDto.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         Artletter artletter = findArtletterById(letterId);
@@ -158,8 +157,8 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     // 아트레터 스크랩 토글 api - 결과 생성 메서드 분리
-    private ArtletterDTO.ScrapResponseDto buildScrapResponseDto(Long letterId, int scrapCnt, boolean isScrapped) {
-        return ArtletterDTO.ScrapResponseDto.builder()
+    private ArtletterDto.ScrapResponseDto buildScrapResponseDto(Long letterId, int scrapCnt, boolean isScrapped) {
+        return ArtletterDto.ScrapResponseDto.builder()
                 .artletterId(letterId)
                 .scrapsCnt(scrapCnt)
                 .isScrapped(isScrapped)
@@ -179,7 +178,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         PageInfo pageInfo = buildPageInfo(resultPage);
 
         List<Artletter> sortedResults = sortSearchResults(resultPage.getContent(), keyword);
-        List<ArtletterDTO.SimpleArtletterResponseDto> response = sortedResults.stream()
+        List<ArtletterDto.SimpleArtletterResponseDto> response = sortedResults.stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
@@ -239,7 +238,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         List<String> memories = memberMemoryRepository.findMemoriesByMemberId(memberId);
 
-        ArtletterDTO.MemoryKeywordResponseDto response = new ArtletterDTO.MemoryKeywordResponseDto(memories);
+        ArtletterDto.MemoryKeywordResponseDto response = new ArtletterDto.MemoryKeywordResponseDto(memories);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
@@ -269,13 +268,13 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 아트레터 상세조회 api
     @Override
-    public ArtletterDTO.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId) {
+    public ArtletterDto.ListResponseDto getArtletter(CustomUserPrincipal userPrincipal, long letterId) {
 
         Artletter artletter = artletterRepository.findById(letterId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LETTERS_NOT_FOUND));
 
         Member member;
-        if (userPrincipal != null) { //로그인한 경우에만 member 조회
+        if (userPrincipal != null) { // 로그인한 경우에만 member 조회
             member = memberRepository.findById(userPrincipal.getMemberId())
                     .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
         } else {
@@ -292,8 +291,8 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     // 아트레터 상세조회 api - 결과 조회 메서드 분리
-    private ArtletterDTO.ListResponseDto buildListResponseDto(Artletter artletter, int likesCnt, int scrapCnt, boolean isLiked, boolean isScrapped) {
-        return ArtletterDTO.ListResponseDto.builder()
+    private ArtletterDto.ListResponseDto buildListResponseDto(Artletter artletter, int likesCnt, int scrapCnt, boolean isLiked, boolean isScrapped) {
+        return ArtletterDto.ListResponseDto.builder()
                 .artletterId(artletter.getLetterId())
                 .title(artletter.getTitle())
                 .content(artletter.getContent())
@@ -312,7 +311,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto) {
+    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDto.EditorRequestDto editorRequestDto) {
         if (editorRequestDto == null || editorRequestDto.getArtletterIds() == null || editorRequestDto.getArtletterIds().isEmpty()) {
             throw new GeneralException(ErrorStatus.ARTLETTER_ID_REQUIRED);
         }
@@ -350,8 +349,8 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .stream()
                 .collect(Collectors.toMap(CountDto::getArtletterId, countDto -> countDto.getCount().intValue()));
 
-        List<ArtletterDTO.ListResponseDto> artletterList = artletters.stream()
-                .map(artletter -> ArtletterDTO.ListResponseDto.builder()
+        List<ArtletterDto.ListResponseDto> artletterList = artletters.stream()
+                .map(artletter -> ArtletterDto.ListResponseDto.builder()
                         .artletterId(artletter.getLetterId())
                         .title(artletter.getTitle())
                         .content(artletter.getContent())
@@ -385,7 +384,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     // 추천바 - 키워드 조회 api
     @Override
     @Transactional
-    public List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds) {
+    public List<ArtletterDto.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds) {
         List<Artletter> artletters = validateArtletterIds(artletterIds);
 
         return artletters.stream()
@@ -393,7 +392,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                     if (artletter.getKeyword() == null) {
                         throw new GeneralException(ErrorStatus.KEYWORD_IS_EMPTY);
                     }
-                    return new ArtletterDTO.recommendKeywordDto(artletter.getLetterId(), artletter.getKeyword());
+                    return new ArtletterDto.recommendKeywordDto(artletter.getLetterId(), artletter.getKeyword());
                 })
                 .collect(Collectors.toList());
     }
@@ -419,14 +418,14 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .collect(Collectors.groupingBy(scrap -> String.valueOf(scrap.getArtletter().getCategory())));
 
         // 그룹화된 데이터를 DTO 리스트로 변환
-        List<ArtletterDTO.GroupedScrapResponseDto> groupedArtletters = groupedByCategory.entrySet().stream()
-                .map(entry -> new ArtletterDTO.GroupedScrapResponseDto(
+        List<ArtletterDto.GroupedScrapResponseDto> groupedArtletters = groupedByCategory.entrySet().stream()
+                .map(entry -> new ArtletterDto.GroupedScrapResponseDto(
                         entry.getKey(),
                         entry.getValue().stream().map(scrap -> {
                             Artletter artletter = scrap.getArtletter();
                             int likesCnt = artletterLikesRepository.countByArtletter(artletter);
                             int scrapsCnt = scrapRepository.countByArtletter(artletter);
-                            return ArtletterDTO.MyScrapResponseDto.builder()
+                            return ArtletterDto.MyScrapResponseDto.builder()
                                     .artletterId(artletter.getLetterId())
                                     .title(artletter.getTitle())
                                     .thumbnail(artletter.getThumbnail())
@@ -461,12 +460,12 @@ public class ArtletterServiceImpl implements ArtletterService {
                 scraps.getTotalPages()
         );
 
-        List<ArtletterDTO.MyScrapResponseDto> artletters = scraps.getContent().stream()
+        List<ArtletterDto.MyScrapResponseDto> artletters = scraps.getContent().stream()
                 .map(scrap -> {
                     Artletter artletter = scrap.getArtletter();
                     int likesCnt = artletterLikesRepository.countByArtletter(artletter);
                     int scrapsCnt = scrapRepository.countByArtletter(artletter);
-                    return ArtletterDTO.MyScrapResponseDto.builder()
+                    return ArtletterDto.MyScrapResponseDto.builder()
                             .artletterId(artletter.getLetterId())
                             .title(artletter.getTitle())
                             .thumbnail(artletter.getThumbnail())
@@ -511,13 +510,13 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     // 아트레터 DTO 생성
-    private ArtletterDTO.SimpleArtletterResponseDto buildSimpleListResponseDto(Artletter artletter, Member member) {
+    private ArtletterDto.SimpleArtletterResponseDto buildSimpleListResponseDto(Artletter artletter, Member member) {
         boolean isLiked = member != null && artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
         int likesCnt = artletterLikesRepository.countByArtletter(artletter);
         boolean isScrapped = member != null && scrapRepository.existsByMemberAndArtletter(member, artletter);
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
-        return ArtletterDTO.SimpleArtletterResponseDto.builder()
+        return ArtletterDto.SimpleArtletterResponseDto.builder()
                 .artletterId(artletter.getLetterId())
                 .title(artletter.getTitle())
                 .thumbnail(artletter.getThumbnail())
@@ -530,22 +529,22 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     // 아트레터 스크랩/좋아요/최신순 정렬
-    private List<ArtletterDTO.SimpleArtletterResponseDto> sortArtletters(List<ArtletterDTO.SimpleArtletterResponseDto> artletters, String sortType) {
+    private List<ArtletterDto.SimpleArtletterResponseDto> sortArtletters(List<ArtletterDto.SimpleArtletterResponseDto> artletters, String sortType) {
         return switch (sortType) {
             case "likes" -> artletters.stream()
-                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt)
+                    .sorted(Comparator.comparing(ArtletterDto.SimpleArtletterResponseDto::getLikesCnt)
                             .reversed())
                     .toList();
 
             case "scraps" -> artletters.stream()
                     .sorted(Comparator
-                            .comparing(ArtletterDTO.SimpleArtletterResponseDto::getScrapsCnt).reversed()
-                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed()
-                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt).reversed())
+                            .comparing(ArtletterDto.SimpleArtletterResponseDto::getScrapsCnt).reversed()
+                            .thenComparing(ArtletterDto.SimpleArtletterResponseDto::getUpdatedAt).reversed()
+                            .thenComparing(ArtletterDto.SimpleArtletterResponseDto::getLikesCnt).reversed())
                     .toList();
 
             case "latest" -> artletters.stream()
-                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed())
+                    .sorted(Comparator.comparing(ArtletterDto.SimpleArtletterResponseDto::getUpdatedAt).reversed())
                     .toList();
 
             default -> artletters;
@@ -591,11 +590,11 @@ public class ArtletterServiceImpl implements ArtletterService {
                 artletters.getTotalPages()
         );
 
-        List<ArtletterDTO.CategoryResponseDto> response = artletters.getContent().stream()
+        List<ArtletterDto.CategoryResponseDto> response = artletters.getContent().stream()
                 .map(artletter -> {
                     boolean isScrapped = (member != null) && scrapRepository.existsByMemberAndArtletter(member, artletter);
 
-                    return ArtletterDTO.CategoryResponseDto.builder()
+                    return ArtletterDto.CategoryResponseDto.builder()
                             .artletterId(artletter.getLetterId())
                             .title(artletter.getTitle())
                             .thumbnail(artletter.getThumbnail())

@@ -3,8 +3,8 @@ package com.edison.project.domain.label.service;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.entity.BubbleBacklink;
-import com.edison.project.domain.label.dto.LabelRequestDTO;
-import com.edison.project.domain.label.dto.LabelResponseDTO;
+import com.edison.project.domain.label.dto.LabelRequestDto;
+import com.edison.project.domain.label.dto.LabelResponseDto;
 import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
 import com.edison.project.domain.label.repository.LabelRepository;
@@ -19,9 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,7 +31,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // 라벨 목록 조회
     @Override
-    public List<LabelResponseDTO.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+    public List<LabelResponseDto.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -47,7 +45,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .map(result -> {
                     Label label = (Label) result[0];
                     Long bubbleCount = (Long) result[1];
-                    return LabelResponseDTO.ListResultDto.builder()
+                    return LabelResponseDto.ListResultDto.builder()
                             .localIdx(label.getLocalIdx())
                             .name(label.getName())
                             .color(label.getColor())
@@ -62,7 +60,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // 라벨 상세 조회
     @Override
-    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long localIdx) {
+    public LabelResponseDto.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long localIdx) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -80,7 +78,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .collect(Collectors.toList());
 
         // BubbleDetailDto 변환
-        return LabelResponseDTO.DetailResultDto.builder()
+        return LabelResponseDto.DetailResultDto.builder()
                 .localIdx(label.getLocalIdx())
                 .name(label.getName())
                 .color(label.getColor())
@@ -91,8 +89,8 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // Bubble -> BubbleResponseDto 변환 함수 (중복 제거)
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
-        List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
-                .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+        List<LabelResponseDto.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDto.LabelSimpleInfoDto.builder()
                         .localIdx(bl.getLabel().getLocalIdx())
                         .name(bl.getLabel().getName())
                         .color(bl.getLabel().getColor())
@@ -118,7 +116,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     @Override
     @Transactional
-    public LabelResponseDTO.LabelSyncResponseDTO syncLabel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, LabelRequestDTO.LabelSyncRequestDTO request) {
+    public LabelResponseDto.LabelSyncResponseDTO syncLabel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, LabelRequestDto.LabelSyncRequestDTO request) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -139,7 +137,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         return labelCreation(request, member);
     }
 
-    private LabelResponseDTO.LabelSyncResponseDTO labelDeletion(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {
+    private LabelResponseDto.LabelSyncResponseDTO labelDeletion(LabelRequestDto.LabelSyncRequestDTO request, Member member) {
         if (!labelRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx())) {
             return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
         }
@@ -151,7 +149,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
     }
 
-    private LabelResponseDTO.LabelSyncResponseDTO labelUpdate(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {
+    private LabelResponseDto.LabelSyncResponseDTO labelUpdate(LabelRequestDto.LabelSyncRequestDTO request, Member member) {
         Label label = labelRepository.findLabelByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
@@ -164,7 +162,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     }
 
     // 라벨 생성 처리
-    private LabelResponseDTO.LabelSyncResponseDTO labelCreation(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {
+    private LabelResponseDto.LabelSyncResponseDTO labelCreation(LabelRequestDto.LabelSyncRequestDTO request, Member member) {
 
         Label label = Label.builder()
                 .localIdx(request.getLocalIdx())
@@ -181,8 +179,8 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         return buildLabelResponse(label.getLocalIdx(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
     }
 
-    private LabelResponseDTO.LabelSyncResponseDTO buildLabelResponse(Long localIdx, String name, int color, boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
-        return LabelResponseDTO.LabelSyncResponseDTO.builder()
+    private LabelResponseDto.LabelSyncResponseDTO buildLabelResponse(Long localIdx, String name, int color, boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+        return LabelResponseDto.LabelSyncResponseDTO.builder()
                 .localIdx(localIdx)
                 .name(name)
                 .color(color)

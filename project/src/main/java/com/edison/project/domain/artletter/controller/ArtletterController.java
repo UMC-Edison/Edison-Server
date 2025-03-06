@@ -3,7 +3,7 @@ package com.edison.project.domain.artletter.controller;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
-import com.edison.project.domain.artletter.dto.ArtletterDTO;
+import com.edison.project.domain.artletter.dto.ArtletterDto;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.service.ArtletterService;
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -33,8 +33,8 @@ public class ArtletterController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> createArtletter(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @Valid @RequestBody ArtletterDTO.CreateRequestDto requestDto) {
-        ArtletterDTO.CreateResponseDto response = artletterService.createArtletter(userPrincipal, requestDto);
+            @Valid @RequestBody ArtletterDto.CreateRequestDto requestDto) {
+        ArtletterDto.CreateResponseDto response = artletterService.createArtletter(userPrincipal, requestDto);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
@@ -87,7 +87,7 @@ public class ArtletterController {
     @PostMapping("/editor-pick")
     public ResponseEntity<ApiResponse> getEditorArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestBody ArtletterDTO.EditorRequestDto editorRequestDto) {
+            @RequestBody ArtletterDto.EditorRequestDto editorRequestDto) {
 
         return artletterService.getEditorArtletters(userPrincipal, editorRequestDto);
     }
@@ -97,7 +97,7 @@ public class ArtletterController {
     @PostMapping("/{letterId}/like")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> likeArtletter(@PathVariable Long letterId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        ArtletterDTO.LikeResponseDto response = artletterService.likeToggleArtletter(userPrincipal, letterId);
+        ArtletterDto.LikeResponseDto response = artletterService.likeToggleArtletter(userPrincipal, letterId);
 
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
@@ -106,7 +106,7 @@ public class ArtletterController {
     @PostMapping("/{letterId}/scrap")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> scrapArtletter(@PathVariable Long letterId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        ArtletterDTO.ScrapResponseDto response = artletterService.scrapToggleArtletter(userPrincipal, letterId);
+        ArtletterDto.ScrapResponseDto response = artletterService.scrapToggleArtletter(userPrincipal, letterId);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
@@ -115,20 +115,20 @@ public class ArtletterController {
     public ResponseEntity<ApiResponse> getArtletterInfo(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @PathVariable("letterId") Long letterId) {
-        ArtletterDTO.ListResponseDto response = artletterService.getArtletter(userPrincipal, letterId);
+        ArtletterDto.ListResponseDto response = artletterService.getArtletter(userPrincipal, letterId);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
     @GetMapping("/recommend-bar/category")
     public ResponseEntity<ApiResponse> getRecommendCategory() {
         List<String> categories = artletterService.getRecommendCategory();
-        return ApiResponse.onSuccess(SuccessStatus._OK, new ArtletterDTO.RecommendCategoryResponse(categories));
+        return ApiResponse.onSuccess(SuccessStatus._OK, new ArtletterDto.RecommendCategoryResponse(categories));
     }
 
     @GetMapping("/recommend-bar/keyword")
     public ResponseEntity<ApiResponse> getRecommendKeywords(
             @RequestParam List<Long> artletterIds) {
-        List<ArtletterDTO.recommendKeywordDto> response = artletterService.getRecommendKeyword(artletterIds);
+        List<ArtletterDto.recommendKeywordDto> response = artletterService.getRecommendKeyword(artletterIds);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 

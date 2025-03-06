@@ -16,6 +16,5 @@ public interface ArtletterRepository extends JpaRepository<Artletter, Long>, Art
     List<Artletter> findByLetterIdIn(List<Long> letterIds);
 
     Page<Artletter> findByCategory(ArtletterCategory category, Pageable pageable);
-
 }
 

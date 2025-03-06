@@ -93,11 +93,4 @@ public class MemberResponseDto {
         private String refreshToken;
     }
 
-    @Getter
-    @AllArgsConstructor
-    public static class CategorizedIdentityKeywordsDto {
-        private Map<String, List<String>> categorizedKeywords;
-    }
-
-
 }
