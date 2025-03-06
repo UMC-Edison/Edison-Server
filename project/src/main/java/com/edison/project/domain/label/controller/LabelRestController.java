@@ -2,8 +2,8 @@ package com.edison.project.domain.label.controller;
 
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.SuccessStatus;
-import com.edison.project.domain.label.dto.LabelRequestDTO;
-import com.edison.project.domain.label.dto.LabelResponseDTO;
+import com.edison.project.domain.label.dto.LabelRequestDto;
+import com.edison.project.domain.label.dto.LabelResponseDto;
 import com.edison.project.domain.label.service.LabelCommandService;
 import com.edison.project.domain.label.service.LabelQueryService;
 import com.edison.project.global.security.CustomUserPrincipal;
@@ -29,7 +29,7 @@ public class LabelRestController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getLabelList(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        List<LabelResponseDTO.ListResultDto> labels = labelQueryService.getLabelInfoList(userPrincipal);
+        List<LabelResponseDto.ListResultDto> labels = labelQueryService.getLabelInfoList(userPrincipal);
         return ApiResponse.onSuccess(SuccessStatus._OK, labels);
     }
 
@@ -38,16 +38,16 @@ public class LabelRestController {
     public ResponseEntity<ApiResponse> getLabelDetail(
             @PathVariable String localIdx,
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        LabelResponseDTO.DetailResultDto details = labelQueryService.getLabelDetailInfoList(userPrincipal, localIdx);
+        LabelResponseDto.DetailResultDto details = labelQueryService.getLabelDetailInfoList(userPrincipal, localIdx);
         return ApiResponse.onSuccess(SuccessStatus._OK, details);
     }
 
     @PostMapping("/sync")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> syncLabel(
-            @RequestBody @Valid LabelRequestDTO.LabelSyncRequestDTO request,
+            @RequestBody @Valid LabelRequestDto.LabelSyncRequestDTO request,
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
-        LabelResponseDTO.LabelSyncResponseDTO response = labelQueryService.syncLabel(userPrincipal, request);
+        LabelResponseDto.LabelSyncResponseDTO response = labelQueryService.syncLabel(userPrincipal, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 

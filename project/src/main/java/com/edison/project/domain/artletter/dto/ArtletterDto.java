@@ -1,10 +1,8 @@
 package com.edison.project.domain.artletter.dto;
 
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
-import com.edison.project.domain.artletter.entity.Artletter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ArtletterDTO {
+public class ArtletterDto {
     private Long artletterId;
     private String title;
     private String thumbnail;
@@ -167,13 +165,6 @@ public class ArtletterDTO {
         private boolean isLiked;
         private boolean isScraped;
         private LocalDateTime updatedAt;
-    }
-
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class MemoryKeywordRequestDto {
-        private String keyword;
     }
 
     @Getter

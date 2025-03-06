@@ -13,16 +13,6 @@ public class GptConfig {
     @Value("${openai_key}")
     private String secretKey;
 
-    private String model = "gpt-3.5-turbo";
-
-    public String getSecretKey() {
-        return secretKey;
-    }
-
-    public String getModel() {
-        return model;
-    }
-
     @Bean(name = "gptRestTemplate")
     public RestTemplate gptRestTemplate() {
         return new RestTemplate();
