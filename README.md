@@ -1,5 +1,4 @@
 <div align="center">
-<h1>💡 Edison - 나만의 아이디어 허브 💡</h1> 
 
 ![표지](https://github.com/user-attachments/assets/f04fc6d6-a423-43f1-9fed-efc55777af5d)
 ![Overview](https://github.com/user-attachments/assets/3b9935c8-a7fe-4944-ba7f-a0ca1b969b79)
@@ -16,6 +15,10 @@
 ![Service Architecture](https://github.com/user-attachments/assets/1c57a499-8a6b-468b-8a08-f266c39b4aac)
 
 <br>
+</div>
+
+<div align="center">
 
 [![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FUMC-Edison%2FEdison-Server&count_bg=%23B0F7D0&title_bg=%238E9398&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)](https://hits.seeyoufarm.com)
+
 </div>
