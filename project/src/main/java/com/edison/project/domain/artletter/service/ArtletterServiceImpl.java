@@ -528,28 +528,6 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
-    // 아트레터 스크랩/좋아요/최신순 정렬
-    private List<ArtletterDTO.SimpleArtletterResponseDto> sortArtletters(List<ArtletterDTO.SimpleArtletterResponseDto> artletters, String sortType) {
-        return switch (sortType) {
-            case "likes" -> artletters.stream()
-                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt)
-                            .reversed())
-                    .toList();
-
-            case "scraps" -> artletters.stream()
-                    .sorted(Comparator
-                            .comparing(ArtletterDTO.SimpleArtletterResponseDto::getScrapsCnt).reversed()
-                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed()
-                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt).reversed())
-                    .toList();
-
-            case "latest" -> artletters.stream()
-                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed())
-                    .toList();
-
-            default -> artletters;
-        };
-    }
 
     // 추천바 - 아트레터 요청 검증
     private List<Artletter> validateArtletterIds(List<Long> artletterIds) {
