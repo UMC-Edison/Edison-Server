@@ -166,26 +166,35 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
-
-    // 아트레터 검색 api
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
         Member member = getMemberIfAuthenticated(userPrincipal);
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
+        Pageable pageable;
+        switch (sortType) {
+            case "likes":
+                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likesCount"));
+                break;
+            case "scraps":
+                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "scrapsCount"));
+                break;
+            case "latest":
+                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+                break;
+            default: // relevance: native query에서 ORDER BY로 처리
+                pageable = PageRequest.of(page, size);
+                break;
+        }
 
+        Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
         PageInfo pageInfo = buildPageInfo(resultPage);
 
-        List<Artletter> sortedResults = sortSearchResults(resultPage.getContent(), keyword);
-        List<ArtletterDTO.SimpleArtletterResponseDto> response = sortedResults.stream()
+        List<ArtletterDTO.SimpleArtletterResponseDto> response = resultPage.getContent().stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
-        response = sortArtletters(response, sortType);
-
-        // 🔥 추가된 부분: 최근 검색어 저장
+        // 최근 검색어 저장
         if (member != null && keyword != null && !keyword.trim().isEmpty()) {
             saveMemoryKeyword(member, keyword);
         }
@@ -193,16 +202,6 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
-    // 아트레터 검색 api - 검색 결과 기본 정렬
-    private List<Artletter> sortSearchResults(List<Artletter> artletters, String keyword) {
-        return artletters.stream()
-                .sorted(Comparator
-                        .comparing((Artletter a) -> a.getTag() != null && a.getTag().contains(keyword) ? 0 : 1)
-                        .thenComparing(a -> a.getTitle() != null && a.getTitle().contains(keyword) ? 0 : 1)
-                        .thenComparing(a -> a.getContent() != null && a.getContent().contains(keyword) ? 0 : 1)
-                )
-                .collect(Collectors.toList());
-    }
 
     // 최근 검색어 자동 저장 메서드
     private void saveMemoryKeyword(Member member, String memory) {
