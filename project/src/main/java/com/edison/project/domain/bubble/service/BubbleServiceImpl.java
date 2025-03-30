@@ -196,17 +196,21 @@ public class BubbleServiceImpl implements BubbleService {
         Bubble bubble = bubbleRepository.findByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
-        // 버블 삭제할 경우 해당 버블을 백링크로 가지고 버블의 백링크 삭제
-        if(request.isTrashed()){
-            List<BubbleBacklink> backlinksDelete = bubbleBacklinkRepository.findByBubble_BubbleId(bubble.getBubbleId());
-            List<BubbleBacklink> backlinksDeleteByBacklink = bubbleBacklinkRepository.findByBacklinkBubble_BubbleId(bubble.getBubbleId());
+        // 관련된 백링크들 가져오기
+        List<BubbleBacklink> backlinksFromBubble = bubbleBacklinkRepository.findByBubble_BubbleId(bubble.getBubbleId());
+        List<BubbleBacklink> backlinksToBubble = bubbleBacklinkRepository.findByBacklinkBubble_BubbleId(bubble.getBubbleId());
 
-            Set<BubbleBacklink> allBacklinksToDelete = new HashSet<>();
-            allBacklinksToDelete.addAll(backlinksDelete);
-            allBacklinksToDelete.addAll(backlinksDeleteByBacklink);
+        Set<BubbleBacklink> allBacklinks = new HashSet<>();
+        allBacklinks.addAll(backlinksFromBubble);
+        allBacklinks.addAll(backlinksToBubble);
 
-            bubbleBacklinkRepository.deleteAll(allBacklinksToDelete);
+        // 하드 딜리트 처리
+        if (request.isTrashed() && request.isDeleted()) {
+            bubbleBacklinkRepository.deleteAll(allBacklinks);
+            // 버블도 실제 삭제할 거면 여기서 bubbleRepository.delete(bubble)도 가능
+            return bubble; // 더 이상 업데이트 필요 없음
         }
+
 
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
@@ -218,6 +222,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .map(backlink -> BubbleBacklink.builder()
                         .bubble(bubble)
                         .backlinkBubble(backlink)
+                        .isTrashed(request.isTrashed())
                         .build())
                 .collect(Collectors.toSet());
         bubble.getBacklinks().addAll(newbacklinks);
