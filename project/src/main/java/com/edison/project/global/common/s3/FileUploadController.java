@@ -1,6 +1,5 @@
 package com.edison.project.global.common.s3;
 
-import com.edison.project.global.config.AmazonConfig;
 import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileUploadController {
 
     private final AmazonS3Manager amazonS3Manager;
-    private final AmazonConfig amazonConfig;
 
     @PostMapping("/{type}")
     public ResponseEntity<String> uploadImage(
