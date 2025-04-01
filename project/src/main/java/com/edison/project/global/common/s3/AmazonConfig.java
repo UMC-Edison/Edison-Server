@@ -22,6 +22,13 @@ public class AmazonConfig {
     @Value("${cloud.aws.region.static}")
     private String region;
 
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
+
+    public String getBucket() {
+        return bucket;
+    }
+
     @Bean
     public AWSCredentials awsCredentials() {
         return new BasicAWSCredentials(accessKey, secretKey);
