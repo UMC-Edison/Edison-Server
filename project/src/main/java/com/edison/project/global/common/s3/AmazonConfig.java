@@ -1,4 +1,4 @@
-package com.edison.project.global.config;
+package com.edison.project.global.common.s3;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;

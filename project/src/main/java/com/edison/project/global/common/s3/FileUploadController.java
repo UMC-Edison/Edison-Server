@@ -1,10 +1,12 @@
 package com.edison.project.global.common.s3;
 
+import com.edison.project.global.config.AmazonConfig;
+import com.edison.project.global.security.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import com.edison.project.aws.s3.AmazonS3Manager;
 
 /*
 - 버킷을 버블 / 아트레터 2개의 폴더로 구분하여 S3에 업로드
@@ -18,18 +20,16 @@ import com.edison.project.aws.s3.AmazonS3Manager;
 public class FileUploadController {
 
     private final AmazonS3Manager amazonS3Manager;
+    private final AmazonConfig amazonConfig;
 
     @PostMapping("/{type}")
     public ResponseEntity<String> uploadImage(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @PathVariable("type") String type,
-            @RequestParam("image") MultipartFile file
+            @RequestParam("image") MultipartFile image
     ) {
-        if (!type.equals("bubble") && !type.equals("artletter")) {
-            return ResponseEntity.badRequest().body("지원하지 않습니다.");
-        }
-
-        String folder = type.equals("bubble") ? "bubble-images" : "artletter-images";
-        String imageUrl = amazonS3Manager.uploadFile(folder, file);
-        return ResponseEntity.ok(imageUrl);
+        Long nickname = userPrincipal.getMemberId();
+        String url = amazonS3Manager.uploadFile(type, nickname, image);
+        return ResponseEntity.ok(url);
     }
 }
