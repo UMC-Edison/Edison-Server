@@ -211,21 +211,37 @@ public class BubbleServiceImpl implements BubbleService {
             return bubble; // 더 이상 업데이트 필요 없음
         }
 
+        for (BubbleBacklink link : backlinksToBubble) {
+            link.setTrashed(request.isTrashed());
+        }
+        bubbleBacklinkRepository.saveAll(backlinksToBubble);
+
 
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
                 .collect(Collectors.toSet());
         bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), bubbleLabels);
 
-        bubble.getBacklinks().clear();
-        Set<BubbleBacklink> newbacklinks = backlinks.stream()
-                .map(backlink -> BubbleBacklink.builder()
+        // 기존 backlinks 유지하면서 is_trashed만 업데이트
+        for (BubbleBacklink backlink : bubble.getBacklinks()) {
+            backlink.setTrashed(request.isTrashed());
+        }
+
+        // 새로운 backlink만 추가 (중복 방지)
+        Set<Bubble> existingBacklinks = bubble.getBacklinks().stream()
+                .map(b -> b.getBacklinkBubble()) // 중복 체크용
+                .collect(Collectors.toSet());
+
+        for (Bubble backlink : backlinks) {
+            if (!existingBacklinks.contains(backlink)) {
+                BubbleBacklink newBacklink = BubbleBacklink.builder()
                         .bubble(bubble)
                         .backlinkBubble(backlink)
                         .isTrashed(request.isTrashed())
-                        .build())
-                .collect(Collectors.toSet());
-        bubble.getBacklinks().addAll(newbacklinks);
+                        .build();
+                bubble.getBacklinks().add(newBacklink);
+            }
+        }
 
         bubble.setTrashed(request.isTrashed());
         bubble.setUpdatedAt(request.getUpdatedAt());
