@@ -198,7 +198,20 @@ public class BubbleServiceImpl implements BubbleService {
 
         // 관련된 백링크들 가져오기
         List<BubbleBacklink> backlinksFromBubble = bubbleBacklinkRepository.findByBubble_BubbleId(bubble.getBubbleId());
+        //이 버블을 백링크로 걸은 백링크목록
         List<BubbleBacklink> backlinksToBubble = bubbleBacklinkRepository.findByBacklinkBubble_BubbleId(bubble.getBubbleId());
+
+        System.out.println("▶▶▶ 내가 다른 버블을 가리키는 백링크 목록 (A → B):");
+        for (BubbleBacklink backlink : backlinksFromBubble) {
+            System.out.println("A → B: 내 ID = " + backlink.getBubble().getBubbleId()
+                    + " → 대상 ID = " + backlink.getBacklinkBubble().getBubbleId());
+        }
+
+        System.out.println("▶▶▶ 나를 가리키는 백링크 목록 (B → A):");
+        for (BubbleBacklink backlink : backlinksToBubble) {
+            System.out.println("B → A: 상대 ID = " + backlink.getBubble().getBubbleId()
+                    + " → 나 ID = " + backlink.getBacklinkBubble().getBubbleId());
+        }
 
         Set<BubbleBacklink> allBacklinks = new HashSet<>();
         allBacklinks.addAll(backlinksFromBubble);
@@ -211,9 +224,35 @@ public class BubbleServiceImpl implements BubbleService {
             return bubble; // 더 이상 업데이트 필요 없음
         }
 
-        for (BubbleBacklink link : backlinksToBubble) {
-            link.setTrashed(request.isTrashed());
+        for (BubbleBacklink link : backlinksFromBubble) {
+            Bubble target = link.getBacklinkBubble();
+            if(target.isDeleted()||request.isDeleted()) {
+                bubbleBacklinkRepository.delete(link);
+            }
+            else{
+                boolean shouldBeTrashed = request.isTrashed() || target.isTrashed();
+                System.out.println(link.getId());
+                link.setTrashed(shouldBeTrashed);
+            }
         }
+        for (BubbleBacklink link : backlinksToBubble) {
+            Bubble target = link.getBacklinkBubble();
+            if(request.isDeleted()||target.isDeleted()) {
+                bubbleBacklinkRepository.delete(link);
+            }
+            else {
+                boolean shouldBeTrashed = request.isTrashed() || link.getBubble().isTrashed() || target.isTrashed();
+                System.out.println(link.getId());
+                System.out.println(target.getLocalIdx());
+                System.out.println(request.isTrashed());
+                if(!request.isTrashed() && !link.getBubble().isTrashed()){
+                    shouldBeTrashed = false;
+                }
+                System.out.println(shouldBeTrashed);
+                link.setTrashed(shouldBeTrashed);
+            }
+        }
+        bubbleBacklinkRepository.saveAll(backlinksFromBubble);
         bubbleBacklinkRepository.saveAll(backlinksToBubble);
 
 
@@ -222,10 +261,7 @@ public class BubbleServiceImpl implements BubbleService {
                 .collect(Collectors.toSet());
         bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), bubbleLabels);
 
-        // 기존 backlinks 유지하면서 is_trashed만 업데이트
-        for (BubbleBacklink backlink : bubble.getBacklinks()) {
-            backlink.setTrashed(request.isTrashed());
-        }
+
 
         // 새로운 backlink만 추가 (중복 방지)
         Set<Bubble> existingBacklinks = bubble.getBacklinks().stream()
