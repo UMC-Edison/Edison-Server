@@ -7,7 +7,11 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(
+  exclude = {
+    org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration.class
+  }
+)
 @ActiveProfiles("test")
 class ProjectApplicationTests {
 
