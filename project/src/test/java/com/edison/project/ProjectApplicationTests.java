@@ -11,12 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 class ProjectApplicationTests {
 
-	@MockBean
-	private OAuth2AuthorizedClientService authorizedClientService;
-
-	@MockBean
-	private OAuth2AuthorizedClientManager authorizedClientManager;
-
 	@Test
 	void contextLoads() {
 	}
