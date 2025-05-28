@@ -26,4 +26,5 @@ public class BubbleBacklink {
 
     @Column(name = "is_trashed", nullable = false)  //휴지통에 있는 지(soft_delete)
     private boolean isTrashed = false;
+
 }
