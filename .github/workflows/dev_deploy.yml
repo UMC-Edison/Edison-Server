@@ -51,6 +51,7 @@ jobs:
           build-root-directory: project
 
       - name: Upload build artifact  # 빌드된 아티팩트 업로드
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Edison-Server
