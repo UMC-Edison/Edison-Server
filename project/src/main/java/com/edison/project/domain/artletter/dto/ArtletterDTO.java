@@ -56,14 +56,6 @@ public class ArtletterDTO {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class EditorRequestDto {
-        private List<Long> artletterIds;
-    }
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class CreateResponseDto {
         private Long artletterId;
         private String title;

@@ -22,7 +22,7 @@ public interface ArtletterService {
     ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
     ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
 
-    ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto);
+    ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal);
     List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds);
     List<String> getRecommendCategory();
 
