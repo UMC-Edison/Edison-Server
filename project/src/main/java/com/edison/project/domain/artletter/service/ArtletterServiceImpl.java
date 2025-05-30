@@ -26,7 +26,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -368,7 +367,15 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     @Transactional
     public List<String> getRecommendCategory() {
-        return Arrays.asList("기술과학", "자연과학", "교육");
+
+        ArtletterCategory[] allCategories = ArtletterCategory.values();
+        List<ArtletterCategory> shuffled = new ArrayList<>(Arrays.asList(allCategories));
+        Collections.shuffle(shuffled);
+
+        return shuffled.stream()
+                .limit(3)
+                .map(Enum::name) // 한글 enum 이름을 문자열로 변환
+                .collect(Collectors.toList());
     }
 
 
