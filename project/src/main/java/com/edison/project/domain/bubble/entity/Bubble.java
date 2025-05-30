@@ -22,8 +22,8 @@ public class Bubble {
     @Column(name = "bubble_id")
     private Long bubbleId;
 
-    @Column(name = "local_idx")
-    private Long localIdx;
+    @Column(name = "local_idx", length = 50)
+    private String localIdx;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -63,7 +63,7 @@ public class Bubble {
     private Set<BubbleBacklink> referencingBubbles = new HashSet<>();
 
     @Builder
-    public Bubble(Member member, Long localIdx, String title, String content, String mainImg, Set<BubbleLabel> labels,
+    public Bubble(Member member, String localIdx, String title, String content, String mainImg, Set<BubbleLabel> labels,
                   boolean isTrashed, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
         this.localIdx = localIdx;
         this.member = member;

@@ -62,7 +62,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // 라벨 상세 조회
     @Override
-    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, Long localIdx) {
+    public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, String localIdx) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
@@ -108,6 +108,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
                 .backlinkIdxs(bubble.getBacklinks().stream()
                         .map(BubbleBacklink::getBacklinkBubble)
                         .map(Bubble::getBubbleId)
+                        .map(String::valueOf)
                         .collect(Collectors.toSet()))
                 .isTrashed(bubble.isTrashed())
                 .createdAt(bubble.getCreatedAt())
@@ -181,7 +182,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         return buildLabelResponse(label.getLocalIdx(), label.getName(), label.getColor(), false, label.getCreatedAt(), label.getUpdatedAt(), label.getDeletedAt());
     }
 
-    private LabelResponseDTO.LabelSyncResponseDTO buildLabelResponse(Long localIdx, String name, int color, boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+    private LabelResponseDTO.LabelSyncResponseDTO buildLabelResponse(String localIdx, String name, int color, boolean isDeleted, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
         return LabelResponseDTO.LabelSyncResponseDTO.builder()
                 .localIdx(localIdx)
                 .name(name)

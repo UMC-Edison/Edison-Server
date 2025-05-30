@@ -58,7 +58,7 @@ public class BubbleRestController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getBubble (
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @PathVariable Long localIdx) {
+            @PathVariable String localIdx) {
         BubbleResponseDto.SyncResultDto response = bubbleService.getBubble(userPrincipal, localIdx);
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }

@@ -11,7 +11,7 @@ public class SpaceResponseDto {
 
     // 올바른 생성자 추가
     public SpaceResponseDto(Bubble bubble, double x, double y) {
-        this.id = bubble.getLocalIdx();
+        this.id = bubble.getBubbleId();
         this.x = x;
         this.y = y;
     }
