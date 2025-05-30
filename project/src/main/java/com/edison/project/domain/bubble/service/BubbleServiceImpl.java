@@ -388,8 +388,8 @@ public class BubbleServiceImpl implements BubbleService {
         return new HashSet<>(backlinks);
     }
 
-    private Set<Label> validateLabels(Set<Long> labelIdxs, Member member) {
-        Set<Long> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
+    private Set<Label> validateLabels(Set<String> labelIdxs, Member member) {
+        Set<String> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
 
         if (idxs.isEmpty()) { return Collections.emptySet();}
         if (idxs.size() > 3) { throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);}
@@ -397,7 +397,7 @@ public class BubbleServiceImpl implements BubbleService {
         Set<Label> labels = new HashSet<>(labelRepository.findAllByMemberAndLocalIdxIn(member, idxs));
 
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
-        Set<Long> foundIdxs = labels.stream().map(Label::getLocalIdx).collect(Collectors.toSet());
+        Set<String> foundIdxs = labels.stream().map(Label::getLocalIdx).map(String::valueOf).collect(Collectors.toSet());
         if (!foundIdxs.containsAll(idxs)) { throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);}
 
         if (!labels.stream().allMatch(label -> label.getMember().equals(member))) {
@@ -409,7 +409,7 @@ public class BubbleServiceImpl implements BubbleService {
 
 
     // 라벨을 DTO로 변환 (localIdx 기준)
-    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<Long> localIdxs) {
+    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<String> localIdxs) {
         return localIdxs.stream()
                 .map(localIdx -> labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
                         .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))

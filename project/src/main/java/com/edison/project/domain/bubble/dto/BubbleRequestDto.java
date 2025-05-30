@@ -25,7 +25,7 @@ public class BubbleRequestDto {
         private String title;
         private String content;
         private String mainImageUrl;
-        private Set<Long> labelIdxs;
+        private Set<String> labelIdxs;
         private Set<String> backlinkIds;
 
         @NotNull(message = "(DTO)삭제 여부는 필수입니다.")

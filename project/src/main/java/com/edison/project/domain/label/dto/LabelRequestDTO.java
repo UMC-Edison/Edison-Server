@@ -14,7 +14,7 @@ public class LabelRequestDTO {
     public static class LabelSyncRequestDTO {
 
         @NotNull(message = "(DTO)라벨 ID는 필수입니다.")
-        private Long localIdx;
+        private String localIdx;
 
         @NotBlank(message = "(DTO)라벨 이름은 필수입니다.")
         private String name;
