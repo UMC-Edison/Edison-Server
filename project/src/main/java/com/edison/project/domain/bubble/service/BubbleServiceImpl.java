@@ -157,7 +157,7 @@ public class BubbleServiceImpl implements BubbleService {
 
     /** 버블 상세 조회 */
     @Override
-    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long localIdx) {
+    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, String localIdx) {
 
         Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
@@ -370,14 +370,14 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     // 백링크 검증
-    private Set<Bubble> validateBacklinks(Set<Long> backlinkIdxs, Member member) {
-        Set<Long> idxs = Optional.ofNullable(backlinkIdxs).orElse(Collections.emptySet());
+    private Set<Bubble> validateBacklinks(Set<String> backlinkIdxs, Member member) {
+        Set<String> idxs = Optional.ofNullable(backlinkIdxs).orElse(Collections.emptySet());
 
         if (idxs.isEmpty()) { return Collections.emptySet();}
         Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllByMemberAndLocalIdxIn(member, idxs));
 
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
-        Set<Long> foundIdxs = backlinks.stream().map(Bubble::getLocalIdx).collect(Collectors.toSet());
+        Set<String> foundIdxs = backlinks.stream().map(Bubble::getLocalIdx).collect(Collectors.toSet());
         if (!foundIdxs.containsAll(idxs)) {
             throw new GeneralException(ErrorStatus.BACKLINK_NOT_FOUND);
         }
