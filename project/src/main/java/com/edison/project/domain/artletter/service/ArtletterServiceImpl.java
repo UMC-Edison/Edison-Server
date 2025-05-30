@@ -10,8 +10,10 @@ import com.edison.project.domain.artletter.dto.CountDto;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.entity.ArtletterLikes;
+import com.edison.project.domain.artletter.entity.EditorPick;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
+import com.edison.project.domain.artletter.repository.EditorPickRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.entity.MemberMemory;
 import com.edison.project.domain.member.repository.MemberMemoryRepository;
@@ -26,7 +28,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -42,7 +43,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final MemberMemoryRepository memberMemoryRepository;
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
-    private final Map<Long, LinkedList<String>> recentSearchKeywords = new HashMap<>();
+    private final EditorPickRepository editorPickRepository;
 
 
     // 전체 아트레터 조회 API
@@ -312,29 +313,18 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto) {
-        if (editorRequestDto == null || editorRequestDto.getArtletterIds() == null || editorRequestDto.getArtletterIds().isEmpty()) {
-            throw new GeneralException(ErrorStatus.ARTLETTER_ID_REQUIRED);
-        }
+    public List<ArtletterDTO.ListResponseDto> getEditorArtletters(CustomUserPrincipal userPrincipal) {
 
         Member member = Optional.ofNullable(userPrincipal)
                 .map(up -> memberRepository.findByMemberId(up.getMemberId()))
                 .orElse(null);
 
-        List<Long> artletterIds = editorRequestDto.getArtletterIds();
-        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+        List<EditorPick> picks = editorPickRepository.findAll();
 
-        if (artletters.size() < artletterIds.size()) {
-            Set<Long> foundArtletterIds = artletters.stream()
-                    .map(Artletter::getLetterId)
-                    .collect(Collectors.toSet());
+        List<Artletter> artletters = picks.stream()
+                .map(EditorPick::getArtletter)
+                .collect(Collectors.toList());
 
-            for (Long artletterId : artletterIds) {
-                if (!foundArtletterIds.contains(artletterId)) {
-                    throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND, "요청된 아트레터가 존재하지 않습니다. (ID: " + artletterId + ")");
-                }
-            }
-        }
 
         Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, artletters)
                 .stream().collect(Collectors.toMap(al -> al.getArtletter().getLetterId(), al -> true));
@@ -370,7 +360,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .collect(Collectors.toList());
 
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, artletterList);
+        return artletterList;
     }
 
 

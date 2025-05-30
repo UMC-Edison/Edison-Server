@@ -84,12 +84,12 @@ public class ArtletterController {
     }
 
 
-    @PostMapping("/editor-pick")
+    @GetMapping("/editor-pick")
     public ResponseEntity<ApiResponse> getEditorArtletters(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestBody ArtletterDTO.EditorRequestDto editorRequestDto) {
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
 
-        return artletterService.getEditorArtletters(userPrincipal, editorRequestDto);
+        List<ArtletterDTO.ListResponseDto> response = artletterService.getEditorArtletters(userPrincipal);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
   
 

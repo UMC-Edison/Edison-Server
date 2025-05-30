@@ -3,7 +3,6 @@ package com.edison.project.domain.artletter.service;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
-import com.edison.project.domain.member.entity.Member;
 import com.edison.project.global.security.CustomUserPrincipal;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +21,7 @@ public interface ArtletterService {
     ArtletterDTO.LikeResponseDto likeToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
     ArtletterDTO.ScrapResponseDto scrapToggleArtletter(CustomUserPrincipal userPrincipal, Long letterId);
 
-    ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto);
+    List<ArtletterDTO.ListResponseDto> getEditorArtletters(CustomUserPrincipal userPrincipal);
     List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds);
     List<String> getRecommendCategory();
 
