@@ -2,10 +2,7 @@ package com.edison.project.global.common.s3;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,5 +15,12 @@ public class S3Controller {
     public ResponseEntity<S3Service.PresignedUrlResponse> getPresignedUrl(@RequestParam String fileName) {
         return ResponseEntity.ok(s3Service.generatePresignedUrl(fileName));
     }
+
+    @GetMapping("/get-img")
+    public ResponseEntity<String> getPresignedDownloadUrl(@RequestParam String key) {
+        String presignedUrl = s3Service.generatePresignedGetUrl(key);
+        return ResponseEntity.ok(presignedUrl);
+    }
+
 }
 
