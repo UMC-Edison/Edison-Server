@@ -25,7 +25,7 @@ public class S3Config {
         );
 
         return S3Presigner.builder()
-                .region(Region.AP_NORTHEAST_2)
+                .region(Region.AP_SOUTHEAST_2)
                 .credentialsProvider(credentialsProvider)
                 .build();
     }
