@@ -10,8 +10,10 @@ import com.edison.project.domain.artletter.dto.CountDto;
 import com.edison.project.domain.artletter.entity.Artletter;
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
 import com.edison.project.domain.artletter.entity.ArtletterLikes;
+import com.edison.project.domain.artletter.entity.EditorPick;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
+import com.edison.project.domain.artletter.repository.EditorPickRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.entity.MemberMemory;
 import com.edison.project.domain.member.repository.MemberMemoryRepository;
@@ -42,6 +44,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final MemberMemoryRepository memberMemoryRepository;
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
+    private final EditorPickRepository editorPickRepository;
 
     // 전체 아트레터 조회 API
     @Override
@@ -301,19 +304,18 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal) {
+    public List<ArtletterDTO.ListResponseDto> getEditorArtletters(CustomUserPrincipal userPrincipal) {
 
         Member member = Optional.ofNullable(userPrincipal)
                 .map(up -> memberRepository.findByMemberId(up.getMemberId()))
                 .orElse(null);
 
-        // 전체 아트레터 중 랜덤 3개 조회
-        List<Artletter> allArtletters = artletterRepository.findAll();
 
-        // 랜덤 3개 추출
-        Collections.shuffle(allArtletters);
-        List<Artletter> selected = allArtletters.subList(0, 3);
+        List<EditorPick> picks = editorPickRepository.findAll();
 
+        List<Artletter> artletters = picks.stream()
+                .map(EditorPick::getArtletter)
+                .collect(Collectors.toList());
 
         Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, selected)
                 .stream().collect(Collectors.toMap(al -> al.getArtletter().getLetterId(), al -> true));
@@ -349,7 +351,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .collect(Collectors.toList());
 
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, artletterList);
+        return artletterList;
     }
 
 
