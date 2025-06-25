@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface BubbleBacklinkRepository extends JpaRepository<BubbleBacklink, Long> {
-    List<BubbleBacklink> findByBubble_BubbleId(Long bubbleId);
-
     List<BubbleBacklink> findByBacklinkBubble_BubbleId(Long bubbleId);
+
+    List<BubbleBacklink> findByBubble_BubbleId(Long bubbleId);
 }

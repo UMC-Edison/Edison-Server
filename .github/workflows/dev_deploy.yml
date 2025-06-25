@@ -3,6 +3,7 @@ name: Edison CI/CD Pipeline
 on:
   push:
     branches: [ develop ]  # develop 브랜치에 push가 일어날 때 실행
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,10 +26,6 @@ jobs:
           echo "spring.jpa.hibernate.ddl-auto=update" >> ./project/src/main/resources/application.properties
           # Google OAuth2
           echo "spring.security.oauth2.client.registration.google.client-id=${{ secrets.GOOGLE_CLIENT_ID }}" >> ./project/src/main/resources/application.properties
-          echo "spring.security.oauth2.client.registration.google.client-secret=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> ./project/src/main/resources/application.properties
-          echo "spring.security.oauth2.client.registration.google.scope=openid,email" >> ./project/src/main/resources/application.properties
-          echo "spring.security.oauth2.client.registration.google.redirect-uri=https://api.umcedison.site/login/oauth2/code/google" >> ./project/src/main/resources/application.properties
-          echo "spring.security.oauth2.client.provider.google.issuer-uri=https://accounts.google.com" >> ./project/src/main/resources/application.properties
           # JWT
           echo "jwt.secret=${{ secrets.JWT_SECRET }}" >> ./project/src/main/resources/application.properties
           echo "jwt.access-token-expiration=${{ secrets.JWT_ACCESS_EXPIRATION }}" >> ./project/src/main/resources/application.properties
@@ -54,6 +51,7 @@ jobs:
           build-root-directory: project
 
       - name: Upload build artifact  # 빌드된 아티팩트 업로드
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Edison-Server

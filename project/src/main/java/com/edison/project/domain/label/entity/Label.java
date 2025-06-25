@@ -24,8 +24,8 @@ public class Label {
     @Column(name = "label_id")
     private Long labelId;
 
-    @Column(name="local_idx")
-    private Long localIdx;
+    @Column(name="local_idx", length = 50)
+    private String localIdx;
 
     @Column(name = "name")
     private String name;
@@ -52,7 +52,7 @@ public class Label {
 
     // 생성자 및 빌더 추가
     @Builder
-    public Label(Long labelId, String name, int color, Member member, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
+    public Label(String labelId, String name, int color, Member member, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime deletedAt) {
         this.localIdx = labelId;
         this.name = name;
         this.color = color;

@@ -2,22 +2,17 @@ package com.edison.project;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 
-@SpringBootTest
+// @SpringBootTest
+@ImportAutoConfiguration(
+  exclude = org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration.class
+)
 @ActiveProfiles("test")
 class ProjectApplicationTests {
 
-	@MockBean
-	private OAuth2AuthorizedClientService authorizedClientService;
-
-	@MockBean
-	private OAuth2AuthorizedClientManager authorizedClientManager;
-
-	@Test
-	void contextLoads() {
-	}
+  @Test
+  void contextLoads() {
+  }
 }

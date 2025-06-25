@@ -157,7 +157,7 @@ public class BubbleServiceImpl implements BubbleService {
 
     /** 버블 상세 조회 */
     @Override
-    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long localIdx) {
+    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, String localIdx) {
 
         Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
@@ -196,31 +196,88 @@ public class BubbleServiceImpl implements BubbleService {
         Bubble bubble = bubbleRepository.findByMemberAndLocalIdx(member, request.getLocalIdx())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
-        // 버블 삭제할 경우 해당 버블을 백링크로 가지고 버블의 백링크 삭제
-        if(request.isTrashed()){
-            List<BubbleBacklink> backlinksDelete = bubbleBacklinkRepository.findByBubble_BubbleId(bubble.getBubbleId());
-            List<BubbleBacklink> backlinksDeleteByBacklink = bubbleBacklinkRepository.findByBacklinkBubble_BubbleId(bubble.getBubbleId());
+        // 관련된 백링크들 가져오기
+        List<BubbleBacklink> backlinksFromBubble = bubbleBacklinkRepository.findByBubble_BubbleId(bubble.getBubbleId());
+        //이 버블을 백링크로 걸은 백링크목록
+        List<BubbleBacklink> backlinksToBubble = bubbleBacklinkRepository.findByBacklinkBubble_BubbleId(bubble.getBubbleId());
 
-            Set<BubbleBacklink> allBacklinksToDelete = new HashSet<>();
-            allBacklinksToDelete.addAll(backlinksDelete);
-            allBacklinksToDelete.addAll(backlinksDeleteByBacklink);
-
-            bubbleBacklinkRepository.deleteAll(allBacklinksToDelete);
+        System.out.println("▶▶▶ 내가 다른 버블을 가리키는 백링크 목록 (A → B):");
+        for (BubbleBacklink backlink : backlinksFromBubble) {
+            System.out.println("A → B: 내 ID = " + backlink.getBubble().getBubbleId()
+                    + " → 대상 ID = " + backlink.getBacklinkBubble().getBubbleId());
         }
+
+        System.out.println("▶▶▶ 나를 가리키는 백링크 목록 (B → A):");
+        for (BubbleBacklink backlink : backlinksToBubble) {
+            System.out.println("B → A: 상대 ID = " + backlink.getBubble().getBubbleId()
+                    + " → 나 ID = " + backlink.getBacklinkBubble().getBubbleId());
+        }
+
+        Set<BubbleBacklink> allBacklinks = new HashSet<>();
+        allBacklinks.addAll(backlinksFromBubble);
+        allBacklinks.addAll(backlinksToBubble);
+
+        // 하드 딜리트 처리
+        if (request.isTrashed() && request.isDeleted()) {
+            bubbleBacklinkRepository.deleteAll(allBacklinks);
+            // 버블도 실제 삭제할 거면 여기서 bubbleRepository.delete(bubble)도 가능
+            return bubble; // 더 이상 업데이트 필요 없음
+        }
+
+        for (BubbleBacklink link : backlinksFromBubble) {
+            Bubble target = link.getBacklinkBubble();
+            if(target.isDeleted()||request.isDeleted()) {
+                bubbleBacklinkRepository.delete(link);
+            }
+            else{
+                boolean shouldBeTrashed = request.isTrashed() || target.isTrashed();
+                System.out.println(link.getId());
+                link.setTrashed(shouldBeTrashed);
+            }
+        }
+        for (BubbleBacklink link : backlinksToBubble) {
+            Bubble target = link.getBacklinkBubble();
+            if(request.isDeleted()||target.isDeleted()) {
+                bubbleBacklinkRepository.delete(link);
+            }
+            else {
+                boolean shouldBeTrashed = request.isTrashed() || link.getBubble().isTrashed() || target.isTrashed();
+                System.out.println(link.getId());
+                System.out.println(target.getLocalIdx());
+                System.out.println(request.isTrashed());
+                if(!request.isTrashed() && !link.getBubble().isTrashed()){
+                    shouldBeTrashed = false;
+                }
+                System.out.println(shouldBeTrashed);
+                link.setTrashed(shouldBeTrashed);
+            }
+        }
+        bubbleBacklinkRepository.saveAll(backlinksFromBubble);
+        bubbleBacklinkRepository.saveAll(backlinksToBubble);
+
 
         Set<BubbleLabel> bubbleLabels = labels.stream()
                 .map(label -> BubbleLabel.builder().bubble(bubble).label(label).build())
                 .collect(Collectors.toSet());
         bubble.update(request.getTitle(), request.getContent(), request.getMainImageUrl(), bubbleLabels);
 
-        bubble.getBacklinks().clear();
-        Set<BubbleBacklink> newbacklinks = backlinks.stream()
-                .map(backlink -> BubbleBacklink.builder()
+
+
+        // 새로운 backlink만 추가 (중복 방지)
+        Set<Bubble> existingBacklinks = bubble.getBacklinks().stream()
+                .map(b -> b.getBacklinkBubble()) // 중복 체크용
+                .collect(Collectors.toSet());
+
+        for (Bubble backlink : backlinks) {
+            if (!existingBacklinks.contains(backlink)) {
+                BubbleBacklink newBacklink = BubbleBacklink.builder()
                         .bubble(bubble)
                         .backlinkBubble(backlink)
-                        .build())
-                .collect(Collectors.toSet());
-        bubble.getBacklinks().addAll(newbacklinks);
+                        .isTrashed(request.isTrashed())
+                        .build();
+                bubble.getBacklinks().add(newBacklink);
+            }
+        }
 
         bubble.setTrashed(request.isTrashed());
         bubble.setUpdatedAt(request.getUpdatedAt());
@@ -313,14 +370,14 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     // 백링크 검증
-    private Set<Bubble> validateBacklinks(Set<Long> backlinkIdxs, Member member) {
-        Set<Long> idxs = Optional.ofNullable(backlinkIdxs).orElse(Collections.emptySet());
+    private Set<Bubble> validateBacklinks(Set<String> backlinkIdxs, Member member) {
+        Set<String> idxs = Optional.ofNullable(backlinkIdxs).orElse(Collections.emptySet());
 
         if (idxs.isEmpty()) { return Collections.emptySet();}
         Set<Bubble> backlinks = new HashSet<>(bubbleRepository.findAllByMemberAndLocalIdxIn(member, idxs));
 
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
-        Set<Long> foundIdxs = backlinks.stream().map(Bubble::getLocalIdx).collect(Collectors.toSet());
+        Set<String> foundIdxs = backlinks.stream().map(Bubble::getLocalIdx).collect(Collectors.toSet());
         if (!foundIdxs.containsAll(idxs)) {
             throw new GeneralException(ErrorStatus.BACKLINK_NOT_FOUND);
         }
@@ -331,8 +388,8 @@ public class BubbleServiceImpl implements BubbleService {
         return new HashSet<>(backlinks);
     }
 
-    private Set<Label> validateLabels(Set<Long> labelIdxs, Member member) {
-        Set<Long> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
+    private Set<Label> validateLabels(Set<String> labelIdxs, Member member) {
+        Set<String> idxs = Optional.ofNullable(labelIdxs).orElse(Collections.emptySet());
 
         if (idxs.isEmpty()) { return Collections.emptySet();}
         if (idxs.size() > 3) { throw new GeneralException(ErrorStatus.LABELS_TOO_MANY);}
@@ -340,7 +397,7 @@ public class BubbleServiceImpl implements BubbleService {
         Set<Label> labels = new HashSet<>(labelRepository.findAllByMemberAndLocalIdxIn(member, idxs));
 
         // 조회된 라벨의 localIdx와 요청된 localIdx가 일치하는지 확인
-        Set<Long> foundIdxs = labels.stream().map(Label::getLocalIdx).collect(Collectors.toSet());
+        Set<String> foundIdxs = labels.stream().map(Label::getLocalIdx).map(String::valueOf).collect(Collectors.toSet());
         if (!foundIdxs.containsAll(idxs)) { throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);}
 
         if (!labels.stream().allMatch(label -> label.getMember().equals(member))) {
@@ -352,7 +409,7 @@ public class BubbleServiceImpl implements BubbleService {
 
 
     // 라벨을 DTO로 변환 (localIdx 기준)
-    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<Long> localIdxs) {
+    public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<String> localIdxs) {
         return localIdxs.stream()
                 .map(localIdx -> labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
                         .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))
