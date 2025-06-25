@@ -52,25 +52,39 @@ public enum ErrorStatus {
 
     // 라벨 관련 에러
     LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨을 찾을 수 없습니다."),
+    LABEL_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "LABEL4002", "라벨 이름은 최대 20자까지 가능합니다."),
+    INVALID_COLOR(HttpStatus.BAD_REQUEST, "LABEL4003", "유효하지 않은 라벨 색상값입니다."),
     INVALID_DATE_FORMAT(HttpStatus.BAD_REQUEST, "LABEL4004", "유효하지 않은 시간 형식입니다."),
     LABELS_FORBIDDEN(HttpStatus.FORBIDDEN, "LABEL4005", "권한이 없는 라벨입니다."),
 
     // 아트보드 관련 에러
+    KEYWORD_IS_NOT_VALID(HttpStatus.BAD_REQUEST, "LETTER4001", "입력값이 존재하지 않습니다."),
+    RESULT_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4002", "검색 결과가 존재하지 않습니다."),
+    READTIME_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4003", "readTime field 관련 오류"),
+    TITLE_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4004", "title field 관련 오류"),
+    WRITER_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4005", "writer field 관련 오류"),
+    CONTENT_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4006", "content field 관련 오류"),
+    TAG_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4007", "tag field 관련 오류"),
+    INVALID_ARTLETTER_CATEGORY(HttpStatus.BAD_REQUEST, "LETTER4008", "아트레터 카테고리가 유효하지 않습니다."),
     KEYWORD_IS_EMPTY(HttpStatus.BAD_REQUEST, "LETTER4009", "아트레터에 지정된 키워드가 없습니다."),
     ARTLETTER_ID_REQUIRED(HttpStatus.BAD_REQUEST, "LETTER4010", "아트레터 ID를 입력해 주세요."),
     LETTERS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4011", "아트레터를 찾을 수 없습니다."),
     NOT_EXISTS_CATEGORY(HttpStatus.BAD_REQUEST, "LETTER4012", "존재하지 않는 아트레터 카테고리입니다."),
+    ARTLETTER_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4013", "스크랩한 아트레터가 없습니다."),
     INVALID_ARTLETTER_REQUEST(HttpStatus.BAD_REQUEST, "LETTER4014", "아트레터 ID는 1~3개만 요청할 수 있습니다."),
     DUPLICATE_ARTLETTER_IDS(HttpStatus.BAD_REQUEST, "LETTER4015", "중복된 아트레터 요청입니다."),
     THUMBNAIL_VALIDATION(HttpStatus.BAD_REQUEST, "LETTER4016", "썸네일은 null일 수 없습니다."),
     MEMORY_KEYWORD_NOT_FOUND(HttpStatus.BAD_REQUEST, "LETTER4017", "존재하지 않는 검색어 입니다."),
 
+    // 검색 관련 에러
+    INVALID_KEYWORD(HttpStatus.BAD_REQUEST, "SEARCH4001", "검색어는 공백일 수 없습니다."),
+
     // 스페이스 관련 에러
     NO_BUBBLES_FOUND(HttpStatus.BAD_REQUEST,"SPACE4001", "작성된 버블이 없습니다."),
+    NO_SPACES_FOUND(HttpStatus.BAD_REQUEST, "SPACE4002", "스페이스를 찾을 수 없습니다."),
 
     // 페이징 관련 에러
     INVALID_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "PAGENATION4001", "page는 음수일 수 없고, size는 100 이하의 양수여야 합니다.");
-
     private final HttpStatus httpStatus;
     private final String code;
     private final String message;

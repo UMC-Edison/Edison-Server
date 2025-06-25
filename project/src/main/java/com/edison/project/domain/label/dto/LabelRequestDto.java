@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Getter
-public class LabelRequestDto {
+public class LabelRequestDTO {
     @Getter
     @Setter
     @NoArgsConstructor

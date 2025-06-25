@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class SpaceServiceImpl implements SpaceService {
 
+    private final MemberService memberService;
     @Value("${openai_key}")
     private String secretKey;
 
@@ -40,10 +41,14 @@ public class SpaceServiceImpl implements SpaceService {
     private final SpaceRepository spaceRepository;
     private final BubbleRepository bubbleRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final MemberRepository memberRepository;
 
-    public SpaceServiceImpl(SpaceRepository spaceRepository, BubbleRepository bubbleRepository) {
+    public SpaceServiceImpl(SpaceRepository spaceRepository,
+                            BubbleRepository bubbleRepository, MemberRepository memberRepository, MemberService memberService) {
         this.spaceRepository = spaceRepository;
         this.bubbleRepository = bubbleRepository;
+        this.memberRepository = memberRepository;
+        this.memberService = memberService;
     }
 
     @Override
