@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-public interface LabelRepository extends JpaRepository<Label, Long> {
+public interface LabelRepository extends JpaRepository<Label, String> {
 
     // 특정 사용자의 모든 라벨 정보와 & 라벨별 버블 개수 조회
     @Query("SELECT l, COUNT(bl.bubble) " +
@@ -20,9 +20,9 @@ public interface LabelRepository extends JpaRepository<Label, Long> {
             "GROUP BY l")
     List<Object[]> findLabelInfoByMemberId(@Param("memberId") Long memberId);
 
-    Set<Label> findAllByMemberAndLocalIdxIn(Member member, Set<Long> localIdxs);
+    Set<Label> findAllByMemberAndLocalIdxIn(Member member, Set<String> localIdxs);
 
-    Optional<Label> findLabelByMemberAndLocalIdx(Member member, Long localIdx);
+    Optional<Label> findLabelByMemberAndLocalIdx(Member member, String localIdx);
 
-    boolean existsByMemberAndLocalIdx(Member member, Long localIdx);
+    boolean existsByMemberAndLocalIdx(Member member, String localIdx);
 }

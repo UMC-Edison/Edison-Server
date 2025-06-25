@@ -14,7 +14,7 @@ public interface BubbleService {
 
     ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable);
 
-    BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, Long bubbleId);
+    BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, String bubbleIdx);
 
     ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable);
 

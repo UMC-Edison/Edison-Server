@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface SpaceRepository extends JpaRepository<Space, Long> {
-    @Query("SELECT s FROM Space s JOIN FETCH s.bubble WHERE s.bubble.bubbleId = :bubbleId AND s.memberId = :memberId")
+    @Query("SELECT s FROM Space s JOIN FETCH s.bubble WHERE s.bubble.bubbleId = :bubbleId AND s.memberId = :memberId AND s.bubble.isDeleted = null")
     List<Space> findByBubble_BubbleIdAndMemberId(@Param("bubbleId") Long bubbleId, @Param("memberId") Long memberId);
 
     @Query("SELECT s FROM Space s WHERE s.memberId = :memberId")

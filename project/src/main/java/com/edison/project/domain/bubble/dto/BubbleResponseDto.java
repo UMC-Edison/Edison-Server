@@ -14,12 +14,12 @@ public class BubbleResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TrashedListResultDto {
-        private Long localIdx;
+        private String localIdx;
         private String title;
         private String content;
         private String mainImageUrl;
         private List<LabelResponseDTO.LabelSimpleInfoDto> labels;
-        private Set<Long> backlinkIdxs;
+        private Set<String> backlinkIdxs;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private LocalDateTime deletedAt;
@@ -31,12 +31,12 @@ public class BubbleResponseDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SyncResultDto {
-        private Long localIdx;
+        private String localIdx;
         private String title;
         private String content;
         private String mainImageUrl;
         private List<LabelResponseDTO.LabelSimpleInfoDto> labels;
-        private Set<Long> backlinkIdxs;
+        private Set<String> backlinkIdxs;
         private Boolean isDeleted;
         private Boolean isTrashed;
         private LocalDateTime createdAt;

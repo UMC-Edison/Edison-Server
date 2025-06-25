@@ -41,7 +41,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final MemberMemoryRepository memberMemoryRepository;
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
-    private final Map<Long, LinkedList<String>> recentSearchKeywords = new HashMap<>();
 
 
     // 전체 아트레터 조회 API
@@ -139,17 +138,17 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         Artletter artletter = findArtletterById(letterId);
-        boolean alreadyScrapped = scrapRepository.existsByMemberAndArtletter(member, artletter);
+        boolean alreadyScraped = scrapRepository.existsByMemberAndArtletter(member, artletter);
 
-        toggleScrap(member, artletter, alreadyScrapped);
+        toggleScrap(member, artletter, alreadyScraped);
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
-        return buildScrapResponseDto(letterId, scrapCnt, !alreadyScrapped);
+        return buildScrapResponseDto(letterId, scrapCnt, !alreadyScraped);
     }
 
     // 아트레터 스크랩 토글 api - 스크랩 토글 메서드 분리
-    private void toggleScrap(Member member, Artletter artletter, boolean alreadyScrapped) {
-        if (alreadyScrapped) {
+    private void toggleScrap(Member member, Artletter artletter, boolean alreadyScraped) {
+        if (alreadyScraped) {
             scrapRepository.deleteByMemberAndArtletter(member, artletter);
         } else {
             scrapRepository.save(Scrap.builder().member(member).artletter(artletter).build());
@@ -157,11 +156,11 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     // 아트레터 스크랩 토글 api - 결과 생성 메서드 분리
-    private ArtletterDTO.ScrapResponseDto buildScrapResponseDto(Long letterId, int scrapCnt, boolean isScrapped) {
+    private ArtletterDTO.ScrapResponseDto buildScrapResponseDto(Long letterId, int scrapCnt, boolean isScraped) {
         return ArtletterDTO.ScrapResponseDto.builder()
                 .artletterId(letterId)
                 .scrapsCnt(scrapCnt)
-                .isScrapped(isScrapped)
+                .isScraped(isScraped)
                 .build();
     }
 
@@ -284,14 +283,14 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         boolean isLiked = member != null && artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
         int likesCnt = artletterLikesRepository.countByArtletter(artletter);
-        boolean isScrapped = member != null && scrapRepository.existsByMemberAndArtletter(member, artletter);
+        boolean isScraped = member != null && scrapRepository.existsByMemberAndArtletter(member, artletter);
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
-        return buildListResponseDto(artletter, likesCnt, scrapCnt, isLiked, isScrapped);
+        return buildListResponseDto(artletter, likesCnt, scrapCnt, isLiked, isScraped);
     }
 
     // 아트레터 상세조회 api - 결과 조회 메서드 분리
-    private ArtletterDTO.ListResponseDto buildListResponseDto(Artletter artletter, int likesCnt, int scrapCnt, boolean isLiked, boolean isScrapped) {
+    private ArtletterDTO.ListResponseDto buildListResponseDto(Artletter artletter, int likesCnt, int scrapCnt, boolean isLiked, boolean isScraped) {
         return ArtletterDTO.ListResponseDto.builder()
                 .artletterId(artletter.getLetterId())
                 .title(artletter.getTitle())
@@ -304,7 +303,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .likesCnt(likesCnt)
                 .scrapsCnt(scrapCnt)
                 .isLiked(isLiked)
-                .isScraped(isScrapped)
+                .isScraped(isScraped)
                 .createdAt(artletter.getCreatedAt())
                 .updatedAt(artletter.getUpdatedAt())
                 .build();
@@ -328,7 +327,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, selected)
                 .stream().collect(Collectors.toMap(al -> al.getArtletter().getLetterId(), al -> true));
 
-        Map<Long, Boolean> scrappedMap = scrapRepository.findByMemberAndArtletterIn(member, selected)
+        Map<Long, Boolean> scrapedMap = scrapRepository.findByMemberAndArtletterIn(member, selected)
                 .stream().collect(Collectors.toMap(sc -> sc.getArtletter().getLetterId(), sc -> true));
 
         Map<Long, Integer> likesCountMap = artletterLikesRepository.countByArtletterIn(selected)
@@ -352,7 +351,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                         .likesCnt(likesCountMap.getOrDefault(artletter.getLetterId(), 0))
                         .scrapsCnt(scrapsCountMap.getOrDefault(artletter.getLetterId(), 0))
                         .isLiked(likedMap.getOrDefault(artletter.getLetterId(), false))
-                        .isScraped(scrappedMap.getOrDefault(artletter.getLetterId(), false))
+                        .isScraped(scrapedMap.getOrDefault(artletter.getLetterId(), false))
                         .createdAt(artletter.getCreatedAt())
                         .updatedAt(artletter.getUpdatedAt())
                         .build())
@@ -429,7 +428,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                                     .thumbnail(artletter.getThumbnail())
                                     .likesCnt(likesCnt)
                                     .scrapsCnt(scrapsCnt)
-                                    .scrappedAt(scrap.getCreatedAt())
+                                    .scrapedAt(scrap.getCreatedAt())
                                     .build();
                         }).toList()
                 )).toList();
@@ -469,7 +468,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                             .thumbnail(artletter.getThumbnail())
                             .likesCnt(likesCnt)
                             .scrapsCnt(scrapsCnt)
-                            .scrappedAt(scrap.getCreatedAt())
+                            .scrapedAt(scrap.getCreatedAt())
                             .build();
                 }).toList();
 
@@ -511,7 +510,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     private ArtletterDTO.SimpleArtletterResponseDto buildSimpleListResponseDto(Artletter artletter, Member member) {
         boolean isLiked = member != null && artletterLikesRepository.existsByMemberAndArtletter(member, artletter);
         int likesCnt = artletterLikesRepository.countByArtletter(artletter);
-        boolean isScrapped = member != null && scrapRepository.existsByMemberAndArtletter(member, artletter);
+        boolean isScraped = member != null && scrapRepository.existsByMemberAndArtletter(member, artletter);
         int scrapCnt = scrapRepository.countByArtletter(artletter);
 
         return ArtletterDTO.SimpleArtletterResponseDto.builder()
@@ -521,7 +520,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .likesCnt(likesCnt)
                 .scrapsCnt(scrapCnt)
                 .isLiked(isLiked)
-                .isScraped(isScrapped)
+                .isScraped(isScraped)
                 .updatedAt(artletter.getUpdatedAt())
                 .build();
     }
@@ -590,14 +589,14 @@ public class ArtletterServiceImpl implements ArtletterService {
 
         List<ArtletterDTO.CategoryResponseDto> response = artletters.getContent().stream()
                 .map(artletter -> {
-                    boolean isScrapped = (member != null) && scrapRepository.existsByMemberAndArtletter(member, artletter);
+                    boolean isScraped = (member != null) && scrapRepository.existsByMemberAndArtletter(member, artletter);
 
                     return ArtletterDTO.CategoryResponseDto.builder()
                             .artletterId(artletter.getLetterId())
                             .title(artletter.getTitle())
                             .thumbnail(artletter.getThumbnail())
                             .tags(artletter.getTag())
-                            .isScraped(isScrapped)
+                            .isScraped(isScraped)
                             .build();
                 }).toList();
 

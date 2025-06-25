@@ -8,6 +8,6 @@ import com.edison.project.global.security.CustomUserPrincipal;
 
 public interface LabelQueryService {
     List<LabelResponseDTO.ListResultDto> getLabelInfoList(CustomUserPrincipal userPrincipal);
-    LabelResponseDTO.DetailResultDto getLabelDetailInfoList(CustomUserPrincipal userPrincipal, Long labelId);
+    LabelResponseDTO.DetailResultDto getLabelDetailInfoList(CustomUserPrincipal userPrincipal, String labelIdx);
     LabelResponseDTO.LabelSyncResponseDTO syncLabel(CustomUserPrincipal userPrincipal, LabelRequestDTO.LabelSyncRequestDTO request);
 }

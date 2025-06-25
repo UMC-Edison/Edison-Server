@@ -20,13 +20,13 @@ public class BubbleRequestDto {
     @AllArgsConstructor
     public static class SyncDto {
         @NotNull(message = "(DTO)버블 ID는 필수입니다.")
-        private Long localIdx;
+        private String localIdx;
 
         private String title;
         private String content;
         private String mainImageUrl;
-        private Set<Long> labelIdxs;
-        private Set<Long> backlinkIds;
+        private Set<String> labelIdxs;
+        private Set<String> backlinkIds;
 
         @NotNull(message = "(DTO)삭제 여부는 필수입니다.")
         @JsonProperty("isDeleted")
