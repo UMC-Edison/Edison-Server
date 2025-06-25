@@ -11,6 +11,8 @@ import com.edison.project.domain.space.entity.Space;
 import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 public class SpaceServiceImpl implements SpaceService {
 
     private final MemberService memberService;
+
+    @Value("${openai.secret-key}")
     private String secretKey;
 
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -191,10 +195,12 @@ public class SpaceServiceImpl implements SpaceService {
 
             List<Space> spaces = new ArrayList<>();
             for (Map<String, Object> item : parsedData) {
-                Long id = ((Number) item.get("id")).longValue();
+                String localIdx = (String) item.get("id");
+
                 Optional<Bubble> optionalBubble = bubbles.stream()
-                        .filter(bubble -> bubble.getBubbleId().equals(id))
+                        .filter(bubble -> localIdx.equals(bubble.getLocalIdx()))
                         .findFirst();
+
 
                 if (optionalBubble.isEmpty()) continue;
 
@@ -220,7 +226,7 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("You are tasked with categorizing content items and positioning them on a 2D grid.\n");
         promptBuilder.append("Ensure that ALL provided bubbles are assigned unique coordinates, distributed evenly across four quadrants centered at (0,0).\n");
         promptBuilder.append("Each item should have the following attributes:\n");
-        promptBuilder.append("- id: A unique identifier for the item (integer).\n");
+        promptBuilder.append("- id: A unique identifier for the item (String).\n");
         promptBuilder.append("- content: A short keyword or phrase (1-2 words) representing the item's content.\n");
         promptBuilder.append("- x: A unique floating-point number for the x-coordinate (spread across four quadrants).\n");
         promptBuilder.append("- y: A unique floating-point number for the y-coordinate (spread across four quadrants).\n");
@@ -241,7 +247,7 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("### Response Format:\n");
         promptBuilder.append("[\n");
         promptBuilder.append("  {\n");
-        promptBuilder.append("    \"id\": 1,\n");
+        promptBuilder.append("    \"id\":  \"new-abc-123\",\n");
         promptBuilder.append("    \"content\": \"Keyword\",\n");
         promptBuilder.append("    \"x\": 1.5,\n");
         promptBuilder.append("    \"y\": -0.5,\n");
