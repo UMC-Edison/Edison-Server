@@ -301,45 +301,35 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal, ArtletterDTO.EditorRequestDto editorRequestDto) {
-        if (editorRequestDto == null || editorRequestDto.getArtletterIds() == null || editorRequestDto.getArtletterIds().isEmpty()) {
-            throw new GeneralException(ErrorStatus.ARTLETTER_ID_REQUIRED);
-        }
+    public ResponseEntity<ApiResponse> getEditorArtletters(CustomUserPrincipal userPrincipal) {
 
         Member member = Optional.ofNullable(userPrincipal)
                 .map(up -> memberRepository.findByMemberId(up.getMemberId()))
                 .orElse(null);
 
-        List<Long> artletterIds = editorRequestDto.getArtletterIds();
-        List<Artletter> artletters = artletterRepository.findByLetterIdIn(artletterIds);
+        // 전체 아트레터 중 랜덤 3개 조회
+        List<Artletter> allArtletters = artletterRepository.findAll();
 
-        if (artletters.size() < artletterIds.size()) {
-            Set<Long> foundArtletterIds = artletters.stream()
-                    .map(Artletter::getLetterId)
-                    .collect(Collectors.toSet());
+        // 랜덤 3개 추출
+        Collections.shuffle(allArtletters);
+        List<Artletter> selected = allArtletters.subList(0, 3);
 
-            for (Long artletterId : artletterIds) {
-                if (!foundArtletterIds.contains(artletterId)) {
-                    throw new GeneralException(ErrorStatus.LETTERS_NOT_FOUND, "요청된 아트레터가 존재하지 않습니다. (ID: " + artletterId + ")");
-                }
-            }
-        }
 
-        Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, artletters)
+        Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, selected)
                 .stream().collect(Collectors.toMap(al -> al.getArtletter().getLetterId(), al -> true));
 
-        Map<Long, Boolean> scrapedMap = scrapRepository.findByMemberAndArtletterIn(member, artletters)
+        Map<Long, Boolean> scrapedMap = scrapRepository.findByMemberAndArtletterIn(member, selected)
                 .stream().collect(Collectors.toMap(sc -> sc.getArtletter().getLetterId(), sc -> true));
 
-        Map<Long, Integer> likesCountMap = artletterLikesRepository.countByArtletterIn(artletters)
+        Map<Long, Integer> likesCountMap = artletterLikesRepository.countByArtletterIn(selected)
                 .stream()
                 .collect(Collectors.toMap(CountDto::getArtletterId, countDto -> countDto.getCount().intValue()));
 
-        Map<Long, Integer> scrapsCountMap = scrapRepository.countByArtletterIn(artletters)
+        Map<Long, Integer> scrapsCountMap = scrapRepository.countByArtletterIn(selected)
                 .stream()
                 .collect(Collectors.toMap(CountDto::getArtletterId, countDto -> countDto.getCount().intValue()));
 
-        List<ArtletterDTO.ListResponseDto> artletterList = artletters.stream()
+        List<ArtletterDTO.ListResponseDto> artletterList = selected.stream()
                 .map(artletter -> ArtletterDTO.ListResponseDto.builder()
                         .artletterId(artletter.getLetterId())
                         .title(artletter.getTitle())
@@ -367,7 +357,15 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     @Transactional
     public List<String> getRecommendCategory() {
-        return Arrays.asList("기술과학", "자연과학", "교육");
+
+        ArtletterCategory[] allCategories = ArtletterCategory.values();
+        List<ArtletterCategory> shuffled = new ArrayList<>(Arrays.asList(allCategories));
+        Collections.shuffle(shuffled);
+
+        return shuffled.stream()
+                .limit(3)
+                .map(Enum::name) // 한글 enum 이름을 문자열로 변환
+                .collect(Collectors.toList());
     }
 
 
