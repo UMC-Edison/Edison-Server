@@ -1,10 +1,8 @@
 package com.edison.project.domain.artletter.dto;
 
 import com.edison.project.domain.artletter.entity.ArtletterCategory;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
-import com.edison.project.domain.artletter.entity.Artletter;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -125,7 +123,7 @@ public class ArtletterDTO {
         private String thumbnail;
         private int likesCnt;
         private int scrapsCnt;
-        private LocalDateTime ScrapedAt;
+        private LocalDateTime scrapedAt;
     }
 
     @Data
