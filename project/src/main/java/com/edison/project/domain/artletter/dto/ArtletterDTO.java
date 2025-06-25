@@ -112,7 +112,7 @@ public class ArtletterDTO {
     public static class ScrapResponseDto {
         private Long artletterId;
         private int scrapsCnt;
-        private boolean isscraped;
+        private boolean isScraped;
     }
 
     @Data
@@ -125,7 +125,7 @@ public class ArtletterDTO {
         private String thumbnail;
         private int likesCnt;
         private int scrapsCnt;
-        private LocalDateTime scrapedAt;
+        private LocalDateTime ScrapedAt;
     }
 
     @Data
