@@ -3,11 +3,13 @@ package com.edison.project.domain.artletter.repository;
 import com.edison.project.domain.artletter.entity.Artletter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public class ArtletterRepositoryCustomImpl implements ArtletterRepositoryCustom {
@@ -17,31 +19,30 @@ public class ArtletterRepositoryCustomImpl implements ArtletterRepositoryCustom 
 
     @Override
     public Page<Artletter> searchByKeyword(String keyword, Pageable pageable) {
-        String queryStr = """
-        SELECT a FROM Artletter a
-        WHERE a.tag LIKE :keyword 
-        OR a.title LIKE :keyword 
-        OR a.content LIKE :keyword
-    """;
+        // Full-Text Search 기반 relevance 정렬
+        String nativeQueryStr = """
+            SELECT *, MATCH(tag, title, content) AGAINST (:keyword IN BOOLEAN MODE) AS relevance
+            FROM artletter
+            WHERE MATCH(tag, title, content) AGAINST (:keyword IN BOOLEAN MODE)
+            ORDER BY relevance DESC
+            LIMIT :limit OFFSET :offset
+        """;
 
         String countQueryStr = """
-        SELECT COUNT(a) FROM Artletter a
-        WHERE a.tag LIKE :keyword 
-        OR a.title LIKE :keyword 
-        OR a.content LIKE :keyword
-    """;
+            SELECT COUNT(*) FROM artletter
+            WHERE MATCH(tag, title, content) AGAINST (:keyword IN BOOLEAN MODE)
+        """;
 
-        TypedQuery<Artletter> query = entityManager.createQuery(queryStr, Artletter.class);
-        TypedQuery<Long> countQuery = entityManager.createQuery(countQueryStr, Long.class);
+        List<Artletter> resultList = entityManager.createNativeQuery(nativeQueryStr, Artletter.class)
+                .setParameter("keyword", keyword + "*")  // 부분 매치 지원
+                .setParameter("limit", pageable.getPageSize())
+                .setParameter("offset", pageable.getOffset())
+                .getResultList();
 
-        query.setParameter("keyword", "%" + keyword + "%");
-        countQuery.setParameter("keyword", "%" + keyword + "%");
+        Number totalCount = (Number) entityManager.createNativeQuery(countQueryStr)
+                .setParameter("keyword", keyword + "*")
+                .getSingleResult();
 
-        long totalRows = countQuery.getSingleResult();
-        query.setFirstResult((int) pageable.getOffset());
-        query.setMaxResults(pageable.getPageSize());
-
-        return new PageImpl<>(query.getResultList(), pageable, totalRows);
+        return new PageImpl<>(resultList, pageable, totalCount.longValue());
     }
-
 }

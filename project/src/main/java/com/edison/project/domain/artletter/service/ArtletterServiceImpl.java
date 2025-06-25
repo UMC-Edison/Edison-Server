@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -42,11 +43,17 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
 
-
     // 전체 아트레터 조회 API
     @Override
     public ResponseEntity<ApiResponse> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType) {
-        Page<Artletter> artletters = getPaginatedArtletters(page, size);
+        Pageable pageable = switch (sortType) {
+            case "likes" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likesCount"));
+            case "scraps" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "scrapsCount"));
+            case "latest" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            default -> PageRequest.of(page, size); // 정렬 없음
+        };
+
+        Page<Artletter> artletters = artletterRepository.findAll(pageable);
         PageInfo pageInfo = buildPageInfo(artletters);
 
         Member member = getMemberIfAuthenticated(userPrincipal);
@@ -55,14 +62,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
-        response = sortArtletters(response, sortType);
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
-    }
-
-    // 전체 아트레터 조회 api - 페이징된 아트레터 목록 조회
-    private Page<Artletter> getPaginatedArtletters(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return artletterRepository.findAll(pageable);
     }
 
     // 아트레터 등록 api
@@ -164,26 +164,27 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
-
-    // 아트레터 검색 api
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
         Member member = getMemberIfAuthenticated(userPrincipal);
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
+        Pageable pageable = switch (sortType) {
+            case "likes" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likesCount"));
+            case "scraps" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "scrapsCount"));
+            case "latest" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            default -> // relevance: native query에서 ORDER BY로 처리
+                    PageRequest.of(page, size);
+        };
 
+        Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
         PageInfo pageInfo = buildPageInfo(resultPage);
 
-        List<Artletter> sortedResults = sortSearchResults(resultPage.getContent(), keyword);
-        List<ArtletterDTO.SimpleArtletterResponseDto> response = sortedResults.stream()
+        List<ArtletterDTO.SimpleArtletterResponseDto> response = resultPage.getContent().stream()
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
-        response = sortArtletters(response, sortType);
-
-        // 🔥 추가된 부분: 최근 검색어 저장
+        // 최근 검색어 저장
         if (member != null && keyword != null && !keyword.trim().isEmpty()) {
             saveMemoryKeyword(member, keyword);
         }
@@ -191,16 +192,6 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
-    // 아트레터 검색 api - 검색 결과 기본 정렬
-    private List<Artletter> sortSearchResults(List<Artletter> artletters, String keyword) {
-        return artletters.stream()
-                .sorted(Comparator
-                        .comparing((Artletter a) -> a.getTag() != null && a.getTag().contains(keyword) ? 0 : 1)
-                        .thenComparing(a -> a.getTitle() != null && a.getTitle().contains(keyword) ? 0 : 1)
-                        .thenComparing(a -> a.getContent() != null && a.getContent().contains(keyword) ? 0 : 1)
-                )
-                .collect(Collectors.toList());
-    }
 
     // 최근 검색어 자동 저장 메서드
     private void saveMemoryKeyword(Member member, String memory) {
@@ -396,7 +387,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
     @Override
-    public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getScrapArtletters(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
@@ -442,7 +433,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         try {
-            ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
+            ArtletterCategory.valueOf(String.valueOf(category));
         } catch (IllegalArgumentException e) {
             throw new GeneralException(ErrorStatus.NOT_EXISTS_CATEGORY);
         }
@@ -525,28 +516,6 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .build();
     }
 
-    // 아트레터 스크랩/좋아요/최신순 정렬
-    private List<ArtletterDTO.SimpleArtletterResponseDto> sortArtletters(List<ArtletterDTO.SimpleArtletterResponseDto> artletters, String sortType) {
-        return switch (sortType) {
-            case "likes" -> artletters.stream()
-                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt)
-                            .reversed())
-                    .toList();
-
-            case "scraps" -> artletters.stream()
-                    .sorted(Comparator
-                            .comparing(ArtletterDTO.SimpleArtletterResponseDto::getScrapsCnt).reversed()
-                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed()
-                            .thenComparing(ArtletterDTO.SimpleArtletterResponseDto::getLikesCnt).reversed())
-                    .toList();
-
-            case "latest" -> artletters.stream()
-                    .sorted(Comparator.comparing(ArtletterDTO.SimpleArtletterResponseDto::getUpdatedAt).reversed())
-                    .toList();
-
-            default -> artletters;
-        };
-    }
 
     // 추천바 - 아트레터 요청 검증
     private List<Artletter> validateArtletterIds(List<Long> artletterIds) {
