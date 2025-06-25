@@ -317,21 +317,21 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .map(EditorPick::getArtletter)
                 .collect(Collectors.toList());
 
-        Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, selected)
+        Map<Long, Boolean> likedMap = artletterLikesRepository.findByMemberAndArtletterIn(member, artletters)
                 .stream().collect(Collectors.toMap(al -> al.getArtletter().getLetterId(), al -> true));
 
-        Map<Long, Boolean> scrapedMap = scrapRepository.findByMemberAndArtletterIn(member, selected)
+        Map<Long, Boolean> scrapedMap = scrapRepository.findByMemberAndArtletterIn(member, artletters)
                 .stream().collect(Collectors.toMap(sc -> sc.getArtletter().getLetterId(), sc -> true));
 
-        Map<Long, Integer> likesCountMap = artletterLikesRepository.countByArtletterIn(selected)
+        Map<Long, Integer> likesCountMap = artletterLikesRepository.countByArtletterIn(artletters)
                 .stream()
                 .collect(Collectors.toMap(CountDto::getArtletterId, countDto -> countDto.getCount().intValue()));
 
-        Map<Long, Integer> scrapsCountMap = scrapRepository.countByArtletterIn(selected)
+        Map<Long, Integer> scrapsCountMap = scrapRepository.countByArtletterIn(artletters)
                 .stream()
                 .collect(Collectors.toMap(CountDto::getArtletterId, countDto -> countDto.getCount().intValue()));
 
-        List<ArtletterDTO.ListResponseDto> artletterList = selected.stream()
+        List<ArtletterDTO.ListResponseDto> artletterList = artletters.stream()
                 .map(artletter -> ArtletterDTO.ListResponseDto.builder()
                         .artletterId(artletter.getLetterId())
                         .title(artletter.getTitle())
