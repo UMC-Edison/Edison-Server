@@ -25,8 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -42,13 +42,18 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final MemberMemoryRepository memberMemoryRepository;
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
-    private final Map<Long, LinkedList<String>> recentSearchKeywords = new HashMap<>();
-
 
     // 전체 아트레터 조회 API
     @Override
     public ResponseEntity<ApiResponse> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType) {
-        Page<Artletter> artletters = getPaginatedArtletters(page, size);
+        Pageable pageable = switch (sortType) {
+            case "likes" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likesCount"));
+            case "scraps" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "scrapsCount"));
+            case "latest" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            default -> PageRequest.of(page, size); // 정렬 없음
+        };
+
+        Page<Artletter> artletters = artletterRepository.findAll(pageable);
         PageInfo pageInfo = buildPageInfo(artletters);
 
         Member member = getMemberIfAuthenticated(userPrincipal);
@@ -57,14 +62,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
-        response = sortArtletters(response, sortType);
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
-    }
-
-    // 전체 아트레터 조회 api - 페이징된 아트레터 목록 조회
-    private Page<Artletter> getPaginatedArtletters(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return artletterRepository.findAll(pageable);
     }
 
     // 아트레터 등록 api
@@ -171,21 +169,13 @@ public class ArtletterServiceImpl implements ArtletterService {
     public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
         Member member = getMemberIfAuthenticated(userPrincipal);
 
-        Pageable pageable;
-        switch (sortType) {
-            case "likes":
-                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likesCount"));
-                break;
-            case "scraps":
-                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "scrapsCount"));
-                break;
-            case "latest":
-                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-                break;
-            default: // relevance: native query에서 ORDER BY로 처리
-                pageable = PageRequest.of(page, size);
-                break;
-        }
+        Pageable pageable = switch (sortType) {
+            case "likes" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likesCount"));
+            case "scraps" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "scrapsCount"));
+            case "latest" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+            default -> // relevance: native query에서 ORDER BY로 처리
+                    PageRequest.of(page, size);
+        };
 
         Page<Artletter> resultPage = artletterRepository.searchByKeyword(keyword, pageable);
         PageInfo pageInfo = buildPageInfo(resultPage);
@@ -399,7 +389,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
     @Override
-    public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getScrapArtletters(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
@@ -445,7 +435,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
         try {
-            ArtletterCategory artletterCategory = ArtletterCategory.valueOf(String.valueOf(category));
+            ArtletterCategory.valueOf(String.valueOf(category));
         } catch (IllegalArgumentException e) {
             throw new GeneralException(ErrorStatus.NOT_EXISTS_CATEGORY);
         }

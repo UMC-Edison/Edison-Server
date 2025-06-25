@@ -3,11 +3,13 @@ package com.edison.project.domain.artletter.repository;
 import com.edison.project.domain.artletter.entity.Artletter;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.TypedQuery;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public class ArtletterRepositoryCustomImpl implements ArtletterRepositoryCustom {

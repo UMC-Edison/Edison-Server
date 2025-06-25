@@ -26,7 +26,7 @@ public interface ArtletterService {
     List<ArtletterDTO.recommendKeywordDto> getRecommendKeyword(List<Long> artletterIds);
     List<String> getRecommendCategory();
 
-    ResponseEntity<ApiResponse> getScrapArtlettersByCategory(CustomUserPrincipal userPrincipal, Pageable pageable);
+    ResponseEntity<ApiResponse> getScrapArtletters(CustomUserPrincipal userPrincipal, Pageable pageable);
     ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable);
 
     ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request);

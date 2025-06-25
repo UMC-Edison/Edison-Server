@@ -134,12 +134,12 @@ public class ArtletterController {
 
     @GetMapping("/scrap")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(
+    public ResponseEntity<ApiResponse> getScrapArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return artletterService.getScrapArtlettersByCategory(userPrincipal, pageable);
+        return artletterService.getScrapArtletters(userPrincipal, pageable);
     }
 
     @GetMapping("/scrap/{category}")
