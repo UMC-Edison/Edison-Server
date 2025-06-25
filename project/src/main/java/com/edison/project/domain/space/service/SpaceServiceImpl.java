@@ -3,6 +3,7 @@ package com.edison.project.domain.space.service;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
+import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
@@ -10,7 +11,6 @@ import com.edison.project.domain.space.entity.Space;
 import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 public class SpaceServiceImpl implements SpaceService {
 
     private final MemberService memberService;
-    @Value("${openai_key}")
     private String secretKey;
 
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -43,8 +42,8 @@ public class SpaceServiceImpl implements SpaceService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MemberRepository memberRepository;
 
-    public SpaceServiceImpl(SpaceRepository spaceRepository,
-                            BubbleRepository bubbleRepository, MemberRepository memberRepository, MemberService memberService) {
+    public SpaceServiceImpl(SpaceRepository spaceRepository, BubbleRepository bubbleRepository,
+                            MemberRepository memberRepository, MemberService memberService) {
         this.spaceRepository = spaceRepository;
         this.bubbleRepository = bubbleRepository;
         this.memberRepository = memberRepository;
@@ -55,46 +54,68 @@ public class SpaceServiceImpl implements SpaceService {
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
         Long memberId = userPrincipal.getMemberId();
-        System.out.println("🔍 [Process Spaces] 실행 - 사용자 ID: " + memberId);
+        System.out.println(" [Process Spaces - 전체] 실행 - 사용자 ID: " + memberId);
 
         Pageable unlimitedPageable = PageRequest.of(0, Integer.MAX_VALUE);
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(memberId, unlimitedPageable);
         List<Bubble> bubbles = bubblePage.getContent();
-        System.out.println("🫧 사용자의 Bubble 개수: " + bubbles.size());
+        System.out.println(" 사용자의 Bubble 개수: " + bubbles.size());
 
         if (bubbles.isEmpty()) {
             return ApiResponse.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
         }
 
-        Map<Long, String> requestData = createRequestDataWithId(bubbles);
-
+        Map<String, String> requestData = createRequestDataWithLocalIdx(bubbles);
         String gptResponse = callGPTForGrouping(requestData, userIdentityKeywords);
-        System.out.println("🛠 GPT 응답: " + gptResponse);
-
         List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
-        System.out.println("✅ 변환된 Space 개수: " + newSpaces.size());
 
-        // ✅ 기존 데이터 삭제 후 새로운 데이터만 저장
         spaceRepository.deleteByMemberId(memberId);
-        spaceRepository.flush(); // Hibernate 세션 정리
+        spaceRepository.flush();
+        spaceRepository.saveAll(newSpaces);
 
-        spaceRepository.saveAll(newSpaces); // ✅ newSpaces만 저장
-
-        // ✅ 저장한 newSpaces를 직접 반환
         List<SpaceResponseDto> spaceDtos = newSpaces.stream()
-                .map(space -> new SpaceResponseDto(
-                        space.getBubble(),
-                        space.getX(),
-                        space.getY()
-                ))
+                .map(space -> new SpaceResponseDto(space.getBubble(), space.getX(), space.getY()))
                 .collect(Collectors.toList());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
 
-    private Map<Long, String> createRequestDataWithId(List<Bubble> bubbles) {
+    @Override
+    @Transactional
+    public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, List<String> localIdxs, String userIdentityKeywords) {
+        Long memberId = userPrincipal.getMemberId();
+        System.out.println("[Process Spaces - 선택] 실행 - 사용자 ID: " + memberId);
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
+
+        Set<Bubble> bubbleSet = bubbleRepository.findAllByMemberAndLocalIdxIn(member, new HashSet<>(localIdxs));
+        List<Bubble> bubbles = new ArrayList<>(bubbleSet);
+        System.out.println("선택된 Bubble 개수: " + bubbles.size());
+
+        if (bubbles.isEmpty()) {
+            return ApiResponse.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
+        }
+
+        Map<String, String> requestData = createRequestDataWithLocalIdx(bubbles);
+        String gptResponse = callGPTForGrouping(requestData, userIdentityKeywords);
+        List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
+
+        spaceRepository.deleteByMemberId(memberId);
+        spaceRepository.flush();
+        spaceRepository.saveAll(newSpaces);
+
+        List<SpaceResponseDto> spaceDtos = newSpaces.stream()
+                .map(space -> new SpaceResponseDto(space.getBubble(), space.getX(), space.getY()))
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
+    }
+
+
+    private Map<String, String> createRequestDataWithLocalIdx(List<Bubble> bubbles) {
         return bubbles.stream().collect(Collectors.toMap(
-                Bubble::getBubbleId,
+                Bubble::getLocalIdx,
                 bubble -> String.format("Title: %s\nContent: %s\nLabels: %s",
                         bubble.getTitle(),
                         bubble.getContent(),
@@ -105,14 +126,15 @@ public class SpaceServiceImpl implements SpaceService {
         ));
     }
 
-    private String callGPTForGrouping(Map<Long, String> requestData, String userIdentityKeywords) {
+
+    private String callGPTForGrouping(Map<String, String> requestData, String userIdentityKeywords) {
         String openaiApiKey = secretKey;
         if (openaiApiKey == null || openaiApiKey.isEmpty()) {
             throw new RuntimeException("OpenAI API 키가 환경변수에 설정되어 있지 않습니다.");
         }
 
         Map<String, Object> systemMessage = Map.of("role", "system", "content", "Forget everything before this prompt. Start fresh.");
-        Map<String, Object> userMessage = Map.of("role", "user", "content", buildPromptWithId(requestData, userIdentityKeywords));
+        Map<String, Object> userMessage = Map.of("role", "user", "content", buildPromptWithLocalIdx(requestData, userIdentityKeywords));
         Map<String, Object> requestBody = Map.of("model", "gpt-3.5-turbo", "messages", List.of(systemMessage, userMessage));
 
         try {
@@ -165,7 +187,7 @@ public class SpaceServiceImpl implements SpaceService {
 
             // JSON 배열 파싱
             List<Map<String, Object>> parsedData = objectMapper.readValue(contentJson, new TypeReference<List<Map<String, Object>>>() {});
-            System.out.println("✅ 변환된 Space 데이터: " + parsedData);
+            System.out.println("변환된 Space 데이터: " + parsedData);
 
             List<Space> spaces = new ArrayList<>();
             for (Map<String, Object> item : parsedData) {
@@ -190,8 +212,8 @@ public class SpaceServiceImpl implements SpaceService {
         }
     }
 
-    // ✅ GPT 요청 프롬프트 생성
-    private String buildPromptWithId(Map<Long, String> requestData, String userIdentityKeywords) {
+    // GPT 요청 프롬프트 생성
+    private String buildPromptWithLocalIdx(Map<String, String> requestData, String userIdentityKeywords) {
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("Forget everything before this prompt. Start fresh with no prior memory.\n");
 
@@ -253,12 +275,12 @@ public class SpaceServiceImpl implements SpaceService {
         promptBuilder.append("Consider this information when determining relationships and positions between items.\n\n");
 
 
-        Long lastKey = null;
-        for (Long key : requestData.keySet()) {
+        String lastKey = null;
+        for (String key : requestData.keySet()) {
             lastKey = key;
         }
 
-        for (Map.Entry<Long, String> entry : requestData.entrySet()) {
+        for (Map.Entry<String, String> entry : requestData.entrySet()) {
             promptBuilder.append("- ID: ").append(entry.getKey()).append("\n");
             promptBuilder.append(entry.getValue()).append("\n");
 

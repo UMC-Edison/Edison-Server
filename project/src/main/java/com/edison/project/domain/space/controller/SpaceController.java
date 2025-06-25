@@ -6,12 +6,10 @@ import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
 import com.edison.project.domain.space.service.SpaceService;
 import com.edison.project.global.security.CustomUserPrincipal;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,13 +25,22 @@ public class SpaceController {
         this.memberService = memberService;
     }
 
-    @GetMapping("/convert") // 스페이스로 변환
-    public ResponseEntity<?> convertSpaces(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal, Pageable pageable) {
+    @PostMapping("/convert")
+    public ResponseEntity<?> convertSelectedSpaces(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestBody List<String> localIdxs) {
         String userIdentityKeywords = memberService.getCategorizedIdentityKeywords(userPrincipal);
-        ResponseEntity<ApiResponse> response = spaceService.processSpaces(userPrincipal, pageable, userIdentityKeywords);
+        ResponseEntity<ApiResponse> response = spaceService.processSpaces(userPrincipal, localIdxs, userIdentityKeywords);
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
 
+    @GetMapping("/convert")
+    public ResponseEntity<?> convertAllSpaces(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        String userIdentityKeywords = memberService.getCategorizedIdentityKeywords(userPrincipal);
+        ResponseEntity<ApiResponse> response = spaceService.processSpaces(userPrincipal, PageRequest.of(0, Integer.MAX_VALUE), userIdentityKeywords);
+        List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
+        return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
+    }
 }
