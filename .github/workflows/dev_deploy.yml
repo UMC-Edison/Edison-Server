@@ -37,8 +37,8 @@ jobs:
           # Server Configuration
           echo "server.forward-headers-strategy=native" >> ./project/src/main/resources/application.properties
           # OpenAI
-          echo "openai_key=${{ secrets.OPENAI_KEY }}" >> ./project/src/main/resources/application.properties
-          echo "openai_key=${{ secrets.OPENAI_KEY }}" >> $GITHUB_ENV
+          echo "openai.secret_key=${{ secrets.OPENAI_KEY }}" >> ./project/src/main/resources/application.properties
+          echo "openai.secret_key=${{ secrets.OPENAI_KEY }}" >> $GITHUB_ENV
         shell: bash
 
       - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
