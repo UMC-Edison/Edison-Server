@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class GptConfig {
 
-    @Value("${openai_key}")
+    @Value("${openai.secret_key}")
     private String secretKey;
 
     private String model = "gpt-3.5-turbo";
