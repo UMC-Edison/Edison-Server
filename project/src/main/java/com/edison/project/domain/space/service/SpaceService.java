@@ -5,7 +5,10 @@ import com.edison.project.global.security.CustomUserPrincipal;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 
-public interface SpaceService {
+import java.util.List;
 
+public interface SpaceService {
+    ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, List<String> localIdxs, String userIdentityKeywords);
     ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords);
+
 }

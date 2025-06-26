@@ -84,12 +84,11 @@ public class ArtletterController {
     }
 
 
-    @PostMapping("/editor-pick")
+    @GetMapping("/editor-pick")
     public ResponseEntity<ApiResponse> getEditorArtletters(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestBody ArtletterDTO.EditorRequestDto editorRequestDto) {
-
-        return artletterService.getEditorArtletters(userPrincipal, editorRequestDto);
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        List<ArtletterDTO.ListResponseDto> response = artletterService.getEditorArtletters(userPrincipal);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
   
 
@@ -134,12 +133,12 @@ public class ArtletterController {
 
     @GetMapping("/scrap")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> getScrapArtlettersByCategory(
+    public ResponseEntity<ApiResponse> getScrapArtletters(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return artletterService.getScrapArtlettersByCategory(userPrincipal, pageable);
+        return artletterService.getScrapArtletters(userPrincipal, pageable);
     }
 
     @GetMapping("/scrap/{category}")
