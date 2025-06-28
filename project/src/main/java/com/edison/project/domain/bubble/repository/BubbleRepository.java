@@ -22,6 +22,7 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
 
     // 삭제되지 않은 Bubble만 조회
     Optional<Bubble> findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(Long memberId, String localIdx);
+    Optional<Bubble> findByMember_MemberIdAndLocalIdxAndIsTrashedTrue(Long memberId, String localIdx);
 
     Page<Bubble> findByMember_MemberIdAndIsTrashedFalse(Long memberId, Pageable pageable);
     Page<Bubble> findByMember_MemberIdAndIsTrashedTrue(Long memberId, Pageable pageable);
@@ -40,7 +41,5 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     Set<Bubble> findAllByMemberAndLocalIdxIn(Member member, Set<String> localIdxs);
     Optional<Bubble> findByMemberAndLocalIdx(Member member, String localIdx);
     Boolean existsByMemberAndLocalIdx(Member member, String localIdx);
-
-    List<Bubble> findByMember_MemberIdAndIsTrashedTrue(Long memberId);
 
 }

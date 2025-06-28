@@ -87,5 +87,53 @@ public class BubbleRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
+    // 버블 생성
+    @PostMapping
+    public ResponseEntity<ApiResponse> createBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+                                                    @RequestBody @Valid BubbleRequestDto.CreateDto request) {
+        BubbleResponseDto.CreateResultDto response = bubbleService.createBubble(userPrincipal, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+
+    }
+
+    //버블 삭제
+    @PatchMapping("/{bubbleId}/delete")
+    public ResponseEntity<ApiResponse> deleteBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable String bubbleId) {
+        BubbleResponseDto.DeleteRestoreResultDto result = bubbleService.deleteBubble(userPrincipal, bubbleId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
+
+    //버블 수정
+    @PatchMapping("/{bubbleId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> updateBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable String bubbleId,
+            @RequestBody @Valid BubbleRequestDto.CreateDto request) {
+        BubbleResponseDto.CreateResultDto response = bubbleService.updateBubble(userPrincipal, bubbleId, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    //버블 복원
+    @PatchMapping("/{bubbleId}/restore")
+    public ResponseEntity<ApiResponse> restoreBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable String bubbleId) {
+        BubbleResponseDto.DeleteRestoreResultDto result = bubbleService.restoreBubble(userPrincipal, bubbleId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
+
+    // 버블 hard-delete
+    @DeleteMapping("/trashbin/{bubbleId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> hardDeleteBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable String bubbleId) {
+        bubbleService.hardDelteBubble(userPrincipal, bubbleId);
+        return ApiResponse.onSuccess(SuccessStatus._OK);
+    }
+
 }
 

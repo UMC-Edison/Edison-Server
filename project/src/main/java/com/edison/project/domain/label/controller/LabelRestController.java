@@ -8,6 +8,7 @@ import com.edison.project.domain.label.service.LabelCommandService;
 import com.edison.project.domain.label.service.LabelQueryService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,4 +52,27 @@ public class LabelRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
+    @PostMapping
+    public ResponseEntity<ApiResponse> createLabel(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestBody LabelRequestDTO.CreateDto request) {
+        LabelResponseDTO.LabelSimpleInfoDto response = labelCommandService.createLabel(userPrincipal, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    @PatchMapping("/{labelId}")
+    public ResponseEntity<ApiResponse> updateLabel(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable String labelId,
+            @RequestBody @Valid LabelRequestDTO.CreateDto request) {
+        LabelResponseDTO.LabelSimpleInfoDto response = labelCommandService.updateLabel(userPrincipal, labelId, request);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
+    @DeleteMapping("/{labelId}")
+    public ResponseEntity<ApiResponse> deleteLabel(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, @PathVariable @NotNull String labelId) {
+        labelCommandService.deleteLabel(userPrincipal, labelId);
+        return ApiResponse.onSuccess(SuccessStatus._OK);
+
+    }
 }

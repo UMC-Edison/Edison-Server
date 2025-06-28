@@ -44,4 +44,28 @@ public class BubbleResponseDto {
         private LocalDateTime deletedAt;
     }
 
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CreateResultDto {
+        private String localIdx;
+        private String title;
+        private String content;
+        private String mainImageUrl;
+        private List<LabelResponseDTO.LabelSimpleInfoDto> labels;
+        private Set<String> backlinkIdxs;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DeleteRestoreResultDto {
+        private String localIdx;
+        private boolean isTrashed;
+    }
+
 }
