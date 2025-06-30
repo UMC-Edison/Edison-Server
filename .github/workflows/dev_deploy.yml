@@ -44,8 +44,8 @@ jobs:
           # aws
           echo "cloud.aws.credentials.access-key=${{ secrets.AWS_ACCESS_KEY }}" >> ./project/src/main/resources/application.properties
           echo "cloud.aws.credentials.secret-key=${{ secrets.AWS_SECRET_KEY }}" >> ./project/src/main/resources/application.properties
-          echo "cloud.aws.region.static=ap-southeast-2" >> ./src/main/resources/application.properties
-          echo "cloud.aws.s3.bucket=${AWS_S3_BUCKET}" >> ./src/main/resources/application.properties
+          echo "cloud.aws.region.static=ap-southeast-2" >> ./project/src/main/resources/application.properties
+          echo "cloud.aws.s3.bucket=${AWS_S3_BUCKET}" >> ./project/src/main/resources/application.properties
         shell: bash
 
       - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
