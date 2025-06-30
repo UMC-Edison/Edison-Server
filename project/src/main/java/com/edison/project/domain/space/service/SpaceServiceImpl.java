@@ -1,11 +1,17 @@
 package com.edison.project.domain.space.service;
 
+import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
+import com.edison.project.domain.bubble.dto.BubbleResponseDto;
+import com.edison.project.domain.bubble.entity.BubbleBacklink;
+import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.service.MemberService;
+import com.edison.project.domain.space.dto.SpaceMapRequestDto;
+import com.edison.project.domain.space.dto.SpaceMapResponseDto;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
 import com.edison.project.domain.space.entity.Space;
 import com.edison.project.domain.space.repository.SpaceRepository;
@@ -45,15 +51,53 @@ public class SpaceServiceImpl implements SpaceService {
     private final BubbleRepository bubbleRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MemberRepository memberRepository;
+    private final AiClient aiClient;
 
     public SpaceServiceImpl(SpaceRepository spaceRepository, BubbleRepository bubbleRepository,
-                            MemberRepository memberRepository, MemberService memberService) {
+                            MemberRepository memberRepository, MemberService memberService, AiClient aiClient) {
         this.spaceRepository = spaceRepository;
         this.bubbleRepository = bubbleRepository;
         this.memberRepository = memberRepository;
         this.memberService = memberService;
+        this.aiClient = aiClient;
     }
 
+    private SpaceMapRequestDto.MapRequestDto convertToBubbleRequestDto(Bubble bubble) {
+        return SpaceMapRequestDto.MapRequestDto.builder()
+                .id(bubble.getLocalIdx())
+                .content(bubble.getContent())
+                .build();
+    };
+
+    @Override
+    @Transactional
+    public List<SpaceMapResponseDto.MapResponseDto> mapBubbles(CustomUserPrincipal userPrincipal) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        List<Bubble> bubbles = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(member.getMemberId());
+
+        List<SpaceMapRequestDto.MapRequestDto> dtoList = bubbles.stream()
+                .map(this::convertToBubbleRequestDto)
+                .collect(Collectors.toList());
+
+        SpaceMapRequestDto requestDto = SpaceMapRequestDto.builder()
+                .memos(dtoList)
+                .build();
+
+        List<Map<String, Object>> aiResults = aiClient.sendToAiServer(requestDto);
+
+        return aiResults.stream()
+                .map(result -> SpaceMapResponseDto.MapResponseDto.builder()
+                        .localIdx((String) result.get("id"))
+                        .x(Double.parseDouble(result.get("x").toString()))
+                        .y(Double.parseDouble(result.get("y").toString()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /*
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
@@ -297,7 +341,7 @@ public class SpaceServiceImpl implements SpaceService {
 
         return promptBuilder.toString();
     }
-
+    */
 }
 
 
