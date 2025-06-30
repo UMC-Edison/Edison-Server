@@ -1,6 +1,8 @@
 package com.edison.project.domain.space.service;
 
 import com.edison.project.domain.space.dto.SpaceMapRequestDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,14 @@ public class AiClient {
 
     public List<Map<String, Object>> sendToAiServer(SpaceMapRequestDto requestDto) {
         String aiServerUrl = "http://52.79.91.137:8000/ai";
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            System.out.println("🔍 보내는 JSON: " + mapper.writeValueAsString(requestDto));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
