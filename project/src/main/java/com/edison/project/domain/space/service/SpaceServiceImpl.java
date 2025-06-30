@@ -54,6 +54,8 @@ public class SpaceServiceImpl implements SpaceService {
         this.memberService = memberService;
     }
 
+
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
