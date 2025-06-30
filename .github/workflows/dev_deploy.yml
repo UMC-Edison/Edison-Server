@@ -20,6 +20,8 @@ jobs:
 
       - name: Make application.properties  # application.properties 파일 생성
         run: |
+          mkdir -p ./project/src/main/resources/
+          
           echo "spring.datasource.url=${{ secrets.RDS_URL }}" > ./project/src/main/resources/application.properties
           echo "spring.datasource.username=${{ secrets.RDS_USERNAME }}" >> ./project/src/main/resources/application.properties
           echo "spring.datasource.password=${{ secrets.RDS_PASSWORD }}" >> ./project/src/main/resources/application.properties
