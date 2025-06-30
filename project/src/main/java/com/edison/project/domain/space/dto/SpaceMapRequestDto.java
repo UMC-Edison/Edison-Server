@@ -5,10 +5,9 @@ import lombok.*;
 import java.util.List;
 
 @Getter
-@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class SpaceMapRequestDto {
 
     private List<MapRequestDto> memos;
@@ -18,7 +17,7 @@ public class SpaceMapRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MapRequestDto {
-        private String localIdx;
+        private String id;
         private String content;
     }
 }

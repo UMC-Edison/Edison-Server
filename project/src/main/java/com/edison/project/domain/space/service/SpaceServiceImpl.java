@@ -64,7 +64,7 @@ public class SpaceServiceImpl implements SpaceService {
 
     private SpaceMapRequestDto.MapRequestDto convertToBubbleRequestDto(Bubble bubble) {
         return SpaceMapRequestDto.MapRequestDto.builder()
-                .localIdx(bubble.getLocalIdx())
+                .id(bubble.getLocalIdx())
                 .content(bubble.getContent())
                 .build();
     };
@@ -76,7 +76,7 @@ public class SpaceServiceImpl implements SpaceService {
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        List<Bubble> bubbles = bubbleRepository.findByMemberIdAndIsTrashedFalse(member.getMemberId());
+        List<Bubble> bubbles = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(member.getMemberId());
 
         List<SpaceMapRequestDto.MapRequestDto> dtoList = bubbles.stream()
                 .map(this::convertToBubbleRequestDto)

@@ -34,6 +34,7 @@ public class SpaceController {
         return ApiResponse.onSuccess(SuccessStatus._OK, space);
     }
 
+    /*
     @PostMapping("/convert")
     public ResponseEntity<?> convertSelectedSpaces(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
@@ -52,4 +53,6 @@ public class SpaceController {
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
+    
+     */
 }
