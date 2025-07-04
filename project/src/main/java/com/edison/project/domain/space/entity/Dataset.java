@@ -19,4 +19,8 @@ public class Dataset {
     private Long id;
 
     private String content;
+
+    public Dataset(String content) {
+        this.content = content;
+    }
 }

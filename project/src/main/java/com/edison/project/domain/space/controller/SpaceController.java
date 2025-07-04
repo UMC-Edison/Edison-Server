@@ -34,6 +34,13 @@ public class SpaceController {
         return ApiResponse.onSuccess(SuccessStatus._OK, space);
     }
 
+    // 데이터셋 생성 openAPI
+    @PostMapping("/generate")
+    public ResponseEntity<ApiResponse> generateSentence(@RequestParam(defaultValue = "poetic") String type) {
+        String sentence = spaceService.generateAndSave(type);
+        return ApiResponse.onSuccess(SuccessStatus._OK, sentence);
+    }
+
     /*
     @PostMapping("/convert")
     public ResponseEntity<?> convertSelectedSpaces(
@@ -53,6 +60,6 @@ public class SpaceController {
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
-    
+
      */
 }
