@@ -13,7 +13,10 @@ import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.domain.space.dto.SpaceMapRequestDto;
 import com.edison.project.domain.space.dto.SpaceMapResponseDto;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
+import com.edison.project.domain.space.entity.Dataset;
 import com.edison.project.domain.space.entity.Space;
+import org.springframework.http.MediaType;
+import com.edison.project.domain.space.repository.DatasetRepository;
 import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
@@ -27,9 +30,12 @@ import com.edison.project.global.security.CustomUserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.*;
@@ -47,15 +53,19 @@ public class SpaceServiceImpl implements SpaceService {
 
     private static final String OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
+    private final RestTemplate restTemplate;
     private final SpaceRepository spaceRepository;
+    private final DatasetRepository datasetRepository;
     private final BubbleRepository bubbleRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final MemberRepository memberRepository;
     private final AiClient aiClient;
 
-    public SpaceServiceImpl(SpaceRepository spaceRepository, BubbleRepository bubbleRepository,
+    public SpaceServiceImpl(RestTemplate restTemplate, SpaceRepository spaceRepository, DatasetRepository datasetRepository, BubbleRepository bubbleRepository,
                             MemberRepository memberRepository, MemberService memberService, AiClient aiClient) {
+        this.restTemplate = restTemplate;
         this.spaceRepository = spaceRepository;
+        this.datasetRepository = datasetRepository;
         this.bubbleRepository = bubbleRepository;
         this.memberRepository = memberRepository;
         this.memberService = memberService;
@@ -95,6 +105,56 @@ public class SpaceServiceImpl implements SpaceService {
                         .y(Double.parseDouble(result.get("y").toString()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public String generateAndSave(String type) {
+        String prompt = switch (type) {
+            case "poem" -> "앞서 얘기했던 것과 겹치지 않는 내용의 감성적인 시 한 편을 생성해줘.";
+            case "novel" -> "앞서 얘기했던 것과 겹치지 않는 내용의 감성적인 소설 문장을 한 문단 써줘.";
+            case "science" -> "앞서 얘기했던 것과 겹치지 않는 새로운 분야의 과학적 사실 내용을 한 문단 써줘.";
+            case "diary" -> "앞서 얘기했던 것과 겹치지 않게 일상적 일기나 대화를 한 문단 써줘.";
+            case "direct" -> "앞서 얘기했던 것과 겹치지 않는 연출, 아이디어, 영감에 대한 내용을 한 문단 써줘.";
+            case "art" -> "앞서 얘기했던 것과 겹치지 않게 예술과 관련된 모든 분야의 내용 중 흥미로운 내용을 한 문단 써줘.";
+            case "recent" -> "앞서 얘기했던 것과 겹치지 않게 현재 이슈가 되고 있는 내용들에 대한 사실들로 한 문단 써줘. 정치적 내용 제외하고";
+            default -> "앞대답과는 다른 내용의 감성적이고 아름다운 문장을 여러 줄 생성해줘.";
+        };
+
+        String sentence = callOpenAPI(prompt);
+        datasetRepository.save(new Dataset(sentence));
+        return sentence;
+    }
+
+    private String callOpenAPI(String prompt) {
+
+        String openaiApiKey = secretKey;
+        if (openaiApiKey == null || openaiApiKey.isEmpty()) {
+            throw new RuntimeException("OpenAI API 키가 환경변수에 설정되어 있지 않습니다.");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + openaiApiKey);
+
+        Map<String, Object> message = Map.of("role", "user", "content", prompt);
+        Map<String, Object> body = Map.of(
+                "model", "gpt-3.5-turbo",
+                "messages", List.of(message),
+                "temperature", 0.9
+        );
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+        ResponseEntity<Map> response = restTemplate.postForEntity(OPENAI_API_URL, request, Map.class);
+
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+        Map<String, Object> messageMap = (Map<String, Object>) choices.get(0).get("message");
+        String content = (String) messageMap.get("content");
+        content = content.replaceAll("(?m)^\\d+\\.\\s*", "")  // "1. " 같은 번호 제거
+                .replace("\n", " ")                  // 줄바꿈 제거
+                .trim();
+
+        return content;
     }
 
     /*
