@@ -111,18 +111,20 @@ public class SpaceServiceImpl implements SpaceService {
     @Transactional
     public String generateAndSave(String type) {
         String prompt = switch (type) {
-            case "poem" -> "앞서 얘기했던 것과 겹치지 않는 내용의 감성적인 시 한 편을 생성해줘.";
-            case "novel" -> "앞서 얘기했던 것과 겹치지 않는 내용의 감성적인 소설 문장을 한 문단 써줘.";
-            case "science" -> "앞서 얘기했던 것과 겹치지 않는 새로운 분야의 과학적 사실 내용을 한 문단 써줘.";
-            case "diary" -> "앞서 얘기했던 것과 겹치지 않게 일상적 일기나 대화를 한 문단 써줘.";
-            case "direct" -> "앞서 얘기했던 것과 겹치지 않는 연출, 아이디어, 영감에 대한 내용을 한 문단 써줘.";
-            case "art" -> "앞서 얘기했던 것과 겹치지 않게 예술과 관련된 모든 분야의 내용 중 흥미로운 내용을 한 문단 써줘.";
-            case "recent" -> "앞서 얘기했던 것과 겹치지 않게 현재 이슈가 되고 있는 내용들에 대한 사실들로 한 문단 써줘. 정치적 내용 제외하고";
-            default -> "앞대답과는 다른 내용의 감성적이고 아름다운 문장을 여러 줄 생성해줘.";
+            case "poem" -> "앞서 얘기했던 것과 절대 겹치지 않는 내용의 감성적인 시 한 편을 생성해줘. 밤이나 바다는 쓰지마.";
+            case "novel" -> "앞서 얘기했던 것과 절대 겹치지 않는 내용의 감성적인 소설 문장을 한 문단 써줘. 밤이나 바다는 쓰지마.";
+            case "science" -> "앞서 얘기했던 것과 절대 겹치지 않는 새로운 분야의 과학적 사실 내용을 한 문단 써줘. 우주에 대한 내용은 쓰지마.";
+            case "diary" -> "앞서 얘기했던 것과 절대 겹치지 않게 일상적 메모나 대화를 한 문단 써줘. 특이한 일상에 대한 메모였으면 좋겠어.";
+            case "direct" -> "앞서 얘기했던 것과 절대 겹치지 않는 연출, 아이디어, 영감에 대한 내용을 한 문단 써줘. 특정 분야에 대한 내용을 자세하게 써줘도 좋아.";
+            case "art" -> "앞서 얘기했던 것과 절대 겹치지 않게 예술과 관련된 내용 중 흥미로운 내용을 한 문단 써줘. 특정 분야에 대한 내용을 자세하게 써줘도 좋아.";
+            case "recent" -> "앞서 얘기했던 것과 절대 겹치지 않고 현재 이슈가 되고 있는 내용들에 대한 사실들로 한 문단 써줘. 코로나19와 정치적 환경적 내용 제외하고";
+            case "culture" -> "앞서 얘기했던 것과 절대 겹치지 않게 다른 나라 문화에 대한 사실들로 한 문단 써줘. 정치적 내용 제외하고 특정 문화에 대한 내용을 자세하게 써줘도 좋아.";
+            case "dataset" -> "앞서 얘기했던 것과 절대 겹치지 않게 doc2vec 모델에 사전학습할 문장들로 한 문단 써줘.";
+            default -> "앞서 얘기했던 것과 절대 겹치지 않는 내용의 감성적이고 아름다운 문장을 여러 줄 생성해줘. 밤이나 바다는 쓰지마.";
         };
 
         String sentence = callOpenAPI(prompt);
-        datasetRepository.save(new Dataset(sentence));
+        datasetRepository.save(new Dataset(sentence, type));
         return sentence;
     }
 

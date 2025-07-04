@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/category").permitAll() // 추천 카테고리
                         .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/keyword").permitAll() // 추천 키워드
                         .requestMatchers(HttpMethod.POST, "/artletters/editor-pick").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/spaces/generate").permitAll()
 
                         .anyRequest().authenticated()
                 )

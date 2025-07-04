@@ -18,7 +18,11 @@ public class Dataset {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    public Dataset(String content) {
+    @Column(name = "category")
+    private String category;
+
+    public Dataset(String content, String category) {
         this.content = content;
+        this.category = category;
     }
 }
