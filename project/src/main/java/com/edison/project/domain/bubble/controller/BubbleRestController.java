@@ -131,7 +131,7 @@ public class BubbleRestController {
     public ResponseEntity<ApiResponse> hardDeleteBubble(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @PathVariable String bubbleId) {
-        bubbleService.hardDelteBubble(userPrincipal, bubbleId);
+        bubbleService.hardDeleteBubble(userPrincipal, bubbleId);
         return ApiResponse.onSuccess(SuccessStatus._OK);
     }
 

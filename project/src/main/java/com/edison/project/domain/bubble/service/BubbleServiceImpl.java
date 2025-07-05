@@ -565,7 +565,7 @@ public class BubbleServiceImpl implements BubbleService {
 
     @Override
     @Transactional
-    public void hardDelteBubble(CustomUserPrincipal userPrincipal, String bubbleId) {
+    public void hardDeleteBubble(CustomUserPrincipal userPrincipal, String bubbleId) {
 
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));

@@ -26,5 +26,5 @@ public interface BubbleService {
     BubbleResponseDto.CreateResultDto updateBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx, BubbleRequestDto.CreateDto requestDto);
     BubbleResponseDto.DeleteRestoreResultDto deleteBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx);
     BubbleResponseDto.DeleteRestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx);
-    void hardDelteBubble(CustomUserPrincipal userPrincipal, String bubbleId);
+    void hardDeleteBubble(CustomUserPrincipal userPrincipal, String bubbleId);
 }
