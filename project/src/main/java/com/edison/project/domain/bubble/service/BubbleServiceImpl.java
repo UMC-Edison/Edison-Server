@@ -26,8 +26,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
@@ -430,6 +428,152 @@ public class BubbleServiceImpl implements BubbleService {
                         .color(l.getColor())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    /** 버블 생성 */
+    @Override
+    @Transactional
+    public BubbleResponseDto.CreateResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.CreateDto requestDto) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        if (bubbleRepository.existsByMemberAndLocalIdx(member, requestDto.getLocalIdx())) {
+            throw new GeneralException(ErrorStatus.BUBBLE_ALREADY_EXISTS);  // 예외 정의 필요
+        }
+
+        Set<Bubble> backlinks = validateBacklinks(requestDto.getBacklinkIds(), member);
+        Set<Label> labels = validateLabels(requestDto.getLabelIdxs(), member);
+
+        Bubble bubble = Bubble.builder()
+                .localIdx(requestDto.getLocalIdx())
+                .member(member)
+                .title(requestDto.getTitle())
+                .content(requestDto.getContent())
+                .mainImg(requestDto.getMainImageUrl())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        // backlink들을 BubbleBacklink로 변환
+        Set<BubbleBacklink> backlinkEntities = backlinks.stream()
+                .map(target -> BubbleBacklink.builder()
+                        .bubble(bubble)
+                        .backlinkBubble(target)
+                        .build())
+                .collect(Collectors.toSet());
+        bubble.getBacklinks().addAll(backlinkEntities);
+
+        Set<BubbleLabel> labelEntities = labels.stream()
+                .map(label -> BubbleLabel.builder()
+                        .bubble(bubble)
+                        .label(label)
+                        .build())
+                .collect(Collectors.toSet());
+        bubble.getLabels().addAll(labelEntities);
+
+        // 저장
+        Bubble savedBubble = bubbleRepository.save(bubble);
+
+        // ResponseDto 반환
+        return BubbleResponseDto.CreateResultDto.builder()
+                .localIdx(savedBubble.getLocalIdx())
+                .title(savedBubble.getTitle())
+                .content(savedBubble.getContent())
+                .mainImageUrl(savedBubble.getMainImg())
+                .labels(mapLabelsToDto(labels))
+                .backlinkIdxs(savedBubble.getBacklinks().stream()
+                        .map(BubbleBacklink::getBacklinkBubble)
+                        .map(Bubble::getLocalIdx)
+                        .collect(Collectors.toSet()))
+                .createdAt(savedBubble.getCreatedAt())
+                .updatedAt(savedBubble.getUpdatedAt())
+                .build();
+    }
+
+    /** 버블 소프트 딜리트 */
+    @Override
+    @Transactional
+    public BubbleResponseDto.DeleteRestoreResultDto deleteBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx){
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(
+                        member.getMemberId(), BubbleLocalIdx)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        bubble.softDelete();
+
+        return BubbleResponseDto.DeleteRestoreResultDto.builder()
+                .localIdx(bubble.getLocalIdx())
+                .isTrashed(bubble.isTrashed())
+                .build();
+    }
+
+    /** 버블 수정 */
+    @Override
+    @Transactional
+    public BubbleResponseDto.CreateResultDto updateBubble(CustomUserPrincipal userPrincipal, String bubbleLocalIdx, BubbleRequestDto.CreateDto requestDto) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(
+                        member.getMemberId(), bubbleLocalIdx)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        Set<Bubble> backlinks = validateBacklinks(requestDto.getBacklinkIds(), member);
+        Set<Label> labels = validateLabels(requestDto.getLabelIdxs(), member);
+
+        bubble.update(requestDto.getTitle(), requestDto.getContent(), requestDto.getMainImageUrl(), labels, backlinks);
+
+        bubbleRepository.save(bubble);
+
+        return BubbleResponseDto.CreateResultDto.builder()
+                .localIdx(bubble.getLocalIdx())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .mainImageUrl(bubble.getMainImg())
+                .labels(mapLabelsToDto(labels))
+                .backlinkIdxs(bubble.getBacklinks().stream()
+                        .map(BubbleBacklink::getBacklinkBubble)
+                        .map(Bubble::getLocalIdx)
+                        .collect(Collectors.toSet()))
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .build();
+    }
+
+    /** 버블 복구 */
+    @Override
+    @Transactional
+    public BubbleResponseDto.DeleteRestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx){
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedTrue(
+                        member.getMemberId(), BubbleLocalIdx)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        bubble.restore();
+
+        return BubbleResponseDto.DeleteRestoreResultDto.builder()
+                .localIdx(bubble.getLocalIdx())
+                .isTrashed(bubble.isTrashed())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void hardDeleteBubble(CustomUserPrincipal userPrincipal, String bubbleId) {
+
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedTrue(member.getMemberId(), bubbleId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
+
+        bubbleRepository.delete(bubble);
     }
 
 }

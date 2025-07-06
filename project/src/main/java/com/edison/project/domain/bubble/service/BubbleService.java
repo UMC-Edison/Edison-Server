@@ -21,4 +21,10 @@ public interface BubbleService {
     ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable);
 
     BubbleResponseDto.SyncResultDto syncBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.SyncDto requestDto);
+
+    BubbleResponseDto.CreateResultDto createBubble(CustomUserPrincipal userPrincipal, BubbleRequestDto.CreateDto requestDto);
+    BubbleResponseDto.CreateResultDto updateBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx, BubbleRequestDto.CreateDto requestDto);
+    BubbleResponseDto.DeleteRestoreResultDto deleteBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx);
+    BubbleResponseDto.DeleteRestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx);
+    void hardDeleteBubble(CustomUserPrincipal userPrincipal, String bubbleId);
 }
