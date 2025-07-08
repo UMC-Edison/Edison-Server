@@ -27,4 +27,6 @@ public interface BubbleService {
     BubbleResponseDto.DeleteRestoreResultDto deleteBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx);
     BubbleResponseDto.DeleteRestoreResultDto restoreBubble(CustomUserPrincipal userPrincipal, String BubbleLocalIdx);
     void hardDeleteBubble(CustomUserPrincipal userPrincipal, String bubbleId);
+
+    ResponseEntity<ApiResponse> getAllBubbles(CustomUserPrincipal userPrincipal, Pageable pageable);
 }

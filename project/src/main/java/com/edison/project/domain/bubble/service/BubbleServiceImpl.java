@@ -39,6 +39,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@org.springframework.transaction.annotation.Transactional(readOnly = true)
 public class BubbleServiceImpl implements BubbleService {
 
     private final BubbleRepository bubbleRepository;
@@ -76,7 +77,7 @@ public class BubbleServiceImpl implements BubbleService {
     @Transactional
     public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberId(userPrincipal.getMemberId(), pageable);
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
@@ -574,6 +575,24 @@ public class BubbleServiceImpl implements BubbleService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         bubbleRepository.delete(bubble);
+    }
+
+    /** 모든 버블 조회(소프트딜리트 포함) */
+    @Override
+    public ResponseEntity<ApiResponse> getAllBubbles(CustomUserPrincipal userPrincipal, Pageable pageable){
+
+        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberId(userPrincipal.getMemberId(), pageable);
+
+        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
+                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+
+        // Bubble 데이터 변환
+        List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
+                .map(this::convertToBubbleResponseDto)
+                .collect(Collectors.toList());
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+
     }
 
 }
