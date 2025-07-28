@@ -66,6 +66,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     filterChain.doFilter(request, response);
                     return;
                 }
+
+                if (requestURI.startsWith("/api/s3/")) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
             }
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
