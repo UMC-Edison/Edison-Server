@@ -4,9 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.context.annotation.ComponentScan;
 
 @EnableJpaAuditing
 @SpringBootApplication
+@ComponentScan(basePackages = "com.edison.project")
 @EntityScan(basePackages = "com.edison.project.domain")
 public class ProjectApplication {
 
