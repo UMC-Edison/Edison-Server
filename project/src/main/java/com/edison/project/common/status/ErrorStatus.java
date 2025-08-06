@@ -49,6 +49,7 @@ public enum ErrorStatus {
     BACKLINK_NOT_FOUND(HttpStatus.BAD_REQUEST, "BUBBLE4003", "백링크 버블을 찾을 수 없습니다."),
     LABELS_TOO_MANY(HttpStatus.BAD_REQUEST, "BUBBLE_LABEL4001", "라벨 개수는 최대 3개까지 가능합니다."),
     BACKLINK_FORBIDDEN(HttpStatus.FORBIDDEN, "BUBBLE4005", "권한이 없는 백링크 버블입니다."),
+    BUBBLE_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "BUBBLE4006", "이미 존재하는 localIdx 버블입니다."),
 
     // 라벨 관련 에러
     LABELS_NOT_FOUND(HttpStatus.BAD_REQUEST, "LABEL4001", "라벨을 찾을 수 없습니다."),

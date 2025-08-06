@@ -32,4 +32,14 @@ public class LabelRequestDTO {
         private LocalDateTime deletedAt;
     }
 
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CreateDto {
+        private String localIdx;
+        private String name;
+        private int color;
+    }
+
 }

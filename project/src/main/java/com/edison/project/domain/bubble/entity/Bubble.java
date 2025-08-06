@@ -1,5 +1,6 @@
 package com.edison.project.domain.bubble.entity;
 
+import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.*;
@@ -71,8 +72,7 @@ public class Bubble {
         this.content = content;
         this.mainImg = mainImg;
         // 기존 라벨 초기화 후 새로운 라벨 추가
-        this.labels.clear();
-        this.labels.addAll(labels);
+        this.labels = labels != null ? new HashSet<>(labels) : new HashSet<>();
         this.isTrashed = isTrashed;
         this.setCreatedAt(createdAt);
         this.setUpdatedAt(updatedAt);
@@ -93,6 +93,55 @@ public class Bubble {
     public void setTrashed (boolean trashed) {
         this.isTrashed = trashed;
     }
+
+    public void softDelete() {
+        this.isTrashed = true;
+        this.updatedAt = LocalDateTime.now();
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        this.isTrashed = false;
+        this.deletedAt = null;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void update(String title, String content, String mainImg,
+                       Set<Label> labels, Set<Bubble> backlinks) {
+
+        this.title = title;
+        this.content = content;
+        this.mainImg = mainImg;
+
+        // 기존 라벨/백링크 모두 제거
+        this.labels.clear();
+        this.backlinks.clear();
+
+        // 새 라벨들 매핑
+        if (labels != null) {
+            for (Label label : labels) {
+                BubbleLabel bubbleLabel = BubbleLabel.builder()
+                        .bubble(this)
+                        .label(label)
+                        .build();
+                this.labels.add(bubbleLabel);
+            }
+        }
+
+        // 새 백링크들 매핑
+        if (backlinks != null) {
+            for (Bubble target : backlinks) {
+                BubbleBacklink bubbleBacklink = BubbleBacklink.builder()
+                        .bubble(this)
+                        .backlinkBubble(target)
+                        .build();
+                this.backlinks.add(bubbleBacklink);
+            }
+        }
+
+        this.updatedAt = LocalDateTime.now();
+    }
+
 
 }
 

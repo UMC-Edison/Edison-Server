@@ -1,5 +1,6 @@
 package com.edison.project.domain.label.entity;
 
+import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.global.common.entity.BaseEntity;
@@ -24,7 +25,7 @@ public class Label {
     @Column(name = "label_id")
     private Long labelId;
 
-    @Column(name="local_idx", length = 50)
+    @Column(name = "local_idx", length = 50)
     private String localIdx;
 
     @Column(name = "name")
@@ -62,4 +63,9 @@ public class Label {
         this.deletedAt = deletedAt;
     }
 
+    public void update(String name, int color) {
+        this.name = name;
+        this.color = color;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

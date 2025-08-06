@@ -56,7 +56,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/keyword").permitAll() // 추천 키워드
                         .requestMatchers(HttpMethod.POST, "/artletters/editor-pick").permitAll()
                         .requestMatchers(HttpMethod.POST, "/spaces/generate").permitAll()
-
+                        .requestMatchers("/api/s3/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

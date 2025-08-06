@@ -45,4 +45,18 @@ public class BubbleRequestDto {
             return isTrashed;
         }
     }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CreateDto {
+
+        private String localIdx;
+        private String title;
+        private String content;
+        private String mainImageUrl;
+        private Set<String> labelIdxs;
+        private Set<String> backlinkIds;
+    }
 }
