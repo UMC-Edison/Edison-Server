@@ -56,15 +56,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/artletters/recommend-bar/keyword").permitAll() // 추천 키워드
                         .requestMatchers(HttpMethod.POST, "/artletters/editor-pick").permitAll()
                         .requestMatchers("/api/s3/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                //.oauth2Login(oauth2 -> oauth2
-                //        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService))
-                //        .successHandler(this::oidcLoginSuccessHandler)
-                //        .failureHandler(this::oidcLoginFailureHandler)
-                //)
+//                .oauth2Login(oauth2 -> oauth2
+//                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService))
+//                        .successHandler(this::oidcLoginSuccessHandler)
+//                        .failureHandler(this::oidcLoginFailureHandler)
+//                )
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(customAuthenticationEntryPoint)
                 );

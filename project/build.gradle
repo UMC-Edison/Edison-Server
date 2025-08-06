@@ -47,7 +47,6 @@ dependencies {
 	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
 
 	// Lombok 설정
-	implementation 'org.projectlombok:lombok:1.18.30'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
