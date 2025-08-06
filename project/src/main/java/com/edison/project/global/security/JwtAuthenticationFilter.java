@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
-                if (requestURI.startsWith("/actuator/")) {
+                if (requestURI.startsWith("/actuator")) {
                     filterChain.doFilter(request, response);
                     return;
                 }

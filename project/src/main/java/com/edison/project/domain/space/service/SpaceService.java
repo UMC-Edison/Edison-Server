@@ -11,6 +11,6 @@ import java.util.List;
 public interface SpaceService {
     List<SpaceMapResponseDto.MapResponseDto> mapBubbles(CustomUserPrincipal userPrincipal);
     //ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, List<String> localIdxs, String userIdentityKeywords);
-    //ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords);
+    ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords);
 
 }

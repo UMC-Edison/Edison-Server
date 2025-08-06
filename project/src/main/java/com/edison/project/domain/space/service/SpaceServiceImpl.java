@@ -97,7 +97,6 @@ public class SpaceServiceImpl implements SpaceService {
                 .collect(Collectors.toList());
     }
 
-    /*
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
@@ -128,6 +127,7 @@ public class SpaceServiceImpl implements SpaceService {
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
 
+    /*
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, List<String> localIdxs, String userIdentityKeywords) {
@@ -159,6 +159,7 @@ public class SpaceServiceImpl implements SpaceService {
 
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
+     */
 
 
     private Map<String, String> createRequestDataWithLocalIdx(List<Bubble> bubbles) {
@@ -341,7 +342,7 @@ public class SpaceServiceImpl implements SpaceService {
 
         return promptBuilder.toString();
     }
-    */
+
 }
 
 
