@@ -56,6 +56,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
+                if (requestURI.startsWith("/actuator/")) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 if (requestURI.matches("^/artletters/\\d+$")) { // "/artletters/{letterId}" 패턴 허용
                     filterChain.doFilter(request, response);
                     return;
