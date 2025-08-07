@@ -15,7 +15,9 @@ import com.edison.project.domain.space.dto.SpaceMapResponseDto;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
 import com.edison.project.domain.space.entity.Dataset;
 import com.edison.project.domain.space.entity.Space;
-import org.springframework.http.MediaType;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import org.springframework.http.HttpHeaders;
 import com.edison.project.domain.space.repository.DatasetRepository;
 import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
@@ -136,7 +138,7 @@ public class SpaceServiceImpl implements SpaceService {
         }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + openaiApiKey);
 
         Map<String, Object> message = Map.of("role", "user", "content", prompt);

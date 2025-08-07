@@ -51,7 +51,6 @@ public class SpaceController {
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
-
      */
 
     @GetMapping("/convert")
@@ -62,5 +61,4 @@ public class SpaceController {
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
-
 }
