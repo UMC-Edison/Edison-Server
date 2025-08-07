@@ -52,6 +52,8 @@ public class SpaceController {
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
 
+     */
+
     @GetMapping("/convert")
     public ResponseEntity<?> convertAllSpaces(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
@@ -61,5 +63,4 @@ public class SpaceController {
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
 
-     */
 }
