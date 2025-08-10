@@ -6,7 +6,6 @@ plugins {
 
 group = 'com.edison'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
 
 springBoot {
     mainClass = 'com.edison.project.ProjectApplication'  // 실행할 Main 클래스
@@ -29,6 +28,12 @@ configurations {
 	}
 }
 
+dependencyManagement {
+	imports {
+		mavenBom "com.google.cloud:libraries-bom:26.10.0"
+	}
+}
+
 repositories {
 	mavenCentral()
 }
@@ -39,19 +44,20 @@ ext {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	runtimeOnly 'org.springframework.data:spring-data-jpa:3.4.1'
+	runtimeOnly 'org.springframework.data:spring-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'com.squareup.okhttp3:okhttp:4.10.0'
-	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
 	// Lombok 설정
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
-	implementation 'mysql:mysql-connector-java:8.0.33'
+	runtimeOnly 'com.mysql:mysql-connector-j'
 
 	// 테스트 관련
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -60,8 +66,13 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.security:spring-security-oauth2-jose'
 	implementation 'com.auth0:java-jwt:4.2.1'
-	implementation 'com.google.api-client:google-api-client:1.33.0'
-	implementation 'com.google.http-client:google-http-client-gson:1.39.2'
+
+	// google 관련 라이브러리 수정
+	implementation 'com.google.api-client:google-api-client'
+	implementation 'com.google.http-client:google-http-client-gson'
+	implementation 'com.google.oauth-client:google-oauth-client'
+	implementation 'com.google.auth:google-auth-library-oauth2-http'
+	implementation 'com.google.code.gson:gson:2.11.0'
 
 	//로그아웃
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
@@ -84,22 +95,16 @@ sourceSets {
 	main.java.srcDirs += [ querydslDir ]
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
 	options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
-}
-
-clean.doLast {
-	file(querydslDir).deleteDir()
-}
-
-clean {
-	delete fileTree(dir: 'src/main/generated', include: '**/*.java')
-}
-tasks.withType(JavaCompile) {
 	options.compilerArgs += [
 			'--add-opens',
 			'java.base/java.lang=ALL-UNNAMED',
 			'--add-opens',
 			'java.base/java.util=ALL-UNNAMED'
 	]
+}
+
+clean.doLast {
+	file(querydslDir).deleteDir()
 }
