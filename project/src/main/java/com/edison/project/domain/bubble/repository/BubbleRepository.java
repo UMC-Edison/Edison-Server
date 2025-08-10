@@ -20,7 +20,6 @@ import java.util.Set;
 @Repository
 public interface BubbleRepository extends JpaRepository<Bubble, Long> {
 
-    // 삭제되지 않은 Bubble만 조회
     Optional<Bubble> findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(Long memberId, String localIdx);
     Optional<Bubble> findByMember_MemberIdAndLocalIdxAndIsTrashedTrue(Long memberId, String localIdx);
 
@@ -28,7 +27,6 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     Page<Bubble> findByMember_MemberIdAndIsTrashedFalse(Long memberId, Pageable pageable);
     Page<Bubble> findByMember_MemberIdAndIsTrashedTrue(Long memberId, Pageable pageable);
 
-    // 휴지통에 있는 버블 포함 조회
     Page<Bubble> findByMember_MemberId(Long memberId, Pageable pageable);
 
     // 7일 이내 버블 목록

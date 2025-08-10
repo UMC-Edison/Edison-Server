@@ -1,44 +1,23 @@
 package com.edison.project.domain.space.dto;
 
-import com.edison.project.domain.bubble.entity.Bubble;
+import com.edison.project.domain.space.entity.Space;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Getter;
 
+@Getter
 @JsonIgnoreProperties ({"hibernateLazyInitializer", "handler"})
 public class SpaceResponseDto {
-    private Long id;
-    private double x;
-    private double y;
 
-    // 올바른 생성자 추가
-    public SpaceResponseDto(Bubble bubble, double x, double y) {
-        this.id = bubble.getBubbleId();
-        this.x = x;
-        this.y = y;
-    }
+    private final String localIdx;
+    private final double x;
+    private final double y;
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    // Space 엔티티를 직접 받아 DTO를 생성
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public double getX() {
-        return x;
-    }
-
-    public void setX(double x) {
-        this.x = x;
-    }
-
-    public double getY() {
-        return y;
-    }
-
-    public void setY(double y) {
-        this.y = y;
+    public SpaceResponseDto(Space space) {
+        this.localIdx = space.getBubble().getLocalIdx();
+        this.x = space.getX();
+        this.y = space.getY();
     }
 
 }

@@ -102,7 +102,7 @@ public class SpaceServiceImpl implements SpaceService {
 
         return aiResults.stream()
                 .map(result -> SpaceMapResponseDto.MapResponseDto.builder()
-                        .localIdx((String) result.get("id"))
+                        .localIdx((String) result.get("localIdx"))
                         .x(Double.parseDouble(result.get("x").toString()))
                         .y(Double.parseDouble(result.get("y").toString()))
                         .build())
@@ -185,46 +185,10 @@ public class SpaceServiceImpl implements SpaceService {
         spaceRepository.saveAll(newSpaces);
 
         List<SpaceResponseDto> spaceDtos = newSpaces.stream()
-                .map(space -> new SpaceResponseDto(space.getBubble(), space.getX(), space.getY()))
+                .map(SpaceResponseDto::new)
                 .collect(Collectors.toList());
-
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
-
-    /*
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, List<String> localIdxs, String userIdentityKeywords) {
-        Long memberId = userPrincipal.getMemberId();
-        System.out.println("[Process Spaces - 선택] 실행 - 사용자 ID: " + memberId);
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
-
-        Set<Bubble> bubbleSet = bubbleRepository.findAllByMemberAndLocalIdxIn(member, new HashSet<>(localIdxs));
-        List<Bubble> bubbles = new ArrayList<>(bubbleSet);
-        System.out.println("선택된 Bubble 개수: " + bubbles.size());
-
-        if (bubbles.isEmpty()) {
-            return ApiResponse.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
-        }
-
-        Map<String, String> requestData = createRequestDataWithLocalIdx(bubbles);
-        String gptResponse = callGPTForGrouping(requestData, userIdentityKeywords);
-        List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
-
-        spaceRepository.deleteByMemberId(memberId);
-        spaceRepository.flush();
-        spaceRepository.saveAll(newSpaces);
-
-        List<SpaceResponseDto> spaceDtos = newSpaces.stream()
-                .map(space -> new SpaceResponseDto(space.getBubble(), space.getX(), space.getY()))
-                .collect(Collectors.toList());
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
-    }
-     */
-
 
     private Map<String, String> createRequestDataWithLocalIdx(List<Bubble> bubbles) {
         return bubbles.stream().collect(Collectors.toMap(
@@ -304,12 +268,11 @@ public class SpaceServiceImpl implements SpaceService {
 
             List<Space> spaces = new ArrayList<>();
             for (Map<String, Object> item : parsedData) {
-                String localIdx = (String) item.get("id");
+                String gptReturnedId = (String) item.get("id");
 
                 Optional<Bubble> optionalBubble = bubbles.stream()
-                        .filter(bubble -> localIdx.equals(bubble.getLocalIdx()))
+                        .filter(bubble -> Objects.equals(gptReturnedId, bubble.getLocalIdx()))
                         .findFirst();
-
 
                 if (optionalBubble.isEmpty()) continue;
 
