@@ -26,6 +26,17 @@ public class SpaceController {
         this.memberService = memberService;
     }
 
+    // doc2vec 키워드
+    @PostMapping("/similarity")
+    public ResponseEntity<ApiResponse> getKeywordMap(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam String keyword
+    ) {
+        List<SpaceMapResponseDto.KeywordResponseDto> space = spaceService.mapKeywordBubbles(userPrincipal, keyword);
+        return ApiResponse.onSuccess(SuccessStatus._OK, space);
+    }
+
+    // doc2vec 기본
     @GetMapping("/map")
     public ResponseEntity<ApiResponse> getConvertedMap(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal
@@ -52,7 +63,7 @@ public class SpaceController {
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
 
-     */
+
 
     @GetMapping("/convert")
     public ResponseEntity<?> convertAllSpaces(
@@ -62,5 +73,6 @@ public class SpaceController {
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
         return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
     }
-
+     */
 }
+

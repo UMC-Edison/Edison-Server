@@ -13,6 +13,7 @@ import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.domain.space.dto.SpaceMapRequestDto;
 import com.edison.project.domain.space.dto.SpaceMapResponseDto;
 import com.edison.project.domain.space.dto.SpaceResponseDto;
+import com.edison.project.domain.space.dto.SpaceSimilarityRequestDto;
 import com.edison.project.domain.space.entity.Dataset;
 import com.edison.project.domain.space.entity.Space;
 import org.springframework.http.MediaType;
@@ -78,6 +79,31 @@ public class SpaceServiceImpl implements SpaceService {
                 .content(bubble.getContent())
                 .build();
     };
+
+    @Override
+    @Transactional
+    public List<SpaceMapResponseDto.KeywordResponseDto> mapKeywordBubbles(CustomUserPrincipal userPrincipal, String keyword) {
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        List<Bubble> bubbles = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(member.getMemberId());
+
+        List<SpaceMapRequestDto.MapRequestDto> dtoList = bubbles.stream()
+                .map(this::convertToBubbleRequestDto)
+                .collect(Collectors.toList());
+
+        SpaceSimilarityRequestDto.MapRequestDto request = new SpaceSimilarityRequestDto.MapResponseDto()
+                .builder()
+                .keyword(keyword)
+                .memos(dtoList)
+                .build();
+
+        // 유사도
+        List<SpaceMapResponseDto.KeywordResponseDto> result = aiClient.sendToSimilarityServer(request);
+
+        //similarity 50프로 이상인 것들만 필터링
+        //최대 10개까지 리스트 반환
+    }
 
     @Override
     @Transactional
@@ -159,6 +185,7 @@ public class SpaceServiceImpl implements SpaceService {
         return content;
     }
 
+     /*
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
@@ -189,7 +216,7 @@ public class SpaceServiceImpl implements SpaceService {
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
 
-    /*
+
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, List<String> localIdxs, String userIdentityKeywords) {
@@ -221,7 +248,6 @@ public class SpaceServiceImpl implements SpaceService {
 
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
-     */
 
 
     private Map<String, String> createRequestDataWithLocalIdx(List<Bubble> bubbles) {
@@ -404,7 +430,7 @@ public class SpaceServiceImpl implements SpaceService {
 
         return promptBuilder.toString();
     }
-
+     */
 }
 
 
