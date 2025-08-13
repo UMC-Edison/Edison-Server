@@ -131,6 +131,15 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
+    @GetMapping("/more/{currentId}")
+    public ResponseEntity<ApiResponse> getRandomArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable("currentId") Long currentId) {
+
+        List<ArtletterDTO.CategoryResponseDto> response = artletterService.getOtherArtletters(userPrincipal, currentId);
+        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+    }
+
     @GetMapping("/scrap")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getScrapArtletters(

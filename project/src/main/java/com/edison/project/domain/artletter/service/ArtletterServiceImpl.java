@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -573,5 +574,34 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
+    }
+
+    // 현재 아트레터 제외한 랜덤 추천
+    public List<ArtletterDTO.CategoryResponseDto> getOtherArtletters(CustomUserPrincipal userPrincipal, Long currentId){
+        List<Long> allIds = artletterRepository.findAllIds();
+        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
+
+        allIds.remove(currentId);
+
+        Random random = new Random();
+        List<Long> selectedIds = IntStream.range(0, 3)
+                .mapToLong(i -> {
+                    int randomIndex = random.nextInt(allIds.size());
+                    return allIds.remove(randomIndex);
+                })
+                .boxed()
+                .collect(Collectors.toList());
+
+        List<Artletter> otherArtletters = artletterRepository.findAllById(selectedIds);
+
+        return otherArtletters.stream()
+                .map(artletter -> ArtletterDTO.CategoryResponseDto.builder()
+                        .artletterId(artletter.getLetterId())
+                        .title(artletter.getTitle())
+                        .thumbnail(artletter.getThumbnail())
+                        .tags(artletter.getTag())
+                        .isScraped(scrapRepository.existsByArtletterAndMemberAndDeletedAtIsNull(artletter, member))
+                        .build())
+                .collect(Collectors.toList());
     }
 }

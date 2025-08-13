@@ -34,4 +34,6 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
     @Query("SELECT new com.edison.project.domain.artletter.dto.CountDto(a.artletter.letterId, COUNT(a)) " +
             "FROM ArtletterLikes a WHERE a.artletter IN :artletters GROUP BY a.artletter")
     List<CountDto> countByArtletterIn(@Param("artletters") List<Artletter> artletters);
+
+    boolean existsByArtletterAndMemberAndDeletedAtIsNull(Artletter artletter, Member member);
 }
