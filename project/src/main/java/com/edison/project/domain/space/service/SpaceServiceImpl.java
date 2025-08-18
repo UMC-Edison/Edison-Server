@@ -97,10 +97,14 @@ public class SpaceServiceImpl implements SpaceService {
 
         AiResponseDto.AiSimilarityResponseDto response = aiClient.sendToSimilarityServer(request);
 
-        return response.getTop_ids().stream()
-                .map(id -> SpaceMapResponseDto.KeywordResponseDto.builder()
-                        .localIdx(id)
-                        //.similarity()
+        if (response == null || response.getResults() == null || response.getResults().isEmpty()) {
+            throw new GeneralException(ErrorStatus.SIMILAR_BUBBLE_NOT_FOUND);
+        }
+
+        return response.getResults().stream()
+                .map(item -> SpaceMapResponseDto.KeywordResponseDto.builder()
+                        .localIdx(item.getLocalIdx())
+                        .similarity(item.getSimilarity())
                         .build())
                 .collect(Collectors.toList());
     }
