@@ -17,7 +17,7 @@ public class SpaceMapRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MapRequestDto {
-        private String id;
+        private String localIdx;
         private String content;
     }
 }

@@ -10,9 +10,7 @@ import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.service.MemberService;
-import com.edison.project.domain.space.dto.SpaceMapRequestDto;
-import com.edison.project.domain.space.dto.SpaceMapResponseDto;
-import com.edison.project.domain.space.dto.SpaceResponseDto;
+import com.edison.project.domain.space.dto.*;
 import com.edison.project.domain.space.entity.Dataset;
 import com.edison.project.domain.space.entity.Space;
 import okhttp3.MediaType;
@@ -76,10 +74,42 @@ public class SpaceServiceImpl implements SpaceService {
 
     private SpaceMapRequestDto.MapRequestDto convertToBubbleRequestDto(Bubble bubble) {
         return SpaceMapRequestDto.MapRequestDto.builder()
-                .id(bubble.getLocalIdx())
+                .localIdx(bubble.getLocalIdx())
                 .content(bubble.getContent())
                 .build();
     };
+
+    @Override
+    @Transactional
+    public List<SpaceMapResponseDto.KeywordResponseDto> mapKeywordBubbles(CustomUserPrincipal userPrincipal, String keyword) {
+        Member member = memberRepository.findById(userPrincipal.getMemberId())
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        List<Bubble> bubbles = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(member.getMemberId());
+
+        List<SpaceMapRequestDto.MapRequestDto> dtoList = bubbles.stream()
+                .map(this::convertToBubbleRequestDto)
+                .collect(Collectors.toList());
+
+        SpaceSimilarityRequestDto.MapRequestDto request = SpaceSimilarityRequestDto.MapRequestDto
+                .builder()
+                .keyword(keyword)
+                .memos(dtoList)
+                .build();
+
+        AiResponseDto.AiSimilarityResponseDto response = aiClient.sendToSimilarityServer(request);
+
+        if (response == null || response.getResults() == null || response.getResults().isEmpty()) {
+            throw new GeneralException(ErrorStatus.SIMILAR_BUBBLE_NOT_FOUND);
+        }
+
+        return response.getResults().stream()
+                .map(item -> SpaceMapResponseDto.KeywordResponseDto.builder()
+                        .localIdx(item.getLocalIdx())
+                        .similarity(item.getSimilarity())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     @Override
     @Transactional
@@ -94,17 +124,13 @@ public class SpaceServiceImpl implements SpaceService {
                 .map(this::convertToBubbleRequestDto)
                 .collect(Collectors.toList());
 
-        SpaceMapRequestDto requestDto = SpaceMapRequestDto.builder()
-                .memos(dtoList)
-                .build();
-
-        List<Map<String, Object>> aiResults = aiClient.sendToAiServer(requestDto);
+        List<AiResponseDto.AiVectorResponseDto> aiResults = aiClient.sendToAiServer(dtoList);
 
         return aiResults.stream()
                 .map(result -> SpaceMapResponseDto.MapResponseDto.builder()
-                        .localIdx((String) result.get("localIdx"))
-                        .x(Double.parseDouble(result.get("x").toString()))
-                        .y(Double.parseDouble(result.get("y").toString()))
+                        .localIdx(result.getLocalIdx())
+                        .x(result.getX())
+                        .y(result.getY())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -129,7 +155,7 @@ public class SpaceServiceImpl implements SpaceService {
         datasetRepository.save(new Dataset(sentence, type));
         return sentence;
     }
-
+    
     private String callOpenAPI(String prompt) {
 
         String openaiApiKey = secretKey;
@@ -161,6 +187,7 @@ public class SpaceServiceImpl implements SpaceService {
         return content;
     }
 
+    /*
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
@@ -189,6 +216,7 @@ public class SpaceServiceImpl implements SpaceService {
                 .collect(Collectors.toList());
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
+
 
     private Map<String, String> createRequestDataWithLocalIdx(List<Bubble> bubbles) {
         return bubbles.stream().collect(Collectors.toMap(
@@ -369,7 +397,7 @@ public class SpaceServiceImpl implements SpaceService {
 
         return promptBuilder.toString();
     }
-
+     */
 }
 
 

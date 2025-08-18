@@ -21,4 +21,13 @@ public class SpaceMapResponseDto {
         private double x;
         private double y;
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class KeywordResponseDto {
+        private String localIdx;
+        private Double similarity;
+    }
 }
