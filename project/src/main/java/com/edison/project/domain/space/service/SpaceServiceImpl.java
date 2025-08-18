@@ -13,7 +13,9 @@ import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.domain.space.dto.*;
 import com.edison.project.domain.space.entity.Dataset;
 import com.edison.project.domain.space.entity.Space;
-import org.springframework.http.MediaType;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import org.springframework.http.HttpHeaders;
 import com.edison.project.domain.space.repository.DatasetRepository;
 import com.edison.project.domain.space.repository.SpaceRepository;
 import com.edison.project.domain.bubble.entity.Bubble;
@@ -153,7 +155,7 @@ public class SpaceServiceImpl implements SpaceService {
         datasetRepository.save(new Dataset(sentence, type));
         return sentence;
     }
-
+    
     private String callOpenAPI(String prompt) {
 
         String openaiApiKey = secretKey;
@@ -162,7 +164,7 @@ public class SpaceServiceImpl implements SpaceService {
         }
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + openaiApiKey);
 
         Map<String, Object> message = Map.of("role", "user", "content", prompt);
@@ -185,7 +187,7 @@ public class SpaceServiceImpl implements SpaceService {
         return content;
     }
 
-     /*
+    /*
     @Override
     @Transactional
     public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
@@ -210,42 +212,8 @@ public class SpaceServiceImpl implements SpaceService {
         spaceRepository.saveAll(newSpaces);
 
         List<SpaceResponseDto> spaceDtos = newSpaces.stream()
-                .map(space -> new SpaceResponseDto(space.getBubble(), space.getX(), space.getY()))
+                .map(SpaceResponseDto::new)
                 .collect(Collectors.toList());
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
-    }
-
-
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, List<String> localIdxs, String userIdentityKeywords) {
-        Long memberId = userPrincipal.getMemberId();
-        System.out.println("[Process Spaces - 선택] 실행 - 사용자 ID: " + memberId);
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
-
-        Set<Bubble> bubbleSet = bubbleRepository.findAllByMemberAndLocalIdxIn(member, new HashSet<>(localIdxs));
-        List<Bubble> bubbles = new ArrayList<>(bubbleSet);
-        System.out.println("선택된 Bubble 개수: " + bubbles.size());
-
-        if (bubbles.isEmpty()) {
-            return ApiResponse.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
-        }
-
-        Map<String, String> requestData = createRequestDataWithLocalIdx(bubbles);
-        String gptResponse = callGPTForGrouping(requestData, userIdentityKeywords);
-        List<Space> newSpaces = parseGptResponse(gptResponse, bubbles, memberId);
-
-        spaceRepository.deleteByMemberId(memberId);
-        spaceRepository.flush();
-        spaceRepository.saveAll(newSpaces);
-
-        List<SpaceResponseDto> spaceDtos = newSpaces.stream()
-                .map(space -> new SpaceResponseDto(space.getBubble(), space.getX(), space.getY()))
-                .collect(Collectors.toList());
-
         return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
     }
 
@@ -328,12 +296,11 @@ public class SpaceServiceImpl implements SpaceService {
 
             List<Space> spaces = new ArrayList<>();
             for (Map<String, Object> item : parsedData) {
-                String localIdx = (String) item.get("id");
+                String gptReturnedId = (String) item.get("id");
 
                 Optional<Bubble> optionalBubble = bubbles.stream()
-                        .filter(bubble -> localIdx.equals(bubble.getLocalIdx()))
+                        .filter(bubble -> Objects.equals(gptReturnedId, bubble.getLocalIdx()))
                         .findFirst();
-
 
                 if (optionalBubble.isEmpty()) continue;
 

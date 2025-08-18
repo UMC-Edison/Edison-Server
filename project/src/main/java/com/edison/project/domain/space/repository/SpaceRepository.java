@@ -11,5 +11,6 @@ import java.util.List;
 @Repository
 public interface SpaceRepository extends JpaRepository<Space, Long> {
     void deleteByMemberId(@Param("memberId") Long memberId);
+
 }
 
