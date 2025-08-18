@@ -28,7 +28,6 @@ public class SpaceMapResponseDto {
     @AllArgsConstructor
     public static class KeywordResponseDto {
         private String localIdx;
-        private String content;
-        private Long similarity;
+        private Double similarity;
     }
 }
