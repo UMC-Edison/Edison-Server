@@ -66,6 +66,7 @@ public class BubbleServiceImpl implements BubbleService {
                         .map(Bubble::getLocalIdx)
                         .collect(Collectors.toSet()))
                 .isTrashed(bubble.isTrashed())
+                .isDeleted(bubble.isDeleted())
                 .createdAt(bubble.getCreatedAt())
                 .updatedAt(bubble.getUpdatedAt())
                 .deletedAt(bubble.getDeletedAt())
