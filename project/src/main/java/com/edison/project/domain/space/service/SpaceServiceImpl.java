@@ -75,7 +75,7 @@ public class SpaceServiceImpl implements SpaceService {
     private SpaceMapRequestDto.MapRequestDto convertToBubbleRequestDto(Bubble bubble) {
         return SpaceMapRequestDto.MapRequestDto.builder()
                 .localIdx(bubble.getLocalIdx())
-                .content(bubble.getContent())
+                .content(bubble.getTitle() + bubble.getContent())
                 .build();
     };
 
