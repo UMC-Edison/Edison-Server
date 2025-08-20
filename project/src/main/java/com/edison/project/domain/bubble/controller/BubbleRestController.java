@@ -135,5 +135,17 @@ public class BubbleRestController {
         return ApiResponse.onSuccess(SuccessStatus._OK);
     }
 
+    // 전체 버블 조회(소프트딜리트 포함)
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getAllBubbles(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return bubbleService.getAllBubbles(userPrincipal, pageable);
+    }
+
 }
 
