@@ -28,7 +28,7 @@ public class S3Service {
         String key = "uploads/" + UUID.randomUUID() + "_" + originalFileName;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket("bubbleimgs")
+                .bucket("haniumbubbleimgs")
                 .key(key)
                 .contentType("application/octet-stream")
                 .build();
