@@ -576,23 +576,35 @@ public class ArtletterServiceImpl implements ArtletterService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
+
     // 현재 아트레터 제외한 랜덤 추천
     public List<ArtletterDTO.CategoryResponseDto> getOtherArtletters(CustomUserPrincipal userPrincipal, Long currentId){
         List<Long> allIds = artletterRepository.findAllIds();
-        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
-        allIds.remove(currentId);
+        if (currentId != null) {
+            allIds.removeIf(id -> id.equals(currentId));
+            // id 있는 경우만 제거하도록 처리
+        }
 
-        Random random = new Random();
-        List<Long> selectedIds = IntStream.range(0, 3)
-                .mapToLong(i -> {
-                    int randomIndex = random.nextInt(allIds.size());
-                    return allIds.remove(randomIndex);
-                })
-                .boxed()
+        if (allIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Collections.shuffle(allIds);
+        List<Long> selectedIds = allIds.stream()
+                .limit(3)
                 .collect(Collectors.toList());
 
         List<Artletter> otherArtletters = artletterRepository.findAllById(selectedIds);
+
+        // scrap 했는지 미리 조회 (N+1)
+        Member member = (userPrincipal != null) ? memberRepository.findByMemberId(userPrincipal.getMemberId()) : null;
+        Map<Long, Boolean> isScrapedMap = (member != null)
+                ? scrapRepository.findByMember(member, Pageable.unpaged()).stream()
+                .filter(scrap -> scrap.getDeletedAt() == null)
+                .collect(Collectors.toMap(scrap -> scrap.getArtletter().getLetterId(), scrap -> true))
+                : new HashMap<>();
+
 
         return otherArtletters.stream()
                 .map(artletter -> ArtletterDTO.CategoryResponseDto.builder()
@@ -600,7 +612,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                         .title(artletter.getTitle())
                         .thumbnail(artletter.getThumbnail())
                         .tags(artletter.getTag())
-                        .isScraped(scrapRepository.existsByArtletterAndMemberAndDeletedAtIsNull(artletter, member))
+                        .isScraped(isScrapedMap.getOrDefault(artletter.getLetterId(), false))
                         .build())
                 .collect(Collectors.toList());
     }
