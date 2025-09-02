@@ -58,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/spaces/generate").permitAll()
                         .requestMatchers("/api/s3/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/artletters/more").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
