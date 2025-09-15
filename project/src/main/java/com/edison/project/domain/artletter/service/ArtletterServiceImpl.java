@@ -16,6 +16,7 @@ import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.repository.EditorPickRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.entity.MemberMemory;
+import com.edison.project.domain.member.repository.MemberKeywordRepository;
 import com.edison.project.domain.member.repository.MemberMemoryRepository;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.scrap.entity.Scrap;
@@ -46,6 +47,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
     private final EditorPickRepository editorPickRepository;
+    private final MemberKeywordRepository memberKeywordRepository;
 
     // 전체 아트레터 조회 API
     @Override
@@ -616,4 +618,45 @@ public class ArtletterServiceImpl implements ArtletterService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<ArtletterDTO.CategoryResponseDto> getMoreArtletters(CustomUserPrincipal userPrincipal) {
+        Member member = (userPrincipal != null) ? memberRepository.findByMemberId(userPrincipal.getMemberId()) : null;
+
+        List<String> userKeywords = (member != null)
+                ? memberKeywordRepository.findByMember_MemberIdAndKeywordCategory(member.getMemberId(), "4")
+                .stream()
+                .map(keyword -> keyword.getKeyword().getName())
+                .collect(Collectors.toList())
+                : Collections.emptyList();
+
+        List<Artletter> artletters;
+
+        if (!userKeywords.isEmpty()) {
+            artletters = artletterRepository.findByKeywordsIn(userKeywords);
+        } else {
+            // 관심 키워드가 없으면 전체 아트레터 중 랜덤 3개 선택
+            List<Long> allIds = artletterRepository.findAllIds();
+            Collections.shuffle(allIds);
+            List<Long> selectedIds = allIds.stream().limit(3).collect(Collectors.toList());
+            artletters = artletterRepository.findAllById(selectedIds);
+        }
+
+        Map<Long, Boolean> isScrapedMap = (member != null)
+                ? scrapRepository.findByMember(member, Pageable.unpaged()).stream()
+                .filter(scrap -> scrap.getDeletedAt() == null)
+                .collect(Collectors.toMap(scrap -> scrap.getArtletter().getLetterId(), scrap -> true))
+                : new HashMap<>();
+
+        return artletters.stream()
+                .map(artletter -> ArtletterDTO.CategoryResponseDto.builder()
+                        .artletterId(artletter.getLetterId())
+                        .title(artletter.getTitle())
+                        .thumbnail(artletter.getThumbnail())
+                        .tags(artletter.getTag())
+                        .isScraped(isScrapedMap.getOrDefault(artletter.getLetterId(), false))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
 }

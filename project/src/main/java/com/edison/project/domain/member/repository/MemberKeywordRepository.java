@@ -18,4 +18,5 @@ public interface MemberKeywordRepository extends JpaRepository<MemberKeyword, Lo
     void deleteByMember_MemberIdAndKeywordCategory(Long memberId, String category);
 
     List<MemberKeyword> findByMember_MemberId(Long memberId);
+
 }

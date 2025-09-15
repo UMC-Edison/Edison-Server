@@ -140,6 +140,15 @@ public class ArtletterController {
         return ApiResponse.onSuccess(SuccessStatus._OK, response);
     }
 
+    @GetMapping("/search-more")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getMoreArtletters(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal
+    ) {
+       List<ArtletterDTO.CategoryResponseDto> res = artletterService.getMoreArtletters(userPrincipal);
+       return ApiResponse.onSuccess(SuccessStatus._OK, res);
+    }
+
     @GetMapping("/scrap")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getScrapArtletters(
