@@ -52,5 +52,6 @@ public class MemberRequestDto {
     @AllArgsConstructor
     public static class GoogleLoginDto{
         private String idToken;
+        private MemberRequestDto.IdentityTestSaveDto identity;
     }
 }

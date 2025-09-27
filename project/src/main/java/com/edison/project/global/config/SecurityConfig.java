@@ -7,11 +7,11 @@ import com.edison.project.domain.member.service.CustomOidcUserService;
 import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.global.security.CustomAuthenticationEntryPoint;
 import com.edison.project.global.security.JwtAuthenticationFilter;
-import com.edison.project.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,7 +27,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 import static com.edison.project.common.status.SuccessStatus._OK;
 
@@ -36,10 +35,8 @@ import static com.edison.project.common.status.SuccessStatus._OK;
 public class SecurityConfig {
 
     private final MemberService memberService;
-    private final CustomOidcUserService customOidcUserService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
-    private final JwtUtil jwtUtil;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

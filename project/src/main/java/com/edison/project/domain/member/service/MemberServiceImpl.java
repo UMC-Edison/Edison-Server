@@ -45,15 +45,29 @@ public class MemberServiceImpl implements MemberService{
     // idToken으로 회원가입/로그인 API
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> processGoogleLogin(String idToken) {
+    public ResponseEntity<ApiResponse> processGoogleLogin(String idToken, MemberRequestDto.IdentityTestSaveDto request) {
 
         // Google idToken에서 사용자 정보 추출
         GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
         String email = payload.getEmail();
 
-        MemberResponseDto.LoginResultDto dto = generateTokensForOidcUser(email);
+        //토큰발급
+        MemberResponseDto.LoginResultDto loginDto = generateTokensForOidcUser(email);
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, dto);
+        //아이덴티티 설정
+        Long memberId = memberRepository.findMemberIdByEmail(email);
+        MemberResponseDto.IdentityTestSaveResultDto identityDto = saveIdentityTest(memberId, request);
+
+        MemberResponseDto.LoginResultDto resultDto = MemberResponseDto.LoginResultDto.builder()
+                .isNewMember(loginDto.getIsNewMember())
+                .memberId(loginDto.getMemberId())
+                .email(loginDto.getEmail())
+                .accessToken(loginDto.getAccessToken())
+                .refreshToken(loginDto.getRefreshToken())
+                .identity(identityDto)
+                .build();
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, resultDto);
     }
 
     // 토큰 생성 API
@@ -216,11 +230,9 @@ public class MemberServiceImpl implements MemberService{
         );
     }
 
-    @Override
     @Transactional
-    public MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request) {
+    public MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(Long memberId, MemberRequestDto.IdentityTestSaveDto request) {
 
-        Long memberId = userPrincipal.getMemberId();
         // 존재하지 않는 카테고리 검증
         List<String> validCategories = keywordsRepository.findDistinctCategories();
         String category = request.getCategory();

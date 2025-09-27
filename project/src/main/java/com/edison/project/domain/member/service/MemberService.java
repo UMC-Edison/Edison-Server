@@ -11,7 +11,7 @@ public interface MemberService {
     ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request);
     ResponseEntity<ApiResponse> getProfile(CustomUserPrincipal userPrincipal);
 
-    MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request);
+//    MemberResponseDto.IdentityTestSaveResultDto saveIdentityTest(Long memberId, MemberRequestDto.IdentityTestSaveDto request);
     MemberResponseDto.IdentityKeywordsResultDto getIdentityKeywords(CustomUserPrincipal userPrincipal);
     MemberResponseDto.IdentityTestSaveResultDto updateIdentityTest(CustomUserPrincipal userPrincipal, MemberRequestDto.IdentityTestSaveDto request);
 
@@ -19,7 +19,7 @@ public interface MemberService {
     ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> refreshAccessToken(String token);
     ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal);
-    ResponseEntity<ApiResponse> processGoogleLogin(String authorizationCode);
+    ResponseEntity<ApiResponse> processGoogleLogin(String authorizationCode, MemberRequestDto.IdentityTestSaveDto request);
 
     String getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal);
 

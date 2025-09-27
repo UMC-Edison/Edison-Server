@@ -91,6 +91,8 @@ public class MemberResponseDto {
         private String email;
         private String accessToken;
         private String refreshToken;
+
+        private IdentityTestSaveResultDto identity;
     }
 
     @Getter
