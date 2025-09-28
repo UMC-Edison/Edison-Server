@@ -63,11 +63,11 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-//                .oauth2Login(oauth2 -> oauth2
-//                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService))
-//                        .successHandler(this::oidcLoginSuccessHandler)
-//                        .failureHandler(this::oidcLoginFailureHandler)
-//                )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo.oidcUserService(customOidcUserService))
+                        .successHandler(this::oidcLoginSuccessHandler)
+                        .failureHandler(this::oidcLoginFailureHandler)
+                )
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(customAuthenticationEntryPoint)
                 );
