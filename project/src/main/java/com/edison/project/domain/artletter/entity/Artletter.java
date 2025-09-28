@@ -26,8 +26,10 @@ public class Artletter extends BaseEntity {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "writer", length = 100)
-    private String writer;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "writer_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_artletter_writer"))
+    private Writer writer;
 
     @Column(name = "read_time", nullable = false)
     private int readTime;

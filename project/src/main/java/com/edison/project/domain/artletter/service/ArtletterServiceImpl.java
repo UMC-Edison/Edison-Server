@@ -7,13 +7,11 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.artletter.dto.ArtletterDTO;
 import com.edison.project.domain.artletter.dto.CountDto;
-import com.edison.project.domain.artletter.entity.Artletter;
-import com.edison.project.domain.artletter.entity.ArtletterCategory;
-import com.edison.project.domain.artletter.entity.ArtletterLikes;
-import com.edison.project.domain.artletter.entity.EditorPick;
+import com.edison.project.domain.artletter.entity.*;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.repository.EditorPickRepository;
+import com.edison.project.domain.artletter.repository.WriterRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.entity.MemberMemory;
 import com.edison.project.domain.member.repository.MemberMemoryRepository;
@@ -33,7 +31,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -46,6 +43,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
     private final EditorPickRepository editorPickRepository;
+    private final WriterRepository writerRepository;
 
     // 전체 아트레터 조회 API
     @Override
@@ -73,10 +71,13 @@ public class ArtletterServiceImpl implements ArtletterService {
     @Override
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
 
+        Writer writer = writerRepository.getReferenceById(request.getWriterId());
+        // 존재 여부 보장 안해도 되니까 .. 레퍼런스 썻어요
+
         Artletter artletter = Artletter.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
-                .writer(request.getWriter())
+                .writer(writer)
                 .readTime(request.getReadTime())
                 .tag(request.getTag())
                 .category(request.getCategory())
@@ -291,7 +292,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .title(artletter.getTitle())
                 .content(artletter.getContent())
                 .tags(artletter.getTag())
-                .writer(artletter.getWriter())
+                .writerSummary( toWriterSummaryDto(artletter.getWriter()) )
                 .category(artletter.getCategory())
                 .readTime(artletter.getReadTime())
                 .thumbnail(artletter.getThumbnail())
@@ -338,7 +339,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                         .title(artletter.getTitle())
                         .content(artletter.getContent())
                         .tags(artletter.getTag())
-                        .writer(artletter.getWriter())
+                        .writerSummary( toWriterSummaryDto(artletter.getWriter()) )
                         .category(artletter.getCategory())
                         .readTime(artletter.getReadTime())
                         .thumbnail(artletter.getThumbnail())
@@ -353,6 +354,16 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
         return artletterList;
+    }
+
+    private ArtletterDTO.WriterSummaryDto toWriterSummaryDto(Writer w) {
+        if (w == null) return null;
+        return ArtletterDTO.WriterSummaryDto.builder()
+                .writerId(w.getWriterId())
+                .writerName(w.getWriterName())
+                .profileImg(w.getProfileImg())
+                .writerUrl(w.getWriterUrl())
+                .build();
     }
 
 
