@@ -621,6 +621,8 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .collect(Collectors.toList());
     }
 
+    private static final int RESULT_LIMIT = 2;
+
     @Override
     @Transactional(readOnly = true)
     public List<ArtletterDTO.CategoryResponseDto> getMoreArtletters(CustomUserPrincipal userPrincipal) {
@@ -629,7 +631,7 @@ public class ArtletterServiceImpl implements ArtletterService {
         if (userPrincipal == null) {
             List<Long> allIds = artletterRepository.findAllIds();
             Collections.shuffle(allIds);
-            List<Long> selectedIds = allIds.stream().limit(3).toList();
+            List<Long> selectedIds = allIds.stream().limit(RESULT_LIMIT).toList();
             List<Artletter> randoms = selectedIds.isEmpty() ? List.of() : artletterRepository.findAllById(selectedIds);
             return toDtoWithScrap(randoms, Map.of()); // 아래 헬퍼 사용
         }
@@ -667,14 +669,14 @@ public class ArtletterServiceImpl implements ArtletterService {
             } else {
                 List<Artletter> loaded = artletterRepository.findAllById(idSet);
 
-                artletters = loaded.stream()
+                artletters = loaded.stream().limit(RESULT_LIMIT)
                         .toList();
             }
         } else {
-            // 관심 키워드 없으면 랜덤 3개
+            // 관심 키워드 없으면 랜덤 2개
             List<Long> allIds = artletterRepository.findAllIds();
             Collections.shuffle(allIds);
-            List<Long> selectedIds = allIds.stream().limit(3).toList();
+            List<Long> selectedIds = allIds.stream().limit(RESULT_LIMIT).toList();
             artletters = selectedIds.isEmpty() ? List.of() : artletterRepository.findAllById(selectedIds);
         }
 
