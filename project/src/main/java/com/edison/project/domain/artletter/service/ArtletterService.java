@@ -33,4 +33,5 @@ public interface ArtletterService {
     ResponseEntity<ApiResponse> getArtlettersByCategory(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable);
 
     List<ArtletterDTO.CategoryResponseDto> getOtherArtletters(CustomUserPrincipal userPrincipal, Long currentId);
+    List<ArtletterDTO.CategoryResponseDto> getMoreArtletters(CustomUserPrincipal userPrincipal);
 }

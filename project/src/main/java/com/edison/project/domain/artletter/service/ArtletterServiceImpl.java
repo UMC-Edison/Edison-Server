@@ -14,14 +14,16 @@ import com.edison.project.domain.artletter.entity.EditorPick;
 import com.edison.project.domain.artletter.repository.ArtletterLikesRepository;
 import com.edison.project.domain.artletter.repository.ArtletterRepository;
 import com.edison.project.domain.artletter.repository.EditorPickRepository;
+import com.edison.project.domain.keywords.entity.Keywords;
 import com.edison.project.domain.member.entity.Member;
+import com.edison.project.domain.member.entity.MemberKeyword;
 import com.edison.project.domain.member.entity.MemberMemory;
+import com.edison.project.domain.member.repository.MemberKeywordRepository;
 import com.edison.project.domain.member.repository.MemberMemoryRepository;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.scrap.entity.Scrap;
 import com.edison.project.domain.scrap.repository.ScrapRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,6 +32,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,6 +49,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     private final ArtletterLikesRepository artletterLikesRepository;
     private final ScrapRepository scrapRepository;
     private final EditorPickRepository editorPickRepository;
+    private final MemberKeywordRepository memberKeywordRepository;
 
     // 전체 아트레터 조회 API
     @Override
@@ -616,4 +620,89 @@ public class ArtletterServiceImpl implements ArtletterService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    private static final int RESULT_LIMIT = 2;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArtletterDTO.CategoryResponseDto> getMoreArtletters(CustomUserPrincipal userPrincipal) {
+
+        // 비회원 처리
+        if (userPrincipal == null) {
+            List<Long> allIds = artletterRepository.findAllIds();
+            Collections.shuffle(allIds);
+            List<Long> selectedIds = allIds.stream().limit(RESULT_LIMIT).toList();
+            List<Artletter> randoms = selectedIds.isEmpty() ? List.of() : artletterRepository.findAllById(selectedIds);
+            return toDtoWithScrap(randoms, Map.of()); // 아래 헬퍼 사용
+        }
+
+        log.debug("[getMoreArtletters] called. userPrincipal={}", userPrincipal);
+
+        Long memberId = userPrincipal.getMemberId();
+        Member member = memberRepository.findByMemberId(memberId);
+
+        List<MemberKeyword> rawMk = memberKeywordRepository.findByMember_MemberIdAndKeyword_Category(memberId, "CATEGORY4");
+        rawMk.forEach(mk -> { Keywords k = mk.getKeyword();
+            log.debug("[getMoreArtletters] MK -> keywordId={}, name={}, category={}",
+                    (k != null ? k.getKeywordId() : null),
+                    (k != null ? k.getName() : null),
+                    (k != null ? k.getCategory() : null)); });
+
+        List<String> category4Names = rawMk.stream()
+                .map(MemberKeyword::getKeyword)
+                .filter(Objects::nonNull)
+                .map(Keywords::getName)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .toList();
+
+        final List<Artletter> artletters;
+        if (!category4Names.isEmpty()) {
+            LinkedHashSet<Long> idSet = new LinkedHashSet<>();
+            for (String term : category4Names) {
+                idSet.addAll(artletterRepository.searchBySingleKeyword(term));
+            }
+            if (idSet.isEmpty()) {
+                artletters = List.of();
+            } else {
+                List<Artletter> loaded = artletterRepository.findAllById(idSet);
+
+                artletters = loaded.stream().limit(RESULT_LIMIT)
+                        .toList();
+            }
+        } else {
+            // 관심 키워드 없으면 랜덤 2개
+            List<Long> allIds = artletterRepository.findAllIds();
+            Collections.shuffle(allIds);
+            List<Long> selectedIds = allIds.stream().limit(RESULT_LIMIT).toList();
+            artletters = selectedIds.isEmpty() ? List.of() : artletterRepository.findAllById(selectedIds);
+        }
+
+        Map<Long, Boolean> isScrapedMap = (member != null)
+                ? scrapRepository.findByMember(member, Pageable.unpaged()).stream()
+                .filter(s -> s.getDeletedAt() == null)
+                .map(s -> s.getArtletter().getLetterId())
+                .distinct()
+                .collect(Collectors.toMap(id -> id, id -> true))
+                : Map.of();
+
+        return toDtoWithScrap(artletters, isScrapedMap);
+    }
+
+    private List<ArtletterDTO.CategoryResponseDto> toDtoWithScrap(
+            List<Artletter> list, Map<Long, Boolean> isScrapedMap) {
+        return list.stream()
+                .map(a -> ArtletterDTO.CategoryResponseDto.builder()
+                        .artletterId(a.getLetterId())
+                        .title(a.getTitle())
+                        .thumbnail(a.getThumbnail())
+                        .tags(a.getTag())
+                        .isScraped(isScrapedMap.getOrDefault(a.getLetterId(), false))
+                        .build())
+                .toList();
+    }
+
+
 }

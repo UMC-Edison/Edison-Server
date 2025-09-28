@@ -1,6 +1,7 @@
 package com.edison.project.domain.member.repository;
 
 import com.edison.project.domain.member.entity.MemberKeyword;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,8 @@ public interface MemberKeywordRepository extends JpaRepository<MemberKeyword, Lo
     void deleteByMember_MemberIdAndKeywordCategory(Long memberId, String category);
 
     List<MemberKeyword> findByMember_MemberId(Long memberId);
+
+    @EntityGraph(attributePaths = "keyword")
+    List<MemberKeyword> findByMember_MemberIdAndKeyword_Category(Long memberId, String category);
+
 }
