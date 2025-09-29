@@ -72,7 +72,6 @@ public class ArtletterServiceImpl implements ArtletterService {
     public ArtletterDTO.CreateResponseDto createArtletter(CustomUserPrincipal userPrincipal, ArtletterDTO.CreateRequestDto request) {
 
         Writer writer = writerRepository.getReferenceById(request.getWriterId());
-        // 존재 여부 보장 안해도 되니까 .. 레퍼런스 썻어요
 
         Artletter artletter = Artletter.builder()
                 .title(request.getTitle())
