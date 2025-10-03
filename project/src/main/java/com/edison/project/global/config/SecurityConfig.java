@@ -3,7 +3,6 @@ package com.edison.project.global.config;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.dto.MemberResponseDto;
-import com.edison.project.domain.member.service.CustomOidcUserService;
 import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.global.security.CustomAuthenticationEntryPoint;
 import com.edison.project.global.security.JwtAuthenticationFilter;
@@ -11,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -45,7 +43,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         //로그인 없이 접근 가능
                         .requestMatchers("/.well-known/acme-challenge/**").permitAll()
-                        .requestMatchers("/members/google", "/favicon.ico").permitAll()
+                        .requestMatchers("/members/google/login","/members/google/signup", "/favicon.ico").permitAll()
                         .requestMatchers(HttpMethod.GET, "/artletters").permitAll() // 전체 아트레터 조회
                         .requestMatchers(HttpMethod.GET, "/artletters/search").permitAll() // 검색 API
                         .requestMatchers(HttpMethod.GET, "/artletters/**").permitAll() //특정 아트레터 조회

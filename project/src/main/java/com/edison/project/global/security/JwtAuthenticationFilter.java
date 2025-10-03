@@ -42,7 +42,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             // 로그인 없이 접근 가능한 경로 리스트
             List<String> openEndpoints = List.of(
-                    "/members/google",
+                    "/members/google/signup",
+                    "/members/google/login",
                     "/favicon.ico",
                     "/artletters/recommend-bar/category",
                     "/artletters/recommend-bar/keyword",

@@ -45,32 +45,83 @@ public class MemberServiceImpl implements MemberService{
     // idToken으로 회원가입/로그인 API
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> processGoogleLogin(String idToken, MemberRequestDto.IdentityTestSaveDto request) {
+    public MemberResponseDto.SignupResultDto processGoogleSignup(String idToken, MemberRequestDto.IdentityTestSaveDto request) {
 
         // Google idToken에서 사용자 정보 추출
         GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
         String email = payload.getEmail();
 
+        if (memberRepository.existsByEmail(email)) {
+            throw new GeneralException(ErrorStatus.ALREADY_REGISTERED);
+        }
+
+        Member member = Member.builder()
+                .email(email)
+                .build();
+        memberRepository.save(member);
+
+        Long memberId = memberRepository.findMemberIdByEmail(email);
+
         //토큰발급
-        MemberResponseDto.LoginResultDto loginDto = generateTokensForOidcUser(email);
+        MemberResponseDto.TokenDto tokens = generateTokens(memberId, email);
 
         //아이덴티티 설정
-        Long memberId = memberRepository.findMemberIdByEmail(email);
         MemberResponseDto.IdentityTestSaveResultDto identityDto = saveIdentityTest(memberId, request);
 
-        MemberResponseDto.LoginResultDto resultDto = MemberResponseDto.LoginResultDto.builder()
-                .isNewMember(loginDto.getIsNewMember())
-                .memberId(loginDto.getMemberId())
-                .email(loginDto.getEmail())
-                .accessToken(loginDto.getAccessToken())
-                .refreshToken(loginDto.getRefreshToken())
+        return MemberResponseDto.SignupResultDto.builder()
+                .memberId(memberId)
+                .email(email)
+                .accessToken(tokens.getAccessToken())
+                .refreshToken(tokens.getRefreshToken())
                 .identity(identityDto)
                 .build();
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, resultDto);
     }
 
-    // 토큰 생성 API
+    @Override
+    @Transactional
+    public MemberResponseDto.LoginResultDto processGoogleLogin(String idToken) {
+
+        // Google idToken에서 사용자 정보 추출
+        GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
+        String email = payload.getEmail();
+
+        Long memberId = memberRepository.findOptionalMemberIdByEmail(email)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        MemberResponseDto.TokenDto tokens = generateTokens(memberId, email);
+
+        return MemberResponseDto.LoginResultDto.builder()
+                .accessToken(tokens.getAccessToken())
+                .refreshToken(tokens.getRefreshToken())
+                .build();
+    }
+
+    @Transactional
+    @Override
+    public MemberResponseDto.TokenDto generateTokens(Long memberId, String email) {
+        String accessToken = jwtUtil.generateAccessToken(memberId, email);
+        String refreshToken = jwtUtil.generateRefreshToken(memberId, email);
+
+        Optional<RefreshToken> existingToken = refreshTokenRepository.findByEmail(email);
+
+        if (existingToken.isPresent()) {
+            // 기존 토큰이 있으면 업데이트
+            RefreshToken tokenEntity = existingToken.get();
+            tokenEntity.updateToken(refreshToken);
+            refreshTokenRepository.save(tokenEntity);
+        } else {
+            // 기존 토큰이 없으면 새로 저장
+            RefreshToken tokenEntity = RefreshToken.create(email, refreshToken);
+            refreshTokenRepository.save(tokenEntity);
+        }
+
+        return MemberResponseDto.TokenDto.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+    // 토큰 생성 API(백엔드 전용)
     @Override
     @Transactional
     public MemberResponseDto.LoginResultDto generateTokensForOidcUser(String email) {
@@ -103,7 +154,6 @@ public class MemberServiceImpl implements MemberService{
         }
 
         return MemberResponseDto.LoginResultDto.builder()
-                .isNewMember(isNew)
                 .memberId(member.getMemberId())
                 .email(member.getEmail())
                 .accessToken(accessToken)
