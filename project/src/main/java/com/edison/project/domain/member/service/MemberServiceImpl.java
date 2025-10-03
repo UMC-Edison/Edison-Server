@@ -91,6 +91,8 @@ public class MemberServiceImpl implements MemberService{
         MemberResponseDto.TokenDto tokens = generateTokens(memberId, email);
 
         return MemberResponseDto.LoginResultDto.builder()
+                .memberId(memberId)
+                .email(email)
                 .accessToken(tokens.getAccessToken())
                 .refreshToken(tokens.getRefreshToken())
                 .build();
