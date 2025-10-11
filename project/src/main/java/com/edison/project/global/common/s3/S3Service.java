@@ -45,7 +45,7 @@ public class S3Service {
 
     public String generatePresignedGetUrl(String key) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
+                .bucket("haniumbubbleimgs")
                 .key(key)
                 .build();
 
