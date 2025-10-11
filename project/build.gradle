@@ -84,6 +84,10 @@ dependencies {
 	implementation "software.amazon.awssdk:s3control:${awsSdkVersion}"
 	implementation "software.amazon.awssdk:s3outposts:${awsSdkVersion}"
 
+	// Actuator + Prometheus
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
 }
 tasks.named('test') {
 	useJUnitPlatform()
