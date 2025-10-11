@@ -47,7 +47,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     "/artletters/recommend-bar/category",
                     "/artletters/recommend-bar/keyword",
                     "/artletters/editor-pick",
-                    "/spaces/generate"
+                    "/spaces/generate",
+                    "/s3/upload-url"
             );
 
             if (authHeader == null){
