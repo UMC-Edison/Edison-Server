@@ -107,7 +107,12 @@ jobs:
           echo "Using JAR: $jar_file"
 
           echo "=== SCP upload ==="
-          scp -vvv -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:~/app.jar"
+
+          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'whoami; pwd; df -h; ls -ld ~ /home/ubuntu'
+
+          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'mkdir -p /home/ubuntu/deploy && chmod 777 /home/ubuntu/deploy'
+          scp -vvv -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:/home/ubuntu/deploy/app.jar"
+
           scp_rc=$?; echo "scp_rc=$scp_rc"; [ "$scp_rc" -eq 0 ] || exit $scp_rc
       
           echo "=== SSH precheck on host (java present?) ==="
