@@ -18,10 +18,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Make application.properties  # application.properties 파일 생성
+      - name: Make application.properties
         run: |
           mkdir -p ./project/src/main/resources/
-          
           echo "spring.datasource.url=${{ secrets.RDS_URL }}" > ./project/src/main/resources/application.properties
           echo "spring.datasource.username=${{ secrets.RDS_USERNAME }}" >> ./project/src/main/resources/application.properties
           echo "spring.datasource.password=${{ secrets.RDS_PASSWORD }}" >> ./project/src/main/resources/application.properties
@@ -40,13 +39,13 @@ jobs:
           echo "server.forward-headers-strategy=native" >> ./project/src/main/resources/application.properties
           # OpenAI
           echo "openai.secret_key=${{ secrets.OPENAI_KEY }}" >> ./project/src/main/resources/application.properties
-          echo "openai.secret_key=${{ secrets.OPENAI_KEY }}" >> $GITHUB_ENV
-          # aws
+          # AWS
           echo "cloud.aws.credentials.access-key=${{ secrets.AWS_ACCESS_KEY }}" >> ./project/src/main/resources/application.properties
           echo "cloud.aws.credentials.secret-key=${{ secrets.AWS_SECRET_KEY }}" >> ./project/src/main/resources/application.properties
           echo "cloud.aws.region.static=ap-southeast-2" >> ./project/src/main/resources/application.properties
-          echo "cloud.aws.s3.bucket=${AWS_S3_BUCKET}" >> ./project/src/main/resources/application.properties
+          echo "cloud.aws.s3.bucket=${{ secrets.AWS_S3_BUCKET }}" >> ./project/src/main/resources/application.properties
         shell: bash
+
 
       - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
         run: chmod +x project/gradlew
@@ -83,21 +82,77 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: build/libs/
-
-      - name: Deploy to EC2  # EC2에 배포
+      
+      - name: Deploy to EC2
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
+        shell: bash
         run: |
-          echo "$EC2_SSH_KEY" > edison.pem
+          set -euo pipefail
+      
+          cat > edison.pem <<'KEY'
+${{ secrets.EC2_SSH_KEY }}
+KEY
           chmod 600 edison.pem
-          jar_file=$(find build/libs -name '*.jar' ! -name '*plain.jar' | head -n 1)
-          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/Edison-Server.jar
-          ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
+      
+          echo "Artifacts:"
+          find build/libs -maxdepth 2 -type f -name "*.jar" -print
+          jar_file=$(find build/libs -type f -name '*.jar' ! -name '*plain.jar' | head -n 1)
+          if [ -z "${jar_file:-}" ]; then
+            echo "JAR not found"; exit 1
+          fi
+          echo "Using JAR: $jar_file"
+      
+          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
+            set -e
+            sudo mkdir -p /opt/edison
+            sudo chown -R $USER:$USER /opt/edison
+          "'
+      
+          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:/opt/edison/app.jar"
+      
+          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
+            set -e
+            if ! systemctl list-unit-files | grep -q ^edison-server.service; then
+              echo \"[INFO] creating /etc/systemd/system/edison-server.service\"
+              sudo tee /etc/systemd/system/edison-server.service >/dev/null <<'"'"'EOF'"'"'
+      [Unit]
+      Description=Edison Spring Boot Service
+      Wants=network-online.target
+      After=network-online.target
+      
+      [Service]
+      User=ubuntu
+      WorkingDirectory=/opt/edison
+      EnvironmentFile=-/etc/edison.env
+      Environment="JAVA_OPTS=-Xms256m -Xmx1024m -Duser.timezone=Asia/Seoul"
+      Environment="APP_OPTS=--server.port=${SERVER_PORT:-8080}"
+      ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/edison/app.jar $APP_OPTS
+      ExecStop=/bin/kill -TERM $MAINPID
+      Restart=always
+      RestartSec=5
+      SuccessExitStatus=143
+      StandardOutput=journal
+      StandardError=journal
+      LimitNOFILE=65535
+      TimeoutStartSec=60
+      
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+              sudo systemctl daemon-reload
+              sudo systemctl enable edison-server
+            fi
+      
             sudo systemctl restart edison-server
-          "
-          rm -f edison.pem  # 민감한 정보 삭제 true && github.event.pull_request.base.ref == 'develop'
+            sudo systemctl --no-pager status edison-server || true
+            sudo journalctl -u edison-server -n 80 --no-pager || true
+          "'
+      
+          rm -f edison.pem
+
 
       - name: Debug Current Directory
         run: |
@@ -107,19 +162,20 @@ jobs:
           ls -al
           echo "Recursive Directory Listing:"
           find . -type f
-      - name: Deploy NGINX Configuration  # NGINX 설정 배포 및 Redis 관리
+          
+      - name: Deploy NGINX Configuration 
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
           EC2_HOST: ${{ secrets.EC2_HOST }}
         run: |
-          echo "$EC2_SSH_KEY" > edison.pem
+          cat > edison.pem <<'KEY'
+${{ secrets.EC2_SSH_KEY }}
+KEY
           chmod 600 edison.pem
       
-          # 1️⃣ EC2 홈 디렉토리로 nginx.conf 파일 업로드
           scp -i edison.pem -o StrictHostKeyChecking=no ./nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/nginx.conf
       
-          # 2️⃣ EC2 접속 후 sudo 권한으로 파일 이동 및 NGINX 재시작
           ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
             sudo mv /home/$EC2_USERNAME/nginx.conf /etc/nginx/nginx.conf
             sudo chown root:root /etc/nginx/nginx.conf
@@ -127,22 +183,18 @@ jobs:
             sudo nginx -t && sudo systemctl reload nginx
           "
       
-          # 3️⃣ Redis 설치 및 실행 (Ubuntu 전용)
           ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
-            if ! command -v redis-server &> /dev/null
+            if ! command -v redis-server >/dev/null 2>&1;
             then
               echo 'Redis가 설치되어 있지 않습니다. 설치를 진행합니다.'
               sudo apt update
-              sudo apt install -y redis
+              sudo apt install -y redis-server
             else
               echo 'Redis가 이미 설치되어 있습니다.'
             fi
-      
-            # Redis 서버 시작 및 활성화
-            sudo systemctl start redis
-            sudo systemctl enable redis
-            sudo systemctl status redis
+            sudo systemctl start redis-server
+            sudo systemctl enable redis-server
+            sudo systemctl status redis-server
           "
-      
-          # 4️⃣ 민감한 정보 삭제
+    
           rm -f edison.pem
