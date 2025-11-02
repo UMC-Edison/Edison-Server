@@ -119,19 +119,28 @@ jobs:
           ssh -vvv -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "which java || true; java -version || true"'
           ssh2_rc=$?; echo "ssh2_rc=$ssh2_rc"; [ "$ssh2_rc" -eq 0 ] || exit $ssh2_rc
           
-          ssh -vvv -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
-            set -e
+          ssh -vvv -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "set -ex
             pkill -f \"java .* -jar .*app.jar\" || true
             sleep 1
+
+            ln -sfn /home/ubuntu/deploy/app.jar /home/ubuntu/app.jar
             mkdir -p ~/logs
+
+            if ! command -v unzip >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y unzip
+            fi
+
+            echo \"=== Checking datasource inside JAR ===\"
+            unzip -p ~/app.jar BOOT-INF/classes/application.properties | grep -E \"^spring\\.datasource\\.(url|username|password)\" || true
+
             nohup java -Xms256m -Xmx1024m -Duser.timezone=Asia/Seoul -jar ~/app.jar --server.port=8080 \
               > ~/logs/app.out 2>&1 < /dev/null &
-            echo started
-            tail -n 30 ~/logs/app.out || true
-          "'
 
-          ssh3_rc=$?; echo "ssh3_rc=$ssh3_rc"; [ "$ssh3_rc" -eq 0 ] || exit $ssh3_rc
-          rm -f edison.pem      
+            echo started
+            sleep 2
+            tail -n 60 ~/logs/app.out || true
+          "'
 
       - name: Debug Current Directory
         run: |
