@@ -97,13 +97,24 @@ jobs:
           chmod 600 edison.pem
 
           ssh -vvv -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'echo SSH_OK' || exit 255
-      
+          echo "ssh1_rc=$?"
+          
+          find build/libs -maxdepth 3 -type f -print || true
           jar_file=$(find build/libs -type f -name '*.jar' ! -name '*plain.jar' | head -n 1)
-          [ -n "${jar_file:-}" ] || { echo "JAR not found"; exit 1; }
+          if [ -z "${jar_file:-}" ]; then
+            echo "JAR not found"; exit 1
+          fi
+          echo "Using JAR: $jar_file"
+
+          echo "=== SCP upload ==="
+          scp -vvv -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:~/app.jar"
+          scp_rc=$?; echo "scp_rc=$scp_rc"; [ "$scp_rc" -eq 0 ] || exit $scp_rc
       
-          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:~/app.jar"
-      
-          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
+          echo "=== SSH precheck on host (java present?) ==="
+          ssh -vvv -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "which java || true; java -version || true"'
+          ssh2_rc=$?; echo "ssh2_rc=$ssh2_rc"; [ "$ssh2_rc" -eq 0 ] || exit $ssh2_rc
+          
+          ssh -vvv -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
             set -e
             pkill -f \"java .* -jar .*app.jar\" || true
             sleep 1
@@ -113,7 +124,8 @@ jobs:
             echo started
             tail -n 30 ~/logs/app.out || true
           "'
-      
+
+          ssh3_rc=$?; echo "ssh3_rc=$ssh3_rc"; [ "$ssh3_rc" -eq 0 ] || exit $ssh3_rc
           rm -f edison.pem      
 
       - name: Debug Current Directory
