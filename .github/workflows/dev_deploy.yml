@@ -94,6 +94,8 @@ jobs:
       
           printf "%s" "${{ secrets.EC2_SSH_KEY }}" > edison.pem
           chmod 600 edison.pem
+
+          ssh -vvv -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'echo SSH_OK' || exit 255
       
           jar_file=$(find build/libs -type f -name '*.jar' ! -name '*plain.jar' | head -n 1)
           [ -n "${jar_file:-}" ] || { echo "JAR not found"; exit 1; }
@@ -104,22 +106,11 @@ jobs:
             set -e
             pkill -f \"java .* -jar .*app.jar\" || true
             sleep 1
-      
             mkdir -p ~/logs
-      
             nohup java -Xms256m -Xmx1024m -Duser.timezone=Asia/Seoul -jar ~/app.jar --server.port=8080 \
               > ~/logs/app.out 2>&1 < /dev/null &
-      
-            # 헬스체크
-            ok=0
-            for i in $(seq 1 30); do
-              curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null 2>&1 && { ok=1; break; }
-              curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1 && { ok=1; break; }
-              sleep 1
-            done
-            [ $ok -eq 1 ] && echo \"Health OK\" || echo \"(경고) Health 체크 실패 - 로그 확인 필요\"
-      
-            tail -n 50 ~/logs/app.out || true
+            echo started
+            tail -n 30 ~/logs/app.out || true
           "'
       
           rm -f edison.pem      
