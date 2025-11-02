@@ -78,12 +78,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Download build artifact  # 이전 단계에서 업로드한 아티팩트 다운로드
+      - name: Download build artifact 
         uses: actions/download-artifact@v4
         with:
           path: build/libs/
-      
-      - name: Deploy to EC2
+          
+      - name: Deploy to EC2 
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
@@ -95,62 +95,34 @@ jobs:
           printf "%s" "${{ secrets.EC2_SSH_KEY }}" > edison.pem
           chmod 600 edison.pem
       
-          echo "Artifacts:"
-          find build/libs -maxdepth 2 -type f -name "*.jar" -print
           jar_file=$(find build/libs -type f -name '*.jar' ! -name '*plain.jar' | head -n 1)
-          if [ -z "${jar_file:-}" ]; then
-            echo "JAR not found"; exit 1
-          fi
-          echo "Using JAR: $jar_file"
+          [ -n "${jar_file:-}" ] || { echo "JAR not found"; exit 1; }
+      
+          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:~/app.jar"
       
           ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
             set -e
-            sudo mkdir -p /opt/edison
-            sudo chown -R $USER:$USER /opt/edison
+            pkill -f \"java .* -jar .*app.jar\" || true
+            sleep 1
+      
+            mkdir -p ~/logs
+      
+            nohup java -Xms256m -Xmx1024m -Duser.timezone=Asia/Seoul -jar ~/app.jar --server.port=8080 \
+              > ~/logs/app.out 2>&1 < /dev/null &
+      
+            # 헬스체크
+            ok=0
+            for i in $(seq 1 30); do
+              curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null 2>&1 && { ok=1; break; }
+              curl -fsS http://127.0.0.1:8080/ >/dev/null 2>&1 && { ok=1; break; }
+              sleep 1
+            done
+            [ $ok -eq 1 ] && echo \"Health OK\" || echo \"(경고) Health 체크 실패 - 로그 확인 필요\"
+      
+            tail -n 50 ~/logs/app.out || true
           "'
       
-          scp -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:/opt/edison/app.jar"
-      
-          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
-            set -e
-            if ! systemctl list-unit-files | grep -q ^edison-server.service; then
-              echo \"[INFO] creating /etc/systemd/system/edison-server.service\"
-              sudo tee /etc/systemd/system/edison-server.service >/dev/null <<'"'"'EOF'"'"'
-      [Unit]
-      Description=Edison Spring Boot Service
-      Wants=network-online.target
-      After=network-online.target
-      
-      [Service]
-      User=ubuntu
-      WorkingDirectory=/opt/edison
-      EnvironmentFile=-/etc/edison.env
-      Environment="JAVA_OPTS=-Xms256m -Xmx1024m -Duser.timezone=Asia/Seoul"
-      Environment="APP_OPTS=--server.port=${SERVER_PORT:-8080}"
-      ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/edison/app.jar $APP_OPTS
-      ExecStop=/bin/kill -TERM $MAINPID
-      Restart=always
-      RestartSec=5
-      SuccessExitStatus=143
-      StandardOutput=journal
-      StandardError=journal
-      LimitNOFILE=65535
-      TimeoutStartSec=60
-      
-      [Install]
-      WantedBy=multi-user.target
-      EOF
-              sudo systemctl daemon-reload
-              sudo systemctl enable edison-server
-            fi
-      
-            sudo systemctl restart edison-server
-            sudo systemctl --no-pager status edison-server || true
-            sudo journalctl -u edison-server -n 80 --no-pager || true
-          "'
-      
-          rm -f edison.pem
-
+          rm -f edison.pem      
 
       - name: Debug Current Directory
         run: |
