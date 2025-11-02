@@ -91,6 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          set -x
       
           printf "%s" "${{ secrets.EC2_SSH_KEY }}" > edison.pem
           chmod 600 edison.pem
