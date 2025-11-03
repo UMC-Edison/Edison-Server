@@ -68,22 +68,23 @@ jobs:
         with:
           name: test-results
           path: project/build/reports/tests/test/
-
+  
   deploy:
-    needs: build  # build 작업이 성공적으로 완료된 후 실행
+    needs: build
     runs-on: ubuntu-latest
-
+  
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Download build artifact 
+  
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           path: build/libs/
-          
-      - name: Deploy to EC2 
+  
+      - name: Deploy to EC2
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
@@ -92,75 +93,62 @@ jobs:
         run: |
           set -euo pipefail
           set -x
-      
+  
           printf "%s" "${{ secrets.EC2_SSH_KEY }}" > edison.pem
           chmod 600 edison.pem
-
-          ssh -vvv -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'echo SSH_OK' || exit 255
-          echo "ssh1_rc=$?"
-          
-          find build/libs -maxdepth 3 -type f -print || true
-          jar_file=$(find build/libs -type f -name '*.jar' ! -name '*plain.jar' | head -n 1)
+  
+          # SSH 연결 테스트
+          ssh -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'echo SSH_OK'
+  
+          # 빌드된 jar 찾기
+          jar_file=$(find build/libs/Edison-Server -type f -name '*.jar' ! -name '*plain.jar' | head -n 1)
           if [ -z "${jar_file:-}" ]; then
-            echo "JAR not found"; exit 1
+            echo "JAR not found"
+            exit 1
           fi
           echo "Using JAR: $jar_file"
+  
+          ssh -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'set -euxo pipefail; sudo mkdir -p /home/ubuntu/deploy; sudo chown ubuntu:ubuntu /home/ubuntu/deploy || true'
+          scp -o StrictHostKeyChecking=no -i edison.pem "$jar_file" "$EC2_USERNAME@$EC2_HOST:/home/ubuntu/deploy/new.jar"
 
-          echo "=== SCP upload ==="
+          printf '%s\n' \
+            "[Unit]" \
+            "Description=Edison Spring Boot Application" \
+            "After=network.target" \
+            "" \
+            "[Service]" \
+            "User=ubuntu" \
+            "WorkingDirectory=/home/ubuntu/deploy" \
+            "ExecStart=/usr/bin/java -jar /home/ubuntu/deploy/current.jar" \
+            "SuccessExitStatus=143" \
+            "Restart=on-failure" \
+            "RestartSec=5" \
+            "KillSignal=SIGTERM" \
+            "TimeoutStopSec=30" \
+            "" \
+            "[Install]" \
+            "WantedBy=multi-user.target" \
+            > edison.service
 
-          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'whoami; pwd; df -h; ls -ld ~ /home/ubuntu'
+          scp -o StrictHostKeyChecking=no -i edison.pem edison.service "$EC2_USERNAME@$EC2_HOST:/home/ubuntu/edison.service"
 
-          ssh -i edison.pem -o StrictHostKeyChecking=no "$EC2_USERNAME@$EC2_HOST" 'mkdir -p /home/ubuntu/deploy && chmod 777 /home/ubuntu/deploy'
-          scp -vvv -i edison.pem -o StrictHostKeyChecking=no "$jar_file" "$EC2_USERNAME@$EC2_HOST:/home/ubuntu/deploy/app.jar"
+          ssh -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'set -euxo pipefail;
+            sudo mv /home/ubuntu/edison.service /etc/systemd/system/edison.service;
+            sudo systemctl daemon-reload;
+            sudo systemctl enable edison.service || true;
+            sudo systemctl stop edison.service || true;
+            mv -f /home/ubuntu/deploy/new.jar /home/ubuntu/deploy/current.jar;
+            sudo chmod 755 /home/ubuntu/deploy/current.jar;
+            sudo systemctl start edison.service || true;
+            sleep 2;
+            sudo systemctl status --no-pager --full edison.service | head -n 60;
+          '
 
-          scp_rc=$?; echo "scp_rc=$scp_rc"; [ "$scp_rc" -eq 0 ] || exit $scp_rc
-      
-          echo "=== SSH precheck on host (java present?) ==="
-          ssh -vvv -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "which java || true; java -version || true"'
-          ssh2_rc=$?; echo "ssh2_rc=$ssh2_rc"; [ "$ssh2_rc" -eq 0 ] || exit $ssh2_rc
+          # 8) 정리
+          rm -f edison.pem edison.service
 
-          echo "=== Stop old app (ignore if not running) ==="
-          ssh -tt -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
-            set -x
-            pgrep -f \"java .* -jar .*app.jar\" && pkill -f \"java .* -jar .*app.jar\" || true
-            sleep 1
-          "'
-
-          echo "=== Update symlink and logs dir ==="
-          ssh -tt -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
-            set -ex
-            ln -sfn /home/'"$EC2_USERNAME"'/deploy/app.jar /home/'"$EC2_USERNAME"'/app.jar
-            mkdir -p /home/'"$EC2_USERNAME"'/logs
-          "'
-
-          echo "=== Ensure unzip and print datasource in JAR ==="
-          ssh -tt -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
-            set -ex
-            if ! command -v unzip >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y unzip
-            fi
-            echo \"=== Checking datasource inside JAR ===\"
-            unzip -p /home/'"$EC2_USERNAME"'/app.jar BOOT-INF/classes/application.properties \
-              | grep -E \"^spring\\.datasource\\.(url|username|password)\" || true
-          "'
-
-          echo "=== Start app with nohup ==="
-          ssh -tt -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
-            set -ex
-            nohup java -Xms256m -Xmx1024m -Duser.timezone=Asia/Seoul -jar /home/'"$EC2_USERNAME"'/app.jar --server.port=8080 \
-              > /home/'"$EC2_USERNAME"'/logs/app.out 2>&1 < /dev/null &
-            echo started
-          "'
-
-          echo "=== Tail last 80 lines ==="
-          ssh -tt -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'bash -lc "
-            set -x
-            sleep 3
-            tail -n 80 /home/'"$EC2_USERNAME"'/logs/app.out || true
-          "'
-
-
+          echo "=== Deployment Completed ==="
+          
       - name: Debug Current Directory
         run: |
           echo "Current Directory:"
