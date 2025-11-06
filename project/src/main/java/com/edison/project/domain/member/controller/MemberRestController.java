@@ -43,17 +43,6 @@ public class MemberRestController {
     }
 
 
-/*
-    @PostMapping("/identity")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse> saveIdentityTest(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
-            @RequestBody @Valid MemberRequestDto.IdentityTestSaveDto request) {
-        MemberResponseDto.IdentityTestSaveResultDto result = memberService.saveIdentityTest(userPrincipal, request);
-        return ApiResponse.onSuccess(SuccessStatus._OK, result);
-    }
- */
-
     @GetMapping("/identity")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> getIdentityKeywords(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
