@@ -25,7 +25,7 @@ public class AiClient {
     private final ObjectMapper objectMapper;
 
     public List<AiResponseDto.AiVectorResponseDto> sendToAiServer(List<SpaceMapRequestDto.MapRequestDto> requestDtoList) {
-        String aiServerUrl = "http://52.79.91.137:8000/ai";
+        String aiServerUrl = "http://43.200.55.253:8000/ai";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -46,7 +46,7 @@ public class AiClient {
 
     // ✅ 키워드 기반 유사도 상위 ID 요청용
     public AiResponseDto.AiSimilarityResponseDto sendToSimilarityServer(SpaceSimilarityRequestDto.MapRequestDto requestDto) {
-        String similarityUrl = "http://52.79.91.137:8000/similarity";
+        String similarityUrl = "http://43.200.55.253:8000/similarity";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
