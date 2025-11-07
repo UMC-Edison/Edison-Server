@@ -27,6 +27,7 @@ public enum ErrorStatus {
     ACCESSTOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "LOGIN4004", "access토큰이 만료되었습니다. 재발급해 주세요."),
     REFRESHTOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "LOGIN4005", "토큰이 만료되었습니다. 다시 로그인해 주세요."),
     ACCESS_TOKEN_VALID(HttpStatus.BAD_REQUEST, "LOGIN4006", "Access Token이 아직 유효합니다."),
+    ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "LOGIN4007", "이미 회원가입 된 회원입니다. 로그인 해주세요."),
 
     // 멤버 관련 에러
     MEMBER_NOT_FOUND(HttpStatus.BAD_REQUEST, "MEMBER4001", "사용자가 없습니다."),

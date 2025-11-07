@@ -50,6 +50,15 @@ public class MemberRequestDto {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class GoogleSignupDto{
+        private String idToken;
+        private MemberRequestDto.IdentityTestSaveDto identity;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class GoogleLoginDto{
         private String idToken;
     }

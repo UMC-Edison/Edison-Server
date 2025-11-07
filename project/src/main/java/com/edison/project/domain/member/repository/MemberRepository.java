@@ -2,6 +2,7 @@ package com.edison.project.domain.member.repository;
 
 import com.edison.project.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 
@@ -11,4 +12,11 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean existsByMemberId(Long memberId);
     void deleteByMemberId(Long memeberId);
     Member findByMemberId(Long memberId);
+
+    @Query("SELECT m.id FROM Member m WHERE m.email = :email")
+    Long findMemberIdByEmail(String email);
+
+    @Query("SELECT m.id FROM Member m WHERE m.email = :email")
+    Optional<Long> findOptionalMemberIdByEmail(String email);
+
 }

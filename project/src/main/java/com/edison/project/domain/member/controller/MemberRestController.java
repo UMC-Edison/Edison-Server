@@ -43,7 +43,7 @@ public class MemberRestController {
     }
 
 
-
+/*
     @PostMapping("/identity")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse> saveIdentityTest(
@@ -52,6 +52,7 @@ public class MemberRestController {
         MemberResponseDto.IdentityTestSaveResultDto result = memberService.saveIdentityTest(userPrincipal, request);
         return ApiResponse.onSuccess(SuccessStatus._OK, result);
     }
+ */
 
     @GetMapping("/identity")
     @PreAuthorize("isAuthenticated()")
@@ -88,9 +89,16 @@ public class MemberRestController {
         return memberService.cancel(userPrincipal);
     }
 
-    @PostMapping("/google")
-    public ResponseEntity<ApiResponse> googleCallback(@RequestBody MemberRequestDto.GoogleLoginDto request) {
-        return memberService.processGoogleLogin(request.getIdToken());
+    @PostMapping("/google/login")
+    public ResponseEntity<ApiResponse> googleLogin(@RequestBody MemberRequestDto.GoogleLoginDto request) {
+        MemberResponseDto.LoginResultDto dto = memberService.processGoogleLogin(request.getIdToken());
+        return ApiResponse.onSuccess(SuccessStatus._OK, dto);
+    }
+
+    @PostMapping("/google/signup")
+    public ResponseEntity<ApiResponse> googleSignup(@RequestBody MemberRequestDto.GoogleSignupDto request) {
+        MemberResponseDto.SignupResultDto dto = memberService.processGoogleSignup(request.getIdToken(), request.getIdentity());
+        return ApiResponse.onSuccess(SuccessStatus._OK, dto);
     }
 
     @GetMapping("/spaces/identity")
