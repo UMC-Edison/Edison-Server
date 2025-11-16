@@ -62,7 +62,7 @@ public class MemberServiceImpl implements MemberService{
         memberRepository.save(member);
 
         Long memberId = member.getMemberId();
-
+      
         //토큰발급
         MemberResponseDto.TokenDto tokens = generateTokens(memberId, email);
 

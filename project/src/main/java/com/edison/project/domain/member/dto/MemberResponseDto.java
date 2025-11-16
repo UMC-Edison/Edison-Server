@@ -109,6 +109,29 @@ public class MemberResponseDto {
     public static class TokenDto {
         private String accessToken;
         private String refreshToken;
+
+        private IdentityTestSaveResultDto identity;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LoginResultDto{
+
+        private Long memberId;
+        private String email;
+        private String accessToken;
+        private String refreshToken;
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class TokenDto {
+        private String accessToken;
+        private String refreshToken;
     }
 
     @Getter

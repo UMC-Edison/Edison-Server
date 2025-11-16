@@ -19,6 +19,7 @@ public interface MemberService {
     ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal);
     ResponseEntity<ApiResponse> refreshAccessToken(String token);
     ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal);
+
     MemberResponseDto.SignupResultDto processGoogleSignup(String authorizationCode, String nickname, MemberRequestDto.IdentityTestSaveDto request);
     MemberResponseDto.LoginResultDto processGoogleLogin(String authorizationCode);
 

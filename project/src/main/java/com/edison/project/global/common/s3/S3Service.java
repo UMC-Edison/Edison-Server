@@ -30,7 +30,6 @@ public class S3Service {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket("haniumbubbleimgs")
                 .key(key)
-                .contentType("application/octet-stream")
                 .build();
 
         PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -46,7 +45,7 @@ public class S3Service {
 
     public String generatePresignedGetUrl(String key) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName)
+                .bucket("haniumbubbleimgs")
                 .key(key)
                 .build();
 

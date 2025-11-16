@@ -34,9 +34,9 @@ public class ArtletterDTO {
         @NotNull(message = "category는 null일 수 없습니다.")
         private ArtletterCategory category;
 
-        @NotBlank(message = "writer는 비어있을 수 없습니다.")
-        @Pattern(regexp = "^[a-zA-Z가-힣\\s]+$", message = "writer는 문자만 허용됩니다.")
-        private String writer;
+        @NotNull(message = "writerId는 비어있을 수 없습니다.")
+        @Positive(message = "writerId는 양수여야 합니다.")
+        private Long writerId;
 
         @NotNull(message = "readTime은 0보다 큰 정수여야 합니다.")
         @Min(value = 1, message = "readTime은 0보다 큰 정수여야 합니다.")
@@ -48,14 +48,6 @@ public class ArtletterDTO {
         @NotNull(message = "thumbnail은 null일 수 없습니다.")
         private String thumbnail;
 
-    }
-
-    @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class EditorRequestDto {
-        private List<Long> artletterIds;
     }
 
     @Data
@@ -82,7 +74,7 @@ public class ArtletterDTO {
         private String content;
         private ArtletterCategory category;
         private int readTime;
-        private String writer;
+        private WriterSummaryDto writerSummary;
         private String tags;
         private String thumbnail;
         private int likesCnt;
@@ -170,13 +162,6 @@ public class ArtletterDTO {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class MemoryKeywordRequestDto {
-        private String keyword;
-    }
-
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class MemoryKeywordResponseDto {
         private List<String> keywords;
     }
@@ -191,6 +176,17 @@ public class ArtletterDTO {
         private String thumbnail;
         private String tags;
         private boolean isScraped;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class WriterSummaryDto {
+        private Long writerId;
+        private String writerName;
+        private String profileImg;
+        private String writerUrl;
     }
 
 }

@@ -12,8 +12,4 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean existsByMemberId(Long memberId);
     void deleteByMemberId(Long memeberId);
     Member findByMemberId(Long memberId);
-
-    @Query("SELECT m.id FROM Member m WHERE m.email = :email")
-    Optional<Long> findOptionalMemberIdByEmail(String email);
-
 }
