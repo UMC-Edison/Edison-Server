@@ -1,5 +1,6 @@
 package com.edison.project.domain.member.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,14 +14,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class MemberResponseDto {
 
     // 개인정보 관련 DTO
-    @Builder
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CreateProfileResultDto {
-        private String nickname;
-    }
-
     @Builder
     @Getter
     @NoArgsConstructor
@@ -88,6 +81,7 @@ public class MemberResponseDto {
 
         private Long memberId;
         private String email;
+        private String nickname;
         private String accessToken;
         private String refreshToken;
 
@@ -102,6 +96,8 @@ public class MemberResponseDto {
 
         private Long memberId;
         private String email;
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        private String nickname;
         private String accessToken;
         private String refreshToken;
     }

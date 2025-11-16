@@ -20,13 +20,6 @@ public class MemberRestController {
 
     private final MemberService memberService;
 
-    // 회원정보(닉네임) 설정
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse> createProfile(
-            @AuthenticationPrincipal CustomUserPrincipal userPrincipal, @RequestBody MemberRequestDto.CreateProfileDto request) {
-        return memberService.createProfile(userPrincipal, request);
-    }
-
     // 회원정보 변경
     @PatchMapping("/profile")
     public ResponseEntity<ApiResponse> updateProfile(
@@ -85,8 +78,8 @@ public class MemberRestController {
     }
 
     @PostMapping("/google/signup")
-    public ResponseEntity<ApiResponse> googleSignup(@RequestBody MemberRequestDto.GoogleSignupDto request) {
-        MemberResponseDto.SignupResultDto dto = memberService.processGoogleSignup(request.getIdToken(), request.getIdentity());
+    public ResponseEntity<ApiResponse> googleSignup(@Valid @RequestBody MemberRequestDto.GoogleSignupDto request) {
+        MemberResponseDto.SignupResultDto dto = memberService.processGoogleSignup(request.getIdToken(), request.getNickname(), request.getIdentity());
         return ApiResponse.onSuccess(SuccessStatus._OK, dto);
     }
 
