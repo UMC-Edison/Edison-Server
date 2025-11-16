@@ -1,5 +1,6 @@
 package com.edison.project.domain.member.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,16 +10,6 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 public class MemberRequestDto {
-
-    @Builder
-    @Getter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CreateProfileDto {
-
-        @NotBlank
-        private String nickname;
-    }
 
     @Builder
     @Getter
@@ -51,7 +42,15 @@ public class MemberRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class GoogleSignupDto{
+
+        @NotBlank
         private String idToken;
+
+        @NotBlank
+        private String nickname;
+
+        @NotNull
+        @Valid
         private MemberRequestDto.IdentityTestSaveDto identity;
     }
 
@@ -60,6 +59,13 @@ public class MemberRequestDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class GoogleLoginDto{
+
+        @NotBlank
         private String idToken;
+
+        private String nickname;
+
+        @Valid
+        private MemberRequestDto.IdentityTestSaveDto identity;
     }
 }

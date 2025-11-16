@@ -45,7 +45,7 @@ public class MemberServiceImpl implements MemberService{
     // idToken으로 회원가입/로그인 API
     @Override
     @Transactional
-    public MemberResponseDto.SignupResultDto processGoogleSignup(String idToken, MemberRequestDto.IdentityTestSaveDto request) {
+    public MemberResponseDto.SignupResultDto processGoogleSignup(String idToken, String nickname, MemberRequestDto.IdentityTestSaveDto request) {
 
         // Google idToken에서 사용자 정보 추출
         GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
@@ -57,11 +57,12 @@ public class MemberServiceImpl implements MemberService{
 
         Member member = Member.builder()
                 .email(email)
+                .nickname(nickname)
                 .build();
         memberRepository.save(member);
 
-        Long memberId = memberRepository.findMemberIdByEmail(email);
-
+        Long memberId = member.getMemberId();
+      
         //토큰발급
         MemberResponseDto.TokenDto tokens = generateTokens(memberId, email);
 
@@ -85,14 +86,16 @@ public class MemberServiceImpl implements MemberService{
         GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
         String email = payload.getEmail();
 
-        Long memberId = memberRepository.findOptionalMemberIdByEmail(email)
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
+        Long memberId = member.getMemberId();
         MemberResponseDto.TokenDto tokens = generateTokens(memberId, email);
 
         return MemberResponseDto.LoginResultDto.builder()
                 .memberId(memberId)
                 .email(email)
+                .nickname(member.getNickname())
                 .accessToken(tokens.getAccessToken())
                 .refreshToken(tokens.getRefreshToken())
                 .build();
@@ -214,25 +217,6 @@ public class MemberServiceImpl implements MemberService{
         memberRepository.deleteByMemberId(userPrincipal.getMemberId());
 
         return ApiResponse.onSuccess(_OK);
-    }
-
-
-    // 개인정보 설정 API
-    @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> createProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.CreateProfileDto request) {
-
-        Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
-        validateNickname(request.getNickname());
-
-        if (member.getNickname() != null) {
-            throw new GeneralException(ErrorStatus.NICKNAME_ALREADY_SET);
-        }
-
-        member.setNickname(request.getNickname());
-        memberRepository.save(member);
-
-        return ApiResponse.onSuccess(SuccessStatus._OK, new MemberResponseDto.CreateProfileResultDto(member.getNickname()));
     }
 
 
