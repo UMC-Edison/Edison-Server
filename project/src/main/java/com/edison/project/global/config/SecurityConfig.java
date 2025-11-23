@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/s3/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/artletters/more").permitAll()
+                        .requestMatchers("/identity/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
