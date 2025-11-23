@@ -50,7 +50,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     "/artletters/editor-pick",
                     "/spaces/generate",
                     "/s3/upload-url",
-                    "/s3/get-img"
+                    "/s3/get-img",
+                    "/identity/**"
             );
 
             if (authHeader == null){
@@ -71,6 +72,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
 
                 // 로그인 없이 접근 가능한 경로는 필터를 통과
+                // identity/** 열기
+                if (requestURI.startsWith("/identity/")) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 if (openEndpoints.contains(requestURI)) {
                     filterChain.doFilter(request, response);
                     return;
