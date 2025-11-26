@@ -3,6 +3,7 @@ package com.edison.project.global.config;
 import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.dto.MemberResponseDto;
+import com.edison.project.domain.member.service.CustomOidcUserService;
 import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.global.security.CustomAuthenticationEntryPoint;
 import com.edison.project.global.security.JwtAuthenticationFilter;
@@ -34,6 +35,7 @@ public class SecurityConfig {
 
     private final MemberService memberService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomOidcUserService customOidcUserService;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean

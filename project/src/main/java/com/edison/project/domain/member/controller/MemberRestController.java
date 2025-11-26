@@ -79,7 +79,7 @@ public class MemberRestController {
 
     @PostMapping("/google/signup")
     public ResponseEntity<ApiResponse> googleSignup(@Valid @RequestBody MemberRequestDto.GoogleSignupDto request) {
-        MemberResponseDto.SignupResultDto dto = memberService.processGoogleSignup(request.getIdToken(), request.getNickname(), request.getIdentity());
+        MemberResponseDto.SignupResultDto dto = memberService.processGoogleSignup(request.getIdToken(), request.getNickname(), request.getIdentities());
         return ApiResponse.onSuccess(SuccessStatus._OK, dto);
     }
 
