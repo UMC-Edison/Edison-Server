@@ -45,7 +45,7 @@ public class MemberServiceImpl implements MemberService{
     // idToken으로 회원가입/로그인 API
     @Override
     @Transactional
-    public MemberResponseDto.SignupResultDto processGoogleSignup(String idToken, String nickname, MemberRequestDto.IdentityTestSaveDto request) {
+    public MemberResponseDto.SignupResultDto processGoogleSignup(String idToken, String nickname, List<MemberRequestDto.IdentityTestSaveDto> requestList) {
 
         // Google idToken에서 사용자 정보 추출
         GoogleIdToken.Payload payload = jwtUtil.verifyGoogleIdToken(idToken);
@@ -67,14 +67,16 @@ public class MemberServiceImpl implements MemberService{
         MemberResponseDto.TokenDto tokens = generateTokens(memberId, email);
 
         //아이덴티티 설정
-        MemberResponseDto.IdentityTestSaveResultDto identityDto = saveIdentityTest(memberId, request);
+        List<MemberResponseDto.IdentityTestSaveResultDto> identityResults = requestList.stream()
+                .map(requestDto -> saveIdentityTest(memberId, requestDto))
+                .collect(Collectors.toList());
 
         return MemberResponseDto.SignupResultDto.builder()
                 .memberId(memberId)
                 .email(email)
                 .accessToken(tokens.getAccessToken())
                 .refreshToken(tokens.getRefreshToken())
-                .identity(identityDto)
+                .identities(identityResults)
                 .build();
     }
 

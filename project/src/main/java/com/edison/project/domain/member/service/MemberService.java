@@ -5,7 +5,7 @@ import com.edison.project.domain.member.dto.MemberRequestDto;
 import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.global.security.CustomUserPrincipal;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 public interface MemberService {
     ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request);
@@ -20,7 +20,7 @@ public interface MemberService {
     ResponseEntity<ApiResponse> refreshAccessToken(String token);
     ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal);
 
-    MemberResponseDto.SignupResultDto processGoogleSignup(String authorizationCode, String nickname, MemberRequestDto.IdentityTestSaveDto request);
+    MemberResponseDto.SignupResultDto processGoogleSignup(String authorizationCode, String nickname, List<MemberRequestDto.IdentityTestSaveDto> request);
     MemberResponseDto.LoginResultDto processGoogleLogin(String authorizationCode);
 
     String getCategorizedIdentityKeywords(CustomUserPrincipal userPrincipal);
