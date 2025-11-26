@@ -51,7 +51,7 @@ public class MemberRequestDto {
 
         @NotNull
         @Valid
-        private MemberRequestDto.IdentityTestSaveDto identity;
+        private List<MemberRequestDto.IdentityTestSaveDto> identities;
     }
 
     @Builder

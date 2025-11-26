@@ -85,7 +85,7 @@ public class MemberResponseDto {
         private String accessToken;
         private String refreshToken;
 
-        private IdentityTestSaveResultDto identity;
+        private List<IdentityTestSaveResultDto> identities;;
     }
 
     @Builder
