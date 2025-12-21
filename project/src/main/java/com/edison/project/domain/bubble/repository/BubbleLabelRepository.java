@@ -17,4 +17,14 @@ public interface BubbleLabelRepository extends JpaRepository<BubbleLabel, Long> 
             "WHERE bl.label.labelId = :labelId AND b.isTrashed = false")
     List<Bubble> findBubblesByLabelId(@Param("labelId") Long labelId);
 
+    @Query("SELECT DISTINCT b " +
+            "FROM BubbleLabel bl " +
+            "JOIN bl.bubble b " +
+            "LEFT JOIN FETCH b.labels bls " +
+            "LEFT JOIN FETCH bls.label " +
+            "LEFT JOIN FETCH b.backlinks bk " +
+            "LEFT JOIN FETCH bk.backlinkBubble " +
+            "WHERE bl.label.labelId = :labelId AND b.isTrashed = false")
+    List<Bubble> findBubblesByLabelIdWithDetails(@Param("labelId") Long labelId);
+
 }

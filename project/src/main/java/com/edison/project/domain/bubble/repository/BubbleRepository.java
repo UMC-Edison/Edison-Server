@@ -43,4 +43,49 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
 
     List<Bubble> findByMember_MemberIdAndIsTrashedTrue(Long memberId);
 
+    // 전체 버블 조회 (휴지통 제외)
+    @Query("SELECT DISTINCT b FROM Bubble b " +
+            "LEFT JOIN FETCH b.labels bl " +
+            "LEFT JOIN FETCH bl.label " +
+            "LEFT JOIN FETCH b.backlinks bk " +
+            "LEFT JOIN FETCH bk.backlinkBubble " +
+            "WHERE b.member.memberId = :memberId AND b.isTrashed = false")
+    List<Bubble> findByMemberWithDetails(@Param("memberId") Long memberId);
+
+    // 휴지통 버블 조회
+    @Query("SELECT DISTINCT b FROM Bubble b " +
+            "LEFT JOIN FETCH b.labels bl " +
+            "LEFT JOIN FETCH bl.label " +
+            "LEFT JOIN FETCH b.backlinks bk " +
+            "LEFT JOIN FETCH bk.backlinkBubble " +
+            "WHERE b.member.memberId = :memberId AND b.isTrashed = true")
+    List<Bubble> findTrashedByMemberWithDetails(@Param("memberId") Long memberId);
+
+    // 최근 7일 버블 조회
+    @Query("SELECT DISTINCT b FROM Bubble b " +
+            "LEFT JOIN FETCH b.labels bl " +
+            "LEFT JOIN FETCH bl.label " +
+            "LEFT JOIN FETCH b.backlinks bk " +
+            "LEFT JOIN FETCH bk.backlinkBubble " +
+            "WHERE b.member.memberId = :memberId " +
+            "AND b.isTrashed = false " +
+            "AND b.updatedAt >= :since")
+    List<Bubble> findRecentByMemberWithDetails(
+            @Param("memberId") Long memberId,
+            @Param("since") LocalDateTime since
+    );
+
+    // 단건 조회
+    @Query("SELECT b FROM Bubble b " +
+            "LEFT JOIN FETCH b.labels bl " +
+            "LEFT JOIN FETCH bl.label " +
+            "LEFT JOIN FETCH b.backlinks bk " +
+            "LEFT JOIN FETCH bk.backlinkBubble " +
+            "WHERE b.member.memberId = :memberId " +
+            "AND b.localIdx = :localIdx " +
+            "AND b.isTrashed = false")
+    Optional<Bubble> findByMemberAndLocalIdxWithDetails(
+            @Param("memberId") Long memberId,
+            @Param("localIdx") String localIdx
+    );
 }

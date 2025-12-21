@@ -13,10 +13,10 @@ import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -33,15 +33,13 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // 라벨 목록 조회
     @Override
+    @Transactional(readOnly = true)
     public List<LabelResponseDTO.ListResultDto> getLabelInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
         }
 
-        Member member = memberRepository.findById(userPrincipal.getMemberId())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
-
-        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(member.getMemberId());
+        List<Object[]> labelInfoList = labelRepository.findLabelInfoByMemberId(userPrincipal.getMemberId());
 
         return labelInfoList.stream()
                 .map(result -> {
@@ -62,6 +60,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
 
     // 라벨 상세 조회
     @Override
+    @Transactional(readOnly = true)
     public LabelResponseDTO.DetailResultDto getLabelDetailInfoList(@AuthenticationPrincipal CustomUserPrincipal userPrincipal, String localIdx) {
         if (userPrincipal == null) {
             throw new GeneralException(ErrorStatus.LOGIN_REQUIRED);
@@ -73,7 +72,7 @@ public class LabelQueryServiceImpl implements LabelQueryService {
         Label label = labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
 
-        List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelId(label.getLabelId());
+        List<Bubble> bubbles = bubbleLabelRepository.findBubblesByLabelIdWithDetails(label.getLabelId());
 
         List<BubbleResponseDto.SyncResultDto> bubbleDetails = bubbles.stream()
                 .map(this::convertToBubbleResponseDto)
@@ -141,15 +140,16 @@ public class LabelQueryServiceImpl implements LabelQueryService {
     }
 
     private LabelResponseDTO.LabelSyncResponseDTO labelDeletion(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {
-        if (!labelRepository.existsByMemberAndLocalIdx(member, request.getLocalIdx())) {
-            return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
+        Optional<Label> labelOpt = labelRepository.findLabelByMemberAndLocalIdx(member, request.getLocalIdx());
+
+        if (labelOpt.isEmpty()) {
+            return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(),
+                    request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
         }
 
-        Label label = labelRepository.findLabelByMemberAndLocalIdx(member, request.getLocalIdx())
-                .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND));
-
-        labelRepository.delete(label);
-        return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(), request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
+        labelRepository.delete(labelOpt.get());
+        return buildLabelResponse(request.getLocalIdx(), request.getName(), request.getColor(),
+                request.getIsDeleted(), request.getCreatedAt(), request.getUpdatedAt(), request.getDeletedAt());
     }
 
     private LabelResponseDTO.LabelSyncResponseDTO labelUpdate(LabelRequestDTO.LabelSyncRequestDTO request, Member member) {

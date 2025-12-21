@@ -19,18 +19,13 @@ import com.edison.project.domain.label.repository.LabelRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -48,9 +43,6 @@ public class BubbleServiceImpl implements BubbleService {
     private final LabelRepository labelRepository;
     private final MemberRepository memberRepository;
     private final BubbleBacklinkRepository bubbleBacklinkRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     // Bubble → DTO 변환
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
@@ -75,38 +67,63 @@ public class BubbleServiceImpl implements BubbleService {
 
     /** 전체 버블 목록 조회 */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberId(userPrincipal.getMemberId(), pageable);
+        // Fetch Join으로 한 번에 조회
+        List<Bubble> allBubbles = bubbleRepository.findByMemberWithDetails(userPrincipal.getMemberId());
 
-        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
-                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+        // 메모리에서 페이징 처리
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allBubbles.size());
+        List<Bubble> pagedBubbles = start < allBubbles.size()
+                ? allBubbles.subList(start, end)
+                : Collections.emptyList();
 
-        // Bubble 데이터 변환
-        List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
+        PageInfo pageInfo = new PageInfo(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                end < allBubbles.size(),
+                (long) allBubbles.size(),
+                (int) Math.ceil((double) allBubbles.size() / pageable.getPageSize())
+        );
+
+        List<BubbleResponseDto.SyncResultDto> bubbles = pagedBubbles.stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
+
     /** 휴지통 버블 목록 조회 */
     @Override
+    @Transactional(readOnly = true)  // 추가
     public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
+        List<Bubble> allBubbles = bubbleRepository.findTrashedByMemberWithDetails(userPrincipal.getMemberId());
 
-        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
-                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allBubbles.size());
+        List<Bubble> pagedBubbles = start < allBubbles.size()
+                ? allBubbles.subList(start, end)
+                : Collections.emptyList();
 
-        List<BubbleResponseDto.TrashedListResultDto> bubbles = bubblePage.getContent().stream()
+        PageInfo pageInfo = new PageInfo(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                end < allBubbles.size(),
+                (long) allBubbles.size(),
+                (int) Math.ceil((double) allBubbles.size() / pageable.getPageSize())
+        );
+
+        LocalDateTime now = LocalDateTime.now();  // 루프 밖으로 이동
+
+        List<BubbleResponseDto.TrashedListResultDto> bubbles = pagedBubbles.stream()
                 .map(bubble -> {
-                    LocalDateTime deletedAt = Optional.ofNullable(bubble.getDeletedAt()).orElse(LocalDateTime.now());
-                    LocalDateTime now = LocalDateTime.now();
+                    LocalDateTime deletedAt = Optional.ofNullable(bubble.getDeletedAt()).orElse(now);
                     long remainDays = 30 - ChronoUnit.DAYS.between(deletedAt, now);
 
-                    // 라벨 정보 변환
                     List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
                             .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
                                     .localIdx(bl.getLabel().getLocalIdx())
@@ -128,7 +145,7 @@ public class BubbleServiceImpl implements BubbleService {
                             .createdAt(bubble.getCreatedAt())
                             .updatedAt(bubble.getUpdatedAt())
                             .deletedAt(bubble.getDeletedAt())
-                            .remainDay((int) Math.max(remainDays, 0)) // 남은 일수 계산
+                            .remainDay((int) Math.max(remainDays, 0))
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -136,30 +153,44 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
-  /** 최근 7일 내 버블 조회 */
-  @Override
-  public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    /** 최근 7일 내 버블 조회 */
+    @Override
+    @Transactional(readOnly = true)  // 추가
+    public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
-        LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
 
-        Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
+        List<Bubble> allBubbles = bubbleRepository.findRecentByMemberWithDetails(
+                userPrincipal.getMemberId(), sevenDaysAgo);
 
-        List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), allBubbles.size());
+        List<Bubble> pagedBubbles = start < allBubbles.size()
+                ? allBubbles.subList(start, end)
+                : Collections.emptyList();
+
+        List<BubbleResponseDto.SyncResultDto> bubbles = pagedBubbles.stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
-        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
-                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+        PageInfo pageInfo = new PageInfo(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                end < allBubbles.size(),
+                (long) allBubbles.size(),
+                (int) Math.ceil((double) allBubbles.size() / pageable.getPageSize())
+        );
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
-
     /** 버블 상세 조회 */
     @Override
+    @Transactional(readOnly = true)
     public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, String localIdx) {
 
-        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
+        Bubble bubble = bubbleRepository.findByMemberAndLocalIdxWithDetails(
+                        userPrincipal.getMemberId(), localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         return convertToBubbleResponseDto(bubble);
@@ -410,11 +441,19 @@ public class BubbleServiceImpl implements BubbleService {
 
     // 라벨을 DTO로 변환 (localIdx 기준)
     public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<String> localIdxs) {
-        return localIdxs.stream()
-                .map(localIdx -> labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
-                        .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))
+        if (localIdxs == null || localIdxs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Label> labels = labelRepository.findAllByMemberAndLocalIdxIn(member, localIdxs);  // Set으로 받기
+
+        if (labels.size() != localIdxs.size()) {
+            throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
+        }
+
+        return labels.stream()
                 .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                        .localIdx(l.getLocalIdx()) // labelId 대신 localIdx 사용
+                        .localIdx(l.getLocalIdx())
                         .name(l.getName())
                         .color(l.getColor())
                         .build())

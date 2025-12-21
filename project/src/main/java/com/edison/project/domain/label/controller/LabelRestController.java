@@ -4,7 +4,6 @@ import com.edison.project.common.response.ApiResponse;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.label.dto.LabelRequestDTO;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
-import com.edison.project.domain.label.service.LabelCommandService;
 import com.edison.project.domain.label.service.LabelQueryService;
 import com.edison.project.global.security.CustomUserPrincipal;
 import jakarta.validation.Valid;
@@ -22,7 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Validated
 public class LabelRestController {
-    private final LabelCommandService labelCommandService;
     private final LabelQueryService labelQueryService;
 
     @GetMapping
