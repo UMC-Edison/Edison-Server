@@ -1,193 +1,112 @@
-name: Edison CI/CD Pipeline
+name: Edison Spring CI/CD
 
 on:
   push:
-    branches: [ develop ]  # develop 브랜치에 push가 일어날 때 실행
+    branches: [ main, develop ]
   workflow_dispatch:
+
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/edison-spring
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3  # 저장소 코드 체크아웃
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 17  # Java 개발 킷 설정
-        uses: actions/setup-java@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Make application.properties
+      - name: Create application.properties
         run: |
           mkdir -p ./project/src/main/resources/
-          echo "spring.datasource.url=${{ secrets.RDS_URL }}" > ./project/src/main/resources/application.properties
-          echo "spring.datasource.username=${{ secrets.RDS_USERNAME }}" >> ./project/src/main/resources/application.properties
-          echo "spring.datasource.password=${{ secrets.RDS_PASSWORD }}" >> ./project/src/main/resources/application.properties
-          echo "spring.jpa.hibernate.ddl-auto=update" >> ./project/src/main/resources/application.properties
-          # Google OAuth2
-          echo "spring.security.oauth2.client.registration.google.client-id=${{ secrets.GOOGLE_CLIENT_ID }}" >> ./project/src/main/resources/application.properties
-          # JWT
-          echo "jwt.secret=${{ secrets.JWT_SECRET }}" >> ./project/src/main/resources/application.properties
-          echo "jwt.access-token-expiration=${{ secrets.JWT_ACCESS_EXPIRATION }}" >> ./project/src/main/resources/application.properties
-          echo "jwt.refresh-token-expiration=${{ secrets.JWT_REFRESH_EXPIRATION }}" >> ./project/src/main/resources/application.properties
-          # Redis
-          echo "spring.data.redis.host=${{ secrets.REDIS_HOST }}" >> ./project/src/main/resources/application.properties
-          echo "spring.data.redis.port=${{ secrets.REDIS_PORT }}" >> ./project/src/main/resources/application.properties
-          echo "spring.data.redis.password=${{ secrets.REDIS_PASSWORD }}" >> ./project/src/main/resources/application.properties
-          # Server Configuration
-          echo "server.forward-headers-strategy=native" >> ./project/src/main/resources/application.properties
-          # OpenAI
-          echo "openai.secret_key=${{ secrets.OPENAI_KEY }}" >> ./project/src/main/resources/application.properties
-          # AWS
-          echo "cloud.aws.credentials.access-key=${{ secrets.AWS_ACCESS_KEY }}" >> ./project/src/main/resources/application.properties
-          echo "cloud.aws.credentials.secret-key=${{ secrets.AWS_SECRET_KEY }}" >> ./project/src/main/resources/application.properties
-          echo "cloud.aws.region.static=ap-southeast-2" >> ./project/src/main/resources/application.properties
-          echo "cloud.aws.s3.bucket=${{ secrets.AWS_S3_BUCKET }}" >> ./project/src/main/resources/application.properties
-        shell: bash
+          cat > ./project/src/main/resources/application.properties << EOF
+          spring.jpa.hibernate.ddl-auto=update
+          server.forward-headers-strategy=framework
+          
+          spring.datasource.url=\${SPRING_DATASOURCE_URL}
+          spring.datasource.username=\${SPRING_DATASOURCE_USERNAME}
+          spring.datasource.password=\${SPRING_DATASOURCE_PASSWORD}
+          
+          spring.data.redis.host=\${SPRING_DATA_REDIS_HOST:localhost}
+          spring.data.redis.port=\${SPRING_DATA_REDIS_PORT:6379}
+          spring.data.redis.password=\${SPRING_DATA_REDIS_PASSWORD}
+          
+          jwt.secret=\${JWT_SECRET}
+          jwt.access-token-expiration=\${JWT_ACCESS_TOKEN_EXPIRATION:3600000}
+          jwt.refresh-token-expiration=\${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
+          
+          spring.security.oauth2.client.registration.google.client-id=\${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID}
+          spring.security.oauth2.client.registration.google.client-secret=\${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET}
+          
+          openai.secret_key=\${OPENAI_SECRET_KEY}
+          
+          cloud.aws.credentials.access-key=\${CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
+          cloud.aws.credentials.secret-key=\${CLOUD_AWS_CREDENTIALS_SECRET_KEY}
+          cloud.aws.region.static=\${CLOUD_AWS_REGION_STATIC:ap-northeast-2}
+          cloud.aws.s3.bucket=\${CLOUD_AWS_S3_BUCKET}
+          
+          management.endpoints.web.exposure.include=health
+          management.endpoint.health.show-details=always
+          EOF
 
-
-      - name: Grant execute permission for gradlew  # gradlew 실행 권한 부여
+      - name: Grant execute permission for gradlew
         run: chmod +x project/gradlew
 
-      - name: Build with Gradle  # Gradle을 사용하여 프로젝트 빌드
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: clean build --no-build-cache
-          build-root-directory: project
+      - name: Build with Gradle
+        run: cd project && ./gradlew clean build -x test --no-daemon
 
-      - name: Upload build artifact  # 빌드된 아티팩트 업로드
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
         with:
-          name: Edison-Server
-          path: project/build/libs/*.jar
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          name: test-results
-          path: project/build/reports/tests/test/
-  
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
-  
+    if: github.ref == 'refs/heads/main'
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-  
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          path: build/libs/
-  
       - name: Deploy to EC2
-        env:
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          set -x
-  
-          printf "%s" "${{ secrets.EC2_SSH_KEY }}" > edison.pem
-          chmod 600 edison.pem
-  
-          # SSH 연결 테스트
-          ssh -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'echo SSH_OK'
-  
-          # 빌드된 jar 찾기
-          jar_file=$(find build/libs/Edison-Server -type f -name '*.jar' ! -name '*plain.jar' | head -n 1)
-          if [ -z "${jar_file:-}" ]; then
-            echo "JAR not found"
-            exit 1
-          fi
-          echo "Using JAR: $jar_file"
-  
-          ssh -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'set -euxo pipefail; sudo mkdir -p /home/ubuntu/deploy; sudo chown ubuntu:ubuntu /home/ubuntu/deploy || true'
-          scp -o StrictHostKeyChecking=no -i edison.pem "$jar_file" "$EC2_USERNAME@$EC2_HOST:/home/ubuntu/deploy/new.jar"
-
-          printf '%s\n' \
-            "[Unit]" \
-            "Description=Edison Spring Boot Application" \
-            "After=network.target" \
-            "" \
-            "[Service]" \
-            "User=ubuntu" \
-            "WorkingDirectory=/home/ubuntu/deploy" \
-            "ExecStart=/usr/bin/java -jar /home/ubuntu/deploy/current.jar" \
-            "SuccessExitStatus=143" \
-            "Restart=on-failure" \
-            "RestartSec=5" \
-            "KillSignal=SIGTERM" \
-            "TimeoutStopSec=30" \
-            "" \
-            "[Install]" \
-            "WantedBy=multi-user.target" \
-            > edison.service
-
-          scp -o StrictHostKeyChecking=no -i edison.pem edison.service "$EC2_USERNAME@$EC2_HOST:/home/ubuntu/edison.service"
-
-          ssh -o StrictHostKeyChecking=no -i edison.pem "$EC2_USERNAME@$EC2_HOST" 'set -euxo pipefail;
-            sudo mv /home/ubuntu/edison.service /etc/systemd/system/edison.service;
-            sudo systemctl daemon-reload;
-            sudo systemctl enable edison.service || true;
-            sudo systemctl stop edison.service || true;
-            mv -f /home/ubuntu/deploy/new.jar /home/ubuntu/deploy/current.jar;
-            sudo chmod 755 /home/ubuntu/deploy/current.jar;
-            sudo systemctl start edison.service || true;
-            sleep 2;
-            sudo systemctl status --no-pager --full edison.service | head -n 60;
-          '
-
-          # 8) 정리
-          rm -f edison.pem edison.service
-
-          echo "=== Deployment Completed ==="
-          
-      - name: Debug Current Directory
-        run: |
-          echo "Current Directory:"
-          pwd
-          echo "Files and Folders in Current Directory:"
-          ls -al
-          echo "Recursive Directory Listing:"
-          find . -type f
-          
-      - name: Deploy NGINX Configuration 
-        env:
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-        run: |
-          printf "%s" "${{ secrets.EC2_SSH_KEY }}" > edison.pem
-          chmod 600 edison.pem
-      
-          scp -i edison.pem -o StrictHostKeyChecking=no ./nginx/nginx.conf $EC2_USERNAME@$EC2_HOST:/home/$EC2_USERNAME/nginx.conf
-      
-          ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
-            sudo mv /home/$EC2_USERNAME/nginx.conf /etc/nginx/nginx.conf
-            sudo chown root:root /etc/nginx/nginx.conf
-            sudo chmod 644 /etc/nginx/nginx.conf
-            sudo nginx -t && sudo systemctl reload nginx
-          "
-      
-          ssh -i edison.pem -o StrictHostKeyChecking=no $EC2_USERNAME@$EC2_HOST "
-            if ! command -v redis-server >/dev/null 2>&1;
-            then
-              echo 'Redis가 설치되어 있지 않습니다. 설치를 진행합니다.'
-              sudo apt update
-              sudo apt install -y redis-server
-            else
-              echo 'Redis가 이미 설치되어 있습니다.'
-            fi
-            sudo systemctl start redis-server
-            sudo systemctl enable redis-server
-            sudo systemctl status redis-server
-          "
-    
-          rm -f edison.pem
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/edison-infra
+            
+            cat > .env << 'ENVEOF'
+            ${{ secrets.ENV_FILE }}
+            ENVEOF
+            
+            sed -i 's/^SPRING_TAG=.*/SPRING_TAG=${{ github.sha }}/' .env
+            
+            ./deploy.sh spring ${{ github.sha }}
