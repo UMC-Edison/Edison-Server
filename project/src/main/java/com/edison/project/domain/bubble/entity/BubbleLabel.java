@@ -1,0 +1,34 @@
+package com.edison.project.domain.bubble.entity;
+
+import com.edison.project.domain.label.entity.Label;
+import jakarta.persistence.*;
+import lombok.*;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Entity
+@Table(name = "BubbleLabel", indexes = {
+        @Index(name = "idx_bubble_label_bubble_id", columnList = "bubble_id"),
+        @Index(name = "idx_bubble_label_label_id", columnList = "label_id")
+})
+public class BubbleLabel {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "bubble_label_id")
+    private Long bubbleLabelId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bubble_id", nullable = false)
+    private Bubble bubble;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "label_id", nullable = false)
+    private Label label;
+
+    @Builder
+    public BubbleLabel(Bubble bubble, Label label) {
+        this.bubble = bubble;
+        this.label = label;
+    }
+}

@@ -1,0 +1,114 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.1'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.edison'
+version = '0.0.1-SNAPSHOT'
+
+springBoot {
+    mainClass = 'com.edison.project.ProjectApplication'  // 실행할 Main 클래스
+}
+
+bootJar {
+    enabled = true
+    mainClass = 'com.edison.project.ProjectApplication' 
+}
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "com.google.cloud:libraries-bom:26.10.0"
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	awsSdkVersion = "2.25.26"
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	runtimeOnly 'org.springframework.data:spring-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+	// Lombok 설정
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	// 테스트 관련
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'org.springframework.security:spring-security-oauth2-jose'
+	implementation 'com.auth0:java-jwt:4.2.1'
+
+	// google 관련 라이브러리 수정
+	implementation 'com.google.api-client:google-api-client'
+	implementation 'com.google.http-client:google-http-client-gson'
+	implementation 'com.google.oauth-client:google-oauth-client'
+	implementation 'com.google.auth:google-auth-library-oauth2-http'
+	implementation 'com.google.code.gson:gson:2.11.0'
+
+	//로그아웃
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// s3
+	implementation "software.amazon.awssdk:s3:${awsSdkVersion}"
+	implementation "software.amazon.awssdk:auth:${awsSdkVersion}"
+	implementation "software.amazon.awssdk:regions:${awsSdkVersion}"
+	implementation "software.amazon.awssdk:s3control:${awsSdkVersion}"
+	implementation "software.amazon.awssdk:s3outposts:${awsSdkVersion}"
+
+	// Actuator + Prometheus
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+
+}
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+def querydslDir = "src/main/generated"
+
+sourceSets {
+	main.java.srcDirs += [ querydslDir ]
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.annotationProcessorGeneratedSourcesDirectory = file(querydslDir)
+	options.compilerArgs += [
+			'--add-opens',
+			'java.base/java.lang=ALL-UNNAMED',
+			'--add-opens',
+			'java.base/java.util=ALL-UNNAMED'
+	]
+}
+
+clean.doLast {
+	file(querydslDir).deleteDir()
+}
