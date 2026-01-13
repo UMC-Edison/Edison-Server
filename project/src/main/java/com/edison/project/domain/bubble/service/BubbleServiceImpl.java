@@ -19,9 +19,6 @@ import com.edison.project.domain.label.repository.LabelRepository;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.global.security.CustomUserPrincipal;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -36,20 +34,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
-@org.springframework.transaction.annotation.Transactional(readOnly = true)
+@Slf4j
+@Transactional(readOnly = true)
 public class BubbleServiceImpl implements BubbleService {
 
     private final BubbleRepository bubbleRepository;
-    private final BubbleLabelRepository bubbleLabelRepository;
     private final LabelRepository labelRepository;
+    private final BubbleLabelRepository bubbleLabelRepository;
     private final MemberRepository memberRepository;
     private final BubbleBacklinkRepository bubbleBacklinkRepository;
-
-    @PersistenceContext
-    private EntityManager entityManager;
 
     // Bubble → DTO 변환
     private BubbleResponseDto.SyncResultDto convertToBubbleResponseDto(Bubble bubble) {
@@ -73,93 +68,88 @@ public class BubbleServiceImpl implements BubbleService {
                 .build();
     }
 
-    /** 전체 버블 목록 조회 */
     @Override
-    @Transactional
-    public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getBubblesByMember(
+            CustomUserPrincipal userPrincipal,
+            Pageable pageable
+    ) {
+        Page<Bubble> bubblePage = bubbleRepository
+                .findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
-
-        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
-                bubblePage.getTotalElements(), bubblePage.getTotalPages());
-
-        // Bubble 데이터 변환
         List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
+        PageInfo pageInfo = new PageInfo(
+                bubblePage.getNumber(),
+                bubblePage.getSize(),
+                bubblePage.hasNext(),
+                bubblePage.getTotalElements(),
+                bubblePage.getTotalPages()
+        );
+
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
-    /** 휴지통 버블 목록 조회 */
     @Override
-    public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<ApiResponse> getDeletedBubbles(
+            CustomUserPrincipal userPrincipal,
+            Pageable pageable
+    ) {
+        Page<Bubble> bubblePage = bubbleRepository
+                .findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
 
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
-
-        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
-                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+        LocalDateTime now = LocalDateTime.now();
 
         List<BubbleResponseDto.TrashedListResultDto> bubbles = bubblePage.getContent().stream()
-                .map(bubble -> {
-                    LocalDateTime deletedAt = Optional.ofNullable(bubble.getDeletedAt()).orElse(LocalDateTime.now());
-                    LocalDateTime now = LocalDateTime.now();
-                    long remainDays = 30 - ChronoUnit.DAYS.between(deletedAt, now);
-
-                    // 라벨 정보 변환
-                    List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
-                            .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                                    .localIdx(bl.getLabel().getLocalIdx())
-                                    .name(bl.getLabel().getName())
-                                    .color(bl.getLabel().getColor())
-                                    .build())
-                            .collect(Collectors.toList());
-
-                    return BubbleResponseDto.TrashedListResultDto.builder()
-                            .localIdx(bubble.getLocalIdx())
-                            .title(bubble.getTitle())
-                            .content(bubble.getContent())
-                            .mainImageUrl(bubble.getMainImg())
-                            .labels(labelDtos)
-                            .backlinkIdxs(bubble.getBacklinks().stream()
-                                    .map(BubbleBacklink::getBacklinkBubble)
-                                    .map(Bubble::getLocalIdx)
-                                    .collect(Collectors.toSet()))
-                            .createdAt(bubble.getCreatedAt())
-                            .updatedAt(bubble.getUpdatedAt())
-                            .deletedAt(bubble.getDeletedAt())
-                            .remainDay((int) Math.max(remainDays, 0)) // 남은 일수 계산
-                            .build();
-                })
+                .map(bubble -> convertToTrashedDto(bubble, now))
                 .collect(Collectors.toList());
+
+        PageInfo pageInfo = new PageInfo(
+                bubblePage.getNumber(),
+                bubblePage.getSize(),
+                bubblePage.hasNext(),
+                bubblePage.getTotalElements(),
+                bubblePage.getTotalPages()
+        );
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
-  /** 최근 7일 내 버블 조회 */
-  @Override
-  public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    /** 최근 7일 내 버블 조회 */
+    @Override
+    public ResponseEntity<ApiResponse> getRecentBubblesByMember(
+            CustomUserPrincipal userPrincipal,
+            Pageable pageable
+    ) {
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
 
-        LocalDateTime sevenDaysago = LocalDateTime.now().minusDays(7);
-
-        Page<Bubble> bubblePage = bubbleRepository.findRecentBubblesByMember(userPrincipal.getMemberId(), sevenDaysago, pageable);
+        Page<Bubble> bubblePage = bubbleRepository
+                .findRecentByMember(userPrincipal.getMemberId(), sevenDaysAgo, pageable);
 
         List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
 
-        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
-                bubblePage.getTotalElements(), bubblePage.getTotalPages());
+        PageInfo pageInfo = new PageInfo(
+                bubblePage.getNumber(),
+                bubblePage.getSize(),
+                bubblePage.hasNext(),
+                bubblePage.getTotalElements(),
+                bubblePage.getTotalPages()
+        );
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
-
-    /** 버블 상세 조회 */
+    /** 버블 상세 조회 - 단건은 EntityGraph 사용 */
     @Override
-    public BubbleResponseDto.SyncResultDto getBubble(CustomUserPrincipal userPrincipal, String localIdx) {
-
-        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(userPrincipal.getMemberId(), localIdx)
+    public BubbleResponseDto.SyncResultDto getBubble(
+            CustomUserPrincipal userPrincipal,
+            String localIdx
+    ) {
+        Bubble bubble = bubbleRepository
+                .findByMemberAndLocalIdxWithDetails(userPrincipal.getMemberId(), localIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
         return convertToBubbleResponseDto(bubble);
@@ -407,14 +397,20 @@ public class BubbleServiceImpl implements BubbleService {
         return new HashSet<>(labels);
     }
 
-
-    // 라벨을 DTO로 변환 (localIdx 기준)
     public List<LabelResponseDTO.LabelSimpleInfoDto> mapLabelsToDtoByLocalIdx(Member member, Set<String> localIdxs) {
-        return localIdxs.stream()
-                .map(localIdx -> labelRepository.findLabelByMemberAndLocalIdx(member, localIdx)
-                        .orElseThrow(() -> new GeneralException(ErrorStatus.LABELS_NOT_FOUND)))
+        if (localIdxs == null || localIdxs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<Label> labels = labelRepository.findAllByMemberAndLocalIdxIn(member, localIdxs);
+
+        if (labels.size() != localIdxs.size()) {
+            throw new GeneralException(ErrorStatus.LABELS_NOT_FOUND);
+        }
+
+        return labels.stream()
                 .map(l -> LabelResponseDTO.LabelSimpleInfoDto.builder()
-                        .localIdx(l.getLocalIdx()) // labelId 대신 localIdx 사용
+                        .localIdx(l.getLocalIdx())
                         .name(l.getName())
                         .color(l.getColor())
                         .build())
@@ -594,6 +590,30 @@ public class BubbleServiceImpl implements BubbleService {
 
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
 
+    }
+
+    private BubbleResponseDto.TrashedListResultDto convertToTrashedDto(Bubble bubble, LocalDateTime now) {
+        LocalDateTime deletedAt = Optional.ofNullable(bubble.getDeletedAt()).orElse(now);
+        long remainDays = 30 - ChronoUnit.DAYS.between(deletedAt, now);
+
+        List<LabelResponseDTO.LabelSimpleInfoDto> labelDtos = bubble.getLabels().stream()
+                .map(bl -> LabelResponseDTO.LabelSimpleInfoDto.builder()
+                        .localIdx(bl.getLabel().getLocalIdx())
+                        .name(bl.getLabel().getName())
+                        .color(bl.getLabel().getColor())
+                        .build())
+                .collect(Collectors.toList());
+
+        return BubbleResponseDto.TrashedListResultDto.builder()
+                .localIdx(bubble.getLocalIdx())
+                .title(bubble.getTitle())
+                .content(bubble.getContent())
+                .labels(labelDtos)
+                .createdAt(bubble.getCreatedAt())
+                .updatedAt(bubble.getUpdatedAt())
+                .deletedAt(bubble.getDeletedAt())
+                .remainDay((int) Math.max(remainDays, 0))
+                .build();
     }
 
 }
