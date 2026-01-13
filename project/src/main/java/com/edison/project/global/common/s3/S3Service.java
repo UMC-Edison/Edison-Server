@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequ
 import java.net.URL;
 import java.time.Duration;
 import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class S3Service {
@@ -44,7 +45,7 @@ public class S3Service {
 
     public String generatePresignedGetUrl(String key) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(bucketName) // 하드코딩된 문자열 대신 변수 사용
+                .bucket(bucketName)
                 .key(key)
                 .build();
 
@@ -56,25 +57,6 @@ public class S3Service {
         PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
         return presignedRequest.url().toString();
     }
-
-    public record PresignedUrlResponse(String key, String presignedUrl) {}
-}
-
-    public String generatePresignedGetUrl(String key) {
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket("haniumbubbleimgs")
-                .key(key)
-                .build();
-
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .getObjectRequest(getObjectRequest)
-                .signatureDuration(Duration.ofMinutes(60))
-                .build();
-
-        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
-        return presignedRequest.url().toString();
-    }
-
 
     public record PresignedUrlResponse(String key, String presignedUrl) {}
 }
