@@ -255,8 +255,6 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
-    // --- [AI Vectorization Methods] ---
-
     /**
      * Vectorize a single Bubble
      */
@@ -266,35 +264,69 @@ public class BubbleServiceImpl implements BubbleService {
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        Bubble bubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(
+        Bubble targetBubble = bubbleRepository.findByMember_MemberIdAndLocalIdxAndIsTrashedFalse(
                         member.getMemberId(), bubbleLocalIdx)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.BUBBLE_NOT_FOUND));
 
-        String textToEmbed = (bubble.getTitle() != null ? bubble.getTitle() : "") + " " +
-                (bubble.getContent() != null ? bubble.getContent() : "");
+        // 1. 현재 버블의 임베딩 생성 및 저장
+        String textToEmbed = (targetBubble.getTitle() != null ? targetBubble.getTitle() : "") + " " +
+                (targetBubble.getContent() != null ? targetBubble.getContent() : "");
 
         PGvector embedding = embeddingService.embed(textToEmbed);
+        targetBubble.setEmbedding(embedding.toArray());
+        targetBubble.setUpdatedAt(LocalDateTime.now());
 
-        bubble.setEmbedding(embedding.toArray());
-        bubble.setUpdatedAt(LocalDateTime.now());
+        bubbleRepository.saveAndFlush(targetBubble);
 
-        // embedding.toArray() returns float[], so pass it directly
-        float[] vector = embedding.toArray();
-        double[][] projection = dimensionReductionService.reduceTo2D(new float[][] { vector });
+        // 2. [핵심 수정] 내 모든 버블을 가져와서 함께 좌표를 계산해야 함
+        // 좌표는 "상대적"이기 때문에 혼자서는 계산할 수 없음
+        List<Bubble> allBubbles = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(member.getMemberId());
 
-        bubble.setEmbedding2dX(projection[0][0]);
-        bubble.setEmbedding2dY(projection[0][1]);
+        // 임베딩이 있는 버블만 필터링
+        List<Bubble> vectorizedBubbles = allBubbles.stream()
+                .filter(b -> b.getEmbedding() != null)
+                .collect(Collectors.toList());
 
-        bubbleRepository.save(bubble);
+        if (vectorizedBubbles.size() > 1) {
+            // 전체 벡터 배열 생성
+            float[][] vectors = new float[vectorizedBubbles.size()][];
+            for (int i = 0; i < vectorizedBubbles.size(); i++) {
+                vectors[i] = vectorizedBubbles.get(i).getEmbedding();
+            }
+
+            double[][] projection = dimensionReductionService.reduceTo2D(vectors);
+
+            // 계산된 좌표를 각 버블에 업데이트
+            for (int i = 0; i < vectorizedBubbles.size(); i++) {
+                Bubble b = vectorizedBubbles.get(i);
+                b.setEmbedding2dX(projection[i][0]);
+                b.setEmbedding2dY(projection[i][1]);
+            }
+
+            // 변경된 좌표들 일괄 저장
+            bubbleRepository.saveAll(vectorizedBubbles);
+
+            Bubble updatedTarget = vectorizedBubbles.stream()
+                    .filter(b -> b.getLocalIdx().equals(bubbleLocalIdx))
+                    .findFirst()
+                    .orElse(targetBubble);
+
+            targetBubble = updatedTarget;
+
+        } else {
+            targetBubble.setEmbedding2dX(0.0);
+            targetBubble.setEmbedding2dY(0.0);
+            bubbleRepository.save(targetBubble);
+        }
 
         return BubbleResponseDto.VectorizeResultDto.builder()
-                .localIdx(bubble.getLocalIdx())
-                .title(bubble.getTitle())
+                .localIdx(targetBubble.getLocalIdx())
+                .title(targetBubble.getTitle())
                 .isVectorized(true)
-                .embedding2dX(bubble.getEmbedding2dX())
-                .embedding2dY(bubble.getEmbedding2dY())
+                .embedding2dX(targetBubble.getEmbedding2dX())
+                .embedding2dY(targetBubble.getEmbedding2dY())
                 .vectorizedAt(LocalDateTime.now())
-                .message("Bubble vectorized successfully")
+                .message("Bubble vectorized and map updated")
                 .build();
     }
 
