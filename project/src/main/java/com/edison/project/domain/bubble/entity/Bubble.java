@@ -66,9 +66,9 @@ public class Bubble {
     @OneToMany(mappedBy = "backlinkBubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<BubbleBacklink> referencingBubbles = new HashSet<>();
 
-    @Column(columnDefinition = "vector")
+    @Column(name = "embedding")
     @JdbcTypeCode(SqlTypes.VECTOR)
-    private PGvector embedding;
+    private float[] embedding;
 
     @Column(name = "embedding_2d_x")
     private Double embedding2dX;

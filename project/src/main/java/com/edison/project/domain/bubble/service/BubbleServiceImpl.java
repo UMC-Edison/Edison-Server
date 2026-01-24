@@ -275,7 +275,7 @@ public class BubbleServiceImpl implements BubbleService {
 
         PGvector embedding = embeddingService.embed(textToEmbed);
 
-        bubble.setEmbedding(embedding);
+        bubble.setEmbedding(embedding.toArray());
         bubble.setUpdatedAt(LocalDateTime.now());
 
         // embedding.toArray() returns float[], so pass it directly
@@ -324,7 +324,7 @@ public class BubbleServiceImpl implements BubbleService {
 
                 PGvector embedding = embeddingService.embed(textToEmbed);
 
-                bubble.setEmbedding(embedding);
+                bubble.setEmbedding(embedding.toArray());
                 bubble.setUpdatedAt(LocalDateTime.now());
 
                 embeddedBubbles.add(bubble);
