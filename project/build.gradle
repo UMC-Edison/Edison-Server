@@ -58,6 +58,15 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 
 	runtimeOnly 'com.mysql:mysql-connector-j'
+	runtimeOnly 'org.postgresql:postgresql'
+
+	// Vector Database (pgvector)
+    implementation 'com.pgvector:pgvector:0.1.6'
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.7.0'
+    implementation 'com.github.haifengl:smile-core:3.1.1'
+
+	// 차원 축소 (PCA, t-SNE)
+	implementation 'org.apache.commons:commons-math3:3.6.1'
 
 	// 테스트 관련
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

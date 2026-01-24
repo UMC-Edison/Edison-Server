@@ -68,4 +68,30 @@ public class BubbleResponseDto {
         private boolean isTrashed;
     }
 
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VectorizeResultDto {
+        private String localIdx;
+        private String title;
+        private boolean isVectorized;
+        private Double embedding2dX;
+        private Double embedding2dY;
+        private LocalDateTime vectorizedAt;
+        private String message;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BubbleEmbeddingDto {
+        private String localIdx;
+        private String title;
+        private Double embedding2dX;
+        private Double embedding2dY;
+        private LocalDateTime createdAt;
+    }
+
 }

@@ -147,5 +147,44 @@ public class BubbleRestController {
         return bubbleService.getAllBubbles(userPrincipal, pageable);
     }
 
+    /**
+     * 단일 버블 벡터화
+     * POST /bubbles/{localIdx}/vectorize
+     */
+    @PostMapping("/{localIdx}/vectorize")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> vectorizeBubble(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @PathVariable String localIdx) {
+        BubbleResponseDto.VectorizeResultDto result = bubbleService.vectorizeBubble(userPrincipal, localIdx);
+        return ApiResponse.onSuccess(SuccessStatus._OK, result);
+    }
+
+    /**
+     * 모든 버블 벡터화
+     * POST /bubbles/vectorize-all
+     */
+    @PostMapping("/vectorize-all")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> vectorizeAllBubbles(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        return bubbleService.vectorizeAllBubbles(userPrincipal);
+    }
+
+    /**
+     * 사용자의 모든 버블 2D 벡터 좌표 조회
+     * GET /bubbles/embeddings
+     */
+    @GetMapping("/embeddings")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse> getAllBubbleEmbeddings(
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return bubbleService.getAllBubbleEmbeddings(userPrincipal, pageable);
+    }
+
 }
 

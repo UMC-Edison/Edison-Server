@@ -29,4 +29,19 @@ public interface BubbleService {
     void hardDeleteBubble(CustomUserPrincipal userPrincipal, String bubbleId);
 
     ResponseEntity<ApiResponse> getAllBubbles(CustomUserPrincipal userPrincipal, Pageable pageable);
+
+    /**
+     * Bubble을 벡터화하여 데이터베이스에 저장
+     */
+    BubbleResponseDto.VectorizeResultDto vectorizeBubble(CustomUserPrincipal userPrincipal, String bubbleLocalIdx);
+
+    /**
+     * 사용자의 모든 Bubble을 벡터화
+     */
+    ResponseEntity<ApiResponse> vectorizeAllBubbles(CustomUserPrincipal userPrincipal);
+
+    /**
+     * 사용자의 모든 Bubble 2D 임베딩 좌표 조회
+     */
+    ResponseEntity<ApiResponse> getAllBubbleEmbeddings(CustomUserPrincipal userPrincipal, Pageable pageable);
 }

@@ -59,6 +59,9 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     // ============ 목록 조회 (리스트) ============
     List<Bubble> findByMember_MemberIdAndIsTrashedFalse(Long memberId);
 
+    // ============ 벡터 임베딩 조회 ============
+    Page<Bubble> findByMember_MemberIdAndIsTrashedFalseAndEmbeddingIsNotNull(Long memberId, Pageable pageable);
+
     // ============ 배치 조회 ============
     Set<Bubble> findAllByMemberAndLocalIdxIn(Member member, Set<String> localIdxs);
 

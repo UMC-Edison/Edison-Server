@@ -2,8 +2,11 @@ package com.edison.project.domain.bubble.entity;
 
 import com.edison.project.domain.label.entity.Label;
 import com.edison.project.domain.member.entity.Member;
+import com.pgvector.PGvector;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -62,6 +65,16 @@ public class Bubble {
 
     @OneToMany(mappedBy = "backlinkBubble", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<BubbleBacklink> referencingBubbles = new HashSet<>();
+
+    @Column(columnDefinition = "vector")
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    private PGvector embedding;
+
+    @Column(name = "embedding_2d_x")
+    private Double embedding2dX;
+
+    @Column(name = "embedding_2d_y")
+    private Double embedding2dY;
 
     @Builder
     public Bubble(Member member, String localIdx, String title, String content, String mainImg, Set<BubbleLabel> labels,
