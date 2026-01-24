@@ -18,7 +18,7 @@ import java.util.Set;
 @Setter
 @Table(name = "Bubble", indexes = {
         @Index(name = "idx_bubble_member_id", columnList = "member_id"),
-        @Index(name = "idx_localIdx", columnList = "local_idx")})
+        @Index(name = "idx_bubble_local_idx", columnList = "local_idx")})
 public class Bubble {
 
     @Id

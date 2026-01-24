@@ -11,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @Table(name = "Artletter", indexes = {
         @Index(name = "idx_artletter_title", columnList = "title"),
-        @Index(name = "idx_artletter_writer", columnList = "writer")
+        @Index(name = "idx_artletter_writer", columnList = "writer_id")
 })
 public class Artletter extends BaseEntity {
 
