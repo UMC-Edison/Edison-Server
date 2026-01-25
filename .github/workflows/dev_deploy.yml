@@ -1,5 +1,4 @@
 name: Edison Spring CI/CD
-
 on:
   push:
     branches: [ main, develop ]
@@ -11,7 +10,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,6 +67,7 @@ jobs:
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/develop' }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -88,13 +87,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
+  deploy-prod:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-
     steps:
-      - name: Deploy to EC2
+      - name: Deploy to Production EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -105,6 +103,28 @@ jobs:
             
             cat > .env << 'ENVEOF'
             ${{ secrets.ENV_FILE }}
+            ENVEOF
+            
+            sed -i 's/^SPRING_TAG=.*/SPRING_TAG=${{ github.sha }}/' .env
+            
+            ./deploy.sh spring ${{ github.sha }}
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - name: Deploy to Dev EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST_DEV }}
+          username: ${{ secrets.EC2_USERNAME_DEV }}
+          key: ${{ secrets.EC2_SSH_KEY_DEV }}
+          script: |
+            cd /home/ubuntu/edison-infra
+            
+            cat > .env << 'ENVEOF'
+            ${{ secrets.ENV_FILE_DEV }}
             ENVEOF
             
             sed -i 's/^SPRING_TAG=.*/SPRING_TAG=${{ github.sha }}/' .env
