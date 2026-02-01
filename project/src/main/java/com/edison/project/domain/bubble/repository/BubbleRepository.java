@@ -59,9 +59,28 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
     // ============ 목록 조회 (리스트) ============
     List<Bubble> findByMember_MemberIdAndIsTrashedFalse(Long memberId);
 
+    // ============ 벡터 임베딩 조회 ============
+    Page<Bubble> findByMember_MemberIdAndIsTrashedFalseAndEmbeddingIsNotNull(Long memberId, Pageable pageable);
+
     // ============ 배치 조회 ============
     Set<Bubble> findAllByMemberAndLocalIdxIn(Member member, Set<String> localIdxs);
 
     // ============ 존재 여부 ============
     Boolean existsByMemberAndLocalIdx(Member member, String localIdx);
+
+    @Query("SELECT b.localIdx as localIdx, " +
+            "b.title as title, " +
+            "b.embedding2dX as embedding2dX, " +
+            "b.embedding2dY as embedding2dY, " +
+            "b.createdAt as createdAt " +
+            "FROM Bubble b " +
+            "WHERE b.member.memberId = :memberId " +
+            "AND b.isTrashed = false " +
+            "AND b.embedding2dX IS NOT NULL " +
+            "AND b.embedding2dY IS NOT NULL")
+    Page<BubbleEmbeddingProjection> findEmbeddingProjectionsByMemberId(
+            @Param("memberId") Long memberId,
+            Pageable pageable
+    );
+
 }
