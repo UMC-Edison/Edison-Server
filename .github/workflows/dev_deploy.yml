@@ -29,7 +29,6 @@ jobs:
           spring.jpa.hibernate.ddl-auto=update
           server.forward-headers-strategy=framework
           
-          # PostgreSQL 설정 추가 ✅
           spring.datasource.url=\${SPRING_DATASOURCE_URL}
           spring.datasource.username=\${SPRING_DATASOURCE_USERNAME}
           spring.datasource.password=\${SPRING_DATASOURCE_PASSWORD}
@@ -91,25 +90,98 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
+  deploy-dev:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/develop'
+    environment: development
     
     steps:
-      - name: Deploy to EC2
+      - name: Deploy to Dev Server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          host: ${{ vars.EC2_HOST }}
+          username: ${{ vars.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/edison-infra
             
             cat > .env << 'ENVEOF'
-            ${{ secrets.ENV_FILE }}
+            DOCKERHUB_USERNAME=${{ vars.DOCKERHUB_USERNAME }}
+            
+            SPRING_TAG=${{ github.sha }}
+            AI_TAG=latest
+            
+            RDS_URL=${{ vars.RDS_URL }}
+            RDS_USERNAME=${{ vars.RDS_USERNAME }}
+            RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
+            
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ACCESS_EXPIRATION=${{ vars.JWT_ACCESS_EXPIRATION }}
+            JWT_REFRESH_EXPIRATION=${{ vars.JWT_REFRESH_EXPIRATION }}
+            
+            GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            
+            OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+            
+            AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
+            AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+            CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
+            CLOUD_AWS_CREDENTIALS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+            CLOUD_AWS_S3_BUCKET=${{ vars.AWS_S3_BUCKET }}
             ENVEOF
             
-            sed -i 's/^SPRING_TAG=.*/SPRING_TAG=${{ github.sha }}/' .env
+            ./deploy.sh spring ${{ github.sha }} dev
             
-            ./deploy.sh spring ${{ github.sha }}
+            echo "Deployed to DEV server"
+
+  deploy-prod:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+      - name: Deploy to Prod Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.EC2_HOST }}
+          username: ${{ vars.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/edison-infra
+            
+            cat > .env << 'ENVEOF'
+            DOCKERHUB_USERNAME=${{ vars.DOCKERHUB_USERNAME }}
+            
+            SPRING_TAG=${{ github.sha }}
+            AI_TAG=latest
+            
+            RDS_URL=${{ vars.RDS_URL }}
+            RDS_USERNAME=${{ vars.RDS_USERNAME }}
+            RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
+            
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_ACCESS_EXPIRATION=${{ vars.JWT_ACCESS_EXPIRATION }}
+            JWT_REFRESH_EXPIRATION=${{ vars.JWT_REFRESH_EXPIRATION }}
+            
+            GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            
+            OPENAI_KEY=${{ secrets.OPENAI_KEY }}
+            
+            AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
+            AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+            CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
+            CLOUD_AWS_CREDENTIALS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
+            CLOUD_AWS_S3_BUCKET=${{ vars.AWS_S3_BUCKET }}
+            ENVEOF
+            
+            ./deploy.sh spring ${{ github.sha }} prod
+            
+            echo "Deployed to PROD server"
