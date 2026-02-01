@@ -8,6 +8,8 @@ import smile.feature.extraction.PCA;
 @Slf4j
 public class DimensionReductionService {
 
+    private static final int EXPECTED_EMBEDDING_DIM = 1536; // OpenAI text-embedding-3-small
+
     /**
      * PCA를 사용하여 고차원 벡터를 2차원으로 축소 (Smile 라이브러리)
      */
@@ -42,8 +44,19 @@ public class DimensionReductionService {
     }
 
     private double[][] toDoubleArray(float[][] vectors) {
+        if (vectors == null || vectors.length == 0) {
+            return new double[0][0];
+        }
+
         int n = vectors.length;
         int d = vectors[0].length;
+
+        // 간단한 검증만 추가 (선택사항)
+        if (d != EXPECTED_EMBEDDING_DIM) {
+            log.warn("Unexpected embedding dimension: expected {}, got {}",
+                    EXPECTED_EMBEDDING_DIM, d);
+        }
+
         double[][] data = new double[n][d];
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < d; j++) {

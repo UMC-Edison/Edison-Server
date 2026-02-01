@@ -11,6 +11,7 @@ import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.entity.BubbleBacklink;
 import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.bubble.repository.BubbleBacklinkRepository;
+import com.edison.project.domain.bubble.repository.BubbleEmbeddingProjection;
 import com.edison.project.domain.bubble.repository.BubbleLabelRepository;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
 import com.edison.project.domain.label.dto.LabelResponseDTO;
@@ -319,15 +320,15 @@ public class BubbleServiceImpl implements BubbleService {
             bubbleRepository.save(targetBubble);
         }
 
-        return BubbleResponseDto.VectorizeResultDto.builder()
-                .localIdx(targetBubble.getLocalIdx())
-                .title(targetBubble.getTitle())
-                .isVectorized(true)
-                .embedding2dX(targetBubble.getEmbedding2dX())
-                .embedding2dY(targetBubble.getEmbedding2dY())
-                .vectorizedAt(LocalDateTime.now())
-                .message("Bubble vectorized and map updated")
-                .build();
+        return new BubbleResponseDto.VectorizeResultDto(
+                targetBubble.getLocalIdx(),
+                targetBubble.getTitle(),
+                true,
+                targetBubble.getEmbedding2dX(),
+                targetBubble.getEmbedding2dY(),
+                LocalDateTime.now(),
+                "Bubble vectorized and map updated"
+        );
     }
 
     /**
@@ -364,11 +365,15 @@ public class BubbleServiceImpl implements BubbleService {
 
             } catch (Exception e) {
                 log.error("Failed to vectorize bubble [{}]: {}", bubble.getLocalIdx(), e.getMessage());
-                results.add(BubbleResponseDto.VectorizeResultDto.builder()
-                        .localIdx(bubble.getLocalIdx())
-                        .isVectorized(false)
-                        .message("Failed: " + e.getMessage())
-                        .build());
+                results.add(new BubbleResponseDto.VectorizeResultDto(
+                        bubble.getLocalIdx(),
+                        null,
+                        false,
+                        null,
+                        null,
+                        null,
+                        "Failed: " + e.getMessage()
+                ));
             }
         }
 
@@ -380,15 +385,15 @@ public class BubbleServiceImpl implements BubbleService {
                 Bubble bubble = embeddedBubbles.get(i);
                 bubble.setEmbedding2dX(projection[i][0]);
                 bubble.setEmbedding2dY(projection[i][1]);
-                results.add(BubbleResponseDto.VectorizeResultDto.builder()
-                        .localIdx(bubble.getLocalIdx())
-                        .title(bubble.getTitle())
-                        .isVectorized(true)
-                        .embedding2dX(bubble.getEmbedding2dX())
-                        .embedding2dY(bubble.getEmbedding2dY())
-                        .vectorizedAt(LocalDateTime.now())
-                        .message("Success")
-                        .build());
+                results.add(new BubbleResponseDto.VectorizeResultDto(
+                        bubble.getLocalIdx(),
+                        bubble.getTitle(),
+                        true,
+                        bubble.getEmbedding2dX(),
+                        bubble.getEmbedding2dY(),
+                        LocalDateTime.now(),
+                        "Success"
+                ));
             }
             bubbleRepository.saveAll(embeddedBubbles);
         }
@@ -401,33 +406,34 @@ public class BubbleServiceImpl implements BubbleService {
         return ApiResponse.onSuccess(SuccessStatus._OK, responseData);
     }
 
-    /**
-     * Get All Bubble Embeddings (Coordinates)
-     * IMPLEMENTATION ADDED HERE TO FIX INTERFACE ERROR
-     */
+    // Service에서 사용
     @Override
     public ResponseEntity<ApiResponse> getAllBubbleEmbeddings(CustomUserPrincipal userPrincipal, Pageable pageable) {
-        // Fetch active bubbles
-        Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
+        Long memberId = userPrincipal.getMemberId();
 
-        // Map to simple DTO containing coordinates
-        List<BubbleResponseDto.VectorizeResultDto> dtos = bubblePage.getContent().stream()
-                .filter(b -> b.getEmbedding2dX() != null && b.getEmbedding2dY() != null) // Only return vectorized ones
-                .map(b -> BubbleResponseDto.VectorizeResultDto.builder()
-                        .localIdx(b.getLocalIdx())
-                        .title(b.getTitle())
-                        .isVectorized(true)
-                        .embedding2dX(b.getEmbedding2dX())
-                        .embedding2dY(b.getEmbedding2dY())
-                        .build())
-                .collect(Collectors.toList());
+        Page<BubbleEmbeddingProjection> projections =
+                bubbleRepository.findEmbeddingProjectionsByMemberId(memberId, pageable);
 
-        // You might want to adjust page info to reflect the filtered list,
-        // but typically pagination applies to the query result.
-        PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
-                bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, dtos);
+        Page<BubbleResponseDto.BubbleEmbeddingDto> dtos = projections.map(p ->
+                new BubbleResponseDto.BubbleEmbeddingDto(
+                        p.getLocalIdx(),
+                        p.getTitle(),
+                        p.getEmbedding2dX(),
+                        p.getEmbedding2dY(),
+                        p.getCreatedAt()
+                )
+        );
+
+        PageInfo pageInfo = new PageInfo(
+                dtos.getNumber(),
+                dtos.getSize(),
+                dtos.hasNext(),
+                dtos.getTotalElements(),
+                dtos.getTotalPages()
+        );
+
+        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, dtos.getContent());
     }
 
     private Bubble processBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {
