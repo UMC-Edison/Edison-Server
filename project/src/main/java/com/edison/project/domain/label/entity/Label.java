@@ -17,7 +17,7 @@ import java.util.*;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Table(name = "Label", indexes = {
-        @Index(name = "idx_localIdx", columnList = "local_idx")})
+        @Index(name = "idx_label_local_idx", columnList = "local_idx")})
 public class Label {
 
     @Id
