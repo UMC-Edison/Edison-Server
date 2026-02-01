@@ -136,7 +136,7 @@ jobs:
             
             ./deploy.sh spring ${{ github.sha }} dev
             
-            echo "Deployed to DEV server"
+            echo "✅ Deployed to DEV server"
 
   deploy-prod:
     needs: build
@@ -184,4 +184,4 @@ jobs:
             
             ./deploy.sh spring ${{ github.sha }} prod
             
-            echo "Deployed to PROD server"
+            echo "✅ Deployed to PROD server"
