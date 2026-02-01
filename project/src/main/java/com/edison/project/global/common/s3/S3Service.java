@@ -28,7 +28,7 @@ public class S3Service {
         String key = "uploads/" + UUID.randomUUID() + "_" + originalFileName;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket("haniumbubbleimgs")
+                .bucket(bucketName)
                 .key(key)
                 .build();
 
@@ -45,7 +45,7 @@ public class S3Service {
 
     public String generatePresignedGetUrl(String key) {
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket("haniumbubbleimgs")
+                .bucket(bucketName)
                 .key(key)
                 .build();
 
@@ -57,7 +57,6 @@ public class S3Service {
         PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
         return presignedRequest.url().toString();
     }
-
 
     public record PresignedUrlResponse(String key, String presignedUrl) {}
 }
