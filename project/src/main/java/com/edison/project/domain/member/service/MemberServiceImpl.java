@@ -58,6 +58,7 @@ public class MemberServiceImpl implements MemberService{
         Member member = Member.builder()
                 .email(email)
                 .nickname(nickname)
+                .role("ROLE_USER")
                 .build();
         memberRepository.save(member);
 

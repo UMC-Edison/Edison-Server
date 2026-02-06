@@ -37,7 +37,8 @@ public class  Member extends BaseEntity {
     private String nickname;
 
     @Column(nullable = false)
-    private String role;
+    @Builder.Default
+    private String role = "ROLE_USER";
 
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
