@@ -39,3 +39,5 @@ out/
 .idea/
 
 load-test.js
+
+.env
