@@ -1,6 +1,7 @@
 package com.edison.project.domain.space.service;
 
 import com.edison.project.common.exception.GeneralException;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
@@ -174,7 +175,7 @@ public class SpaceServiceImpl implements SpaceService {
     /*
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
+    public ResponseEntity<Response> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
         Long memberId = userPrincipal.getMemberId();
         System.out.println(" [Process Spaces - 전체] 실행 - 사용자 ID: " + memberId);
 
@@ -184,7 +185,7 @@ public class SpaceServiceImpl implements SpaceService {
         System.out.println(" 사용자의 Bubble 개수: " + bubbles.size());
 
         if (bubbles.isEmpty()) {
-            return ApiResponse.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
+            return Response.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
         }
 
         Map<String, String> requestData = createRequestDataWithLocalIdx(bubbles);
@@ -198,7 +199,7 @@ public class SpaceServiceImpl implements SpaceService {
         List<SpaceResponseDto> spaceDtos = newSpaces.stream()
                 .map(SpaceResponseDto::new)
                 .collect(Collectors.toList());
-        return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
+        return Response.onSuccess(SuccessStatus._OK, spaceDtos);
     }
 
 
@@ -383,5 +384,3 @@ public class SpaceServiceImpl implements SpaceService {
     }
      */
 }
-
-

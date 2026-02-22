@@ -83,18 +83,18 @@ public class SpaceController {
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestBody List<String> localIdxs) {
         String userIdentityKeywords = memberService.getCategorizedIdentityKeywords(userPrincipal);
-        ResponseEntity<ApiResponse> response = spaceService.processSpaces(userPrincipal, localIdxs, userIdentityKeywords);
+        ResponseEntity<Response> response = spaceService.processSpaces(userPrincipal, localIdxs, userIdentityKeywords);
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
-        return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
+        return Response.onSuccess(SuccessStatus._OK, spaces);
     }
 
     @GetMapping("/convert")
     public ResponseEntity<?> convertAllSpaces(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         String userIdentityKeywords = memberService.getCategorizedIdentityKeywords(userPrincipal);
-        ResponseEntity<ApiResponse> response = spaceService.processSpaces(userPrincipal, PageRequest.of(0, Integer.MAX_VALUE), userIdentityKeywords);
+        ResponseEntity<Response> response = spaceService.processSpaces(userPrincipal, PageRequest.of(0, Integer.MAX_VALUE), userIdentityKeywords);
         List<SpaceResponseDto> spaces = (List<SpaceResponseDto>) response.getBody().getResult();
-        return ApiResponse.onSuccess(SuccessStatus._OK, spaces);
+        return Response.onSuccess(SuccessStatus._OK, spaces);
     }
     */
 

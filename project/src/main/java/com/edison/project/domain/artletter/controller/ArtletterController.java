@@ -109,7 +109,7 @@ public class ArtletterController {
         List<ArtletterDTO.ListResponseDto> response = artletterService.getEditorArtletters(userPrincipal);
         return Response.onSuccess(SuccessStatus._OK, response);
     }
-  
+
 
     // 좋아요 기능
     @PostMapping("/{letterId}/like")
