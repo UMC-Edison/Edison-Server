@@ -56,7 +56,7 @@ public class MemberRestController {
     }
 
 
-    @Operation(summary = "정체성(Identity) 키워드 조회", description = "사용자의 정체성 키워드를 조회합니다.")
+    @Operation(summary = "아이덴티티 키워드 조회", description = "사용자의 아이덴티티 키워드를 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공", content = @Content(schema = @Schema(implementation = MemberResponseDto.IdentityKeywordsResultDto.class))),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
@@ -68,7 +68,7 @@ public class MemberRestController {
         return Response.onSuccess(SuccessStatus._OK, result);
     }
 
-    @Operation(summary = "정체성(Identity) 테스트 저장", description = "사용자가 정체성 테스트 결과를 저장합니다.")
+    @Operation(summary = "아이덴티티 테스트 저장", description = "사용자의 아이덴티티 테스트 결과를 저장합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공", content = @Content(schema = @Schema(implementation = MemberResponseDto.IdentityTestSaveResultDto.class))),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)
@@ -138,7 +138,7 @@ public class MemberRestController {
         return Response.onSuccess(SuccessStatus._OK, dto);
     }
 
-    @Operation(summary = "사용자 정체성 키워드 포맷 조회", description = "사용자 소속 정체성 키워드들을 포맷된 문자열로 반환합니다.")
+    @Operation(summary = "사용자 아이덴티티 키워드 포맷 조회", description = "사용자 소속 아이덴티티 키워드들을 포맷된 문자열로 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공", content = @Content(schema = @Schema(implementation = String.class))),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content)

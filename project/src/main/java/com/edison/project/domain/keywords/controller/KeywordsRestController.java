@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Swagger/OpenAPI
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,12 +21,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @RestController
 @RequestMapping("/identity")
 @RequiredArgsConstructor
-@Tag(name = "Keywords", description = "정체성(Identity) 관련 키워드 조회 API")
+@Tag(name = "Keywords", description = "아이덴티티 키워드 조회 API")
 public class KeywordsRestController {
 
     private final KeywordsService keywordsService;
 
-    @Operation(summary = "카테고리별 키워드 조회", description = "주어진 카테고리에 해당하는 정체성 키워드 목록을 반환합니다.")
+    @Operation(summary = "카테고리별 키워드 조회", description = "주어진 카테고리에 해당하는 아이덴티티 키워드 목록을 반환합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "성공", content = @Content(schema = @Schema(implementation = KeywordsResponseDto.IdentityKeywordDto.class))),
             @ApiResponse(responseCode = "500", description = "서버 오류", content = @Content)
