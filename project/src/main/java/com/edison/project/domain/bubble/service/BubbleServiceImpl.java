@@ -1,7 +1,7 @@
 package com.edison.project.domain.bubble.service;
 
 import com.edison.project.common.exception.GeneralException;
-import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
@@ -70,7 +70,7 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<Response> getBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(userPrincipal.getMemberId(), pageable);
 
         List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
@@ -80,11 +80,11 @@ public class BubbleServiceImpl implements BubbleService {
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<Response> getDeletedBubbles(CustomUserPrincipal userPrincipal, Pageable pageable) {
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberIdAndIsTrashedTrue(userPrincipal.getMemberId(), pageable);
         LocalDateTime now = LocalDateTime.now();
 
@@ -95,11 +95,11 @@ public class BubbleServiceImpl implements BubbleService {
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<Response> getRecentBubblesByMember(CustomUserPrincipal userPrincipal, Pageable pageable) {
         LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
         Page<Bubble> bubblePage = bubbleRepository.findRecentByMember(userPrincipal.getMemberId(), sevenDaysAgo, pageable);
 
@@ -110,7 +110,7 @@ public class BubbleServiceImpl implements BubbleService {
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
     @Override
@@ -246,14 +246,14 @@ public class BubbleServiceImpl implements BubbleService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getAllBubbles(CustomUserPrincipal userPrincipal, Pageable pageable){
+    public ResponseEntity<Response> getAllBubbles(CustomUserPrincipal userPrincipal, Pageable pageable){
         Page<Bubble> bubblePage = bubbleRepository.findByMember_MemberId(userPrincipal.getMemberId(), pageable);
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
         List<BubbleResponseDto.SyncResultDto> bubbles = bubblePage.getContent().stream()
                 .map(this::convertToBubbleResponseDto)
                 .collect(Collectors.toList());
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
 
     /**
@@ -336,14 +336,14 @@ public class BubbleServiceImpl implements BubbleService {
      */
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> vectorizeAllBubbles(CustomUserPrincipal userPrincipal) {
+    public ResponseEntity<Response> vectorizeAllBubbles(CustomUserPrincipal userPrincipal) {
         Member member = memberRepository.findById(userPrincipal.getMemberId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MEMBER_NOT_FOUND));
 
         List<Bubble> bubbles = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(member.getMemberId());
 
         if (bubbles.isEmpty()) {
-            return ApiResponse.onSuccess(SuccessStatus._OK, null, "No bubbles found");
+            return Response.onSuccess(SuccessStatus._OK, null, "No bubbles found");
         }
 
         List<BubbleResponseDto.VectorizeResultDto> results = new ArrayList<>();
@@ -403,12 +403,12 @@ public class BubbleServiceImpl implements BubbleService {
         responseData.put("successCount", embeddedBubbles.size());
         responseData.put("results", results);
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, responseData);
+        return Response.onSuccess(SuccessStatus._OK, responseData);
     }
 
     // Service에서 사용
     @Override
-    public ResponseEntity<ApiResponse> getAllBubbleEmbeddings(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<Response> getAllBubbleEmbeddings(CustomUserPrincipal userPrincipal, Pageable pageable) {
         Long memberId = userPrincipal.getMemberId();
 
         Page<BubbleEmbeddingProjection> projections =
@@ -433,7 +433,7 @@ public class BubbleServiceImpl implements BubbleService {
                 dtos.getTotalPages()
         );
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, dtos.getContent());
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, dtos.getContent());
     }
 
     private Bubble processBubble(BubbleRequestDto.SyncDto request, Member member, Set<Bubble> backlinks, Set<Label> labels) {

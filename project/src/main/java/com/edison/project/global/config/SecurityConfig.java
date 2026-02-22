@@ -1,6 +1,6 @@
 package com.edison.project.global.config;
 
-import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.dto.MemberResponseDto;
 import com.edison.project.domain.member.service.CustomOidcUserService;
@@ -109,7 +109,7 @@ public class SecurityConfig {
 
     // 인증 실패 응답 처리
     private void sendErrorResponse(HttpServletResponse response, ErrorStatus errorStatus) throws IOException {
-        ResponseEntity<ApiResponse> apiResponse = ApiResponse.onFailure(errorStatus);
+        ResponseEntity<Response> apiResponse = Response.onFailure(errorStatus);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setStatus(apiResponse.getStatusCode().value());
@@ -118,7 +118,7 @@ public class SecurityConfig {
 
     // 인증 성공 응답 처리
     private void sendSuccessResponse(HttpServletResponse response, MemberResponseDto.LoginResultDto dto) throws IOException {
-        ResponseEntity<ApiResponse> apiResponse = ApiResponse.onSuccess(_OK, dto);
+        ResponseEntity<Response> apiResponse = Response.onSuccess(_OK, dto);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         new ObjectMapper().writeValue(response.getWriter(), apiResponse.getBody());
