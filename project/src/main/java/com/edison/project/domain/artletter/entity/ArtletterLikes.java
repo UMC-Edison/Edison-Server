@@ -7,7 +7,7 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "ArtletterLikes", uniqueConstraints = {
+@Table(name = "artletter_likes", uniqueConstraints = {
         @UniqueConstraint(name = "uq_artletter_member", columnNames = {"artletter_id", "member_id"})
 }, indexes = {
         @Index(name = "idx_artletter_likes_artletter_id", columnList = "artletter_id"),

@@ -16,7 +16,7 @@ import java.util.Set;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Setter
-@Table(name = "Bubble", indexes = {
+@Table(name = "bubble", indexes = {
         @Index(name = "idx_bubble_member_id", columnList = "member_id"),
         @Index(name = "idx_bubble_local_idx", columnList = "local_idx")})
 public class Bubble {

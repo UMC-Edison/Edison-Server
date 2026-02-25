@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Keywords", indexes = {
+@Table(name = "keyword", indexes = {
     @Index(name = "idx_keywords_name", columnList = "name"),
     @Index(name = "idx_keywords_category", columnList = "category")
 })

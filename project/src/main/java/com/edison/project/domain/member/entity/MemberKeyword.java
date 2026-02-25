@@ -7,7 +7,7 @@ import lombok.*;
 @Getter
 @Setter
 @Entity
-@Table(name = "MemberKeyword", indexes = {
+@Table(name = "member_keyword", indexes = {
         @Index(name = "idx_member_keyword_member_id", columnList = "member_id"),
         @Index(name = "idx_member_keyword_keyword_id", columnList = "keyword_id")
 })

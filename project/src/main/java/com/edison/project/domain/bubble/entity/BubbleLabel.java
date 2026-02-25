@@ -7,7 +7,7 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "BubbleLabel", indexes = {
+@Table(name = "bubble_label", indexes = {
         @Index(name = "idx_bubble_label_bubble_id", columnList = "bubble_id"),
         @Index(name = "idx_bubble_label_label_id", columnList = "label_id")
 })

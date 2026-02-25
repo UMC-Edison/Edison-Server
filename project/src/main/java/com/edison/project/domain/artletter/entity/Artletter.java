@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Table(name = "Artletter", indexes = {
+@Table(name = "artletter", indexes = {
         @Index(name = "idx_artletter_title", columnList = "title"),
         @Index(name = "idx_artletter_writer", columnList = "writer_id")
 })
