@@ -1,6 +1,6 @@
 package com.edison.project.global.security;
 
-import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.status.ErrorStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +35,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
             logger.error("인증 예외 발생: {}", authException.getMessage(), authException);
         }
 
-        ResponseEntity<ApiResponse> errorResponse = ApiResponse.onFailure(ErrorStatus.CUSTOM_ENTRY_EXCEPTION);
+        ResponseEntity<Response> errorResponse = Response.onFailure(ErrorStatus.CUSTOM_ENTRY_EXCEPTION);
 
         // HttpServletResponse에 직접 작성
         response.setContentType("application/json;charset=UTF-8");

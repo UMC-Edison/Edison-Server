@@ -1,11 +1,7 @@
 package com.edison.project.domain.space.service;
 
-import com.edison.project.common.response.ApiResponse;
 import com.edison.project.domain.space.dto.SpaceMapResponseDto;
 import com.edison.project.global.security.CustomUserPrincipal;
-import org.apache.coyote.Response;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 

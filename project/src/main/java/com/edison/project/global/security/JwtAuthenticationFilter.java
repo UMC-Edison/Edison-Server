@@ -1,7 +1,7 @@
 package com.edison.project.global.security;
 
 import com.edison.project.common.exception.GeneralException;
-import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.domain.member.entity.RefreshToken;
 import com.edison.project.domain.member.repository.MemberRepository;
@@ -117,7 +117,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.setCharacterEncoding("UTF-8");
 
                 ObjectMapper objectMapper = new ObjectMapper();
-                objectMapper.writeValue(response.getWriter(), ApiResponse.onFailure(e.getErrorStatus()).getBody());
+                objectMapper.writeValue(response.getWriter(), Response.onFailure(e.getErrorStatus()).getBody());
             }
         }
     }

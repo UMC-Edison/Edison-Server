@@ -1,7 +1,7 @@
 package com.edison.project.domain.artletter.service;
 
 import com.edison.project.common.exception.GeneralException;
-import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
@@ -47,7 +47,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     // 전체 아트레터 조회 API
     @Override
-    public ResponseEntity<ApiResponse> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType) {
+    public ResponseEntity<Response> getAllArtlettersResponse(CustomUserPrincipal userPrincipal, int page, int size, String sortType) {
         Pageable pageable = switch (sortType) {
             case "likes" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "likesCount"));
             case "scraps" -> PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "scrapsCount"));
@@ -64,7 +64,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 .map(artletter -> buildSimpleListResponseDto(artletter, member))
                 .collect(Collectors.toList());
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
     // 아트레터 등록 api
@@ -170,7 +170,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
+    public ResponseEntity<Response> searchArtletters(CustomUserPrincipal userPrincipal, String keyword, int page, int size, String sortType) {
         Member member = getMemberIfAuthenticated(userPrincipal);
 
         Pageable pageable = switch (sortType) {
@@ -193,7 +193,7 @@ public class ArtletterServiceImpl implements ArtletterService {
             saveMemoryKeyword(member, keyword);
         }
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
 
@@ -227,20 +227,20 @@ public class ArtletterServiceImpl implements ArtletterService {
     // 최근 검색어 조회
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> getMemoryKeyword(CustomUserPrincipal userPrincipal) {
+    public ResponseEntity<Response> getMemoryKeyword(CustomUserPrincipal userPrincipal) {
         Long memberId = userPrincipal.getMemberId();
 
         List<String> memories = memberMemoryRepository.findMemoriesByMemberId(memberId);
 
         ArtletterDTO.MemoryKeywordResponseDto response = new ArtletterDTO.MemoryKeywordResponseDto(memories);
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+        return Response.onSuccess(SuccessStatus._OK, response);
     }
 
 
     // 최근 검색어 삭제
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, String keyword) {
+    public ResponseEntity<Response> deleteMemoryKeyword(CustomUserPrincipal userPrincipal, String keyword) {
         Long memberId = userPrincipal.getMemberId();
 
         keyword = keyword != null ? keyword.trim() : null;
@@ -256,7 +256,7 @@ public class ArtletterServiceImpl implements ArtletterService {
             throw new GeneralException(ErrorStatus.MEMORY_KEYWORD_NOT_FOUND);
         }
 
-        return ApiResponse.onSuccess(SuccessStatus._OK);
+        return Response.onSuccess(SuccessStatus._OK);
     }
 
 
@@ -400,7 +400,7 @@ public class ArtletterServiceImpl implements ArtletterService {
 
 
     @Override
-    public ResponseEntity<ApiResponse> getScrapArtletters(CustomUserPrincipal userPrincipal, Pageable pageable) {
+    public ResponseEntity<Response> getScrapArtletters(CustomUserPrincipal userPrincipal, Pageable pageable) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
@@ -437,11 +437,11 @@ public class ArtletterServiceImpl implements ArtletterService {
                         }).toList()
                 )).toList();
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, groupedArtletters);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, groupedArtletters);
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
+    public ResponseEntity<Response> getScrapCategoryArtletters(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
 
@@ -476,7 +476,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                             .build();
                 }).toList();
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, artletters);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, artletters);
     }
 
 
@@ -550,7 +550,7 @@ public class ArtletterServiceImpl implements ArtletterService {
     }
 
     @Override
-    public ResponseEntity<ApiResponse> getArtlettersByCategory(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
+    public ResponseEntity<Response> getArtlettersByCategory(CustomUserPrincipal userPrincipal, ArtletterCategory category, Pageable pageable) {
         Member member = (userPrincipal != null) ? memberRepository.findByMemberId(userPrincipal.getMemberId()) : null;
 
         // 카테고리 유효성 확인
@@ -583,7 +583,7 @@ public class ArtletterServiceImpl implements ArtletterService {
                 }).toList();
 
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, pageInfo, response);
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, response);
     }
 
 
