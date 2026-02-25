@@ -6,6 +6,8 @@ import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.domain.bubble.service.BubbleService;
 import com.edison.project.global.security.CustomUserPrincipal;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -17,14 +19,14 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.data.domain.Pageable;
 
-
+@Tag(name = "Bubble", description = "버블 도메인 API")
 @RestController
 @RequestMapping("/bubbles")
 @RequiredArgsConstructor
 public class BubbleRestController {
     private final BubbleService bubbleService;
 
-    // 버블 전체 목록 조회
+    @Operation(summary = "삭제되지 않은 버블 전체 목록 조회", description = "soft delete된 버블을 제외한 전체 목록을 조회하는 기능입니다.")
     @GetMapping("/space")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> getBubblesByMember(
@@ -38,7 +40,7 @@ public class BubbleRestController {
         return response;
     }
 
-
+    @Operation(summary = "soft delete된 버블 전체 목록 조회", description = "soft delete된 버블 전체 목록을 조회하는 기능입니다.")
     @GetMapping("/deleted")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> getDeletedBubbles(
@@ -51,7 +53,7 @@ public class BubbleRestController {
     }
 
 
-    // 버블 상세정보 조회
+    @Operation(summary = "버블 상세 조회", description = "localIdx로 버블 상세 정보를 조회하는 기능입니다.")
     @GetMapping("/{localIdx}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> getBubble (
@@ -62,7 +64,7 @@ public class BubbleRestController {
     }
 
 
-    // 7일 내 버블 목록 조회
+    @Operation(summary = "최근 버블 목록 조회", description = "7일 내 작성된 버블 목록을 조회하는 기능입니다.")
     @GetMapping("/recent")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> getRecentBubblesByMember(
@@ -75,7 +77,8 @@ public class BubbleRestController {
 
     }
 
-    // 버블 SYNC
+
+    @Operation(summary = "버블 sync", description = "로컬 버블을 서버로 보내 로컬과 서버를 sync하는 기능입니다.")
     @PostMapping("/sync")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> syncBubble(
@@ -85,7 +88,8 @@ public class BubbleRestController {
         return Response.onSuccess(SuccessStatus._OK, response);
     }
 
-    // 버블 생성
+
+    @Operation(summary = "버블 생성", description = "버블을 생성하는 기능입니다.")
     @PostMapping
     public ResponseEntity<Response> createBubble(@AuthenticationPrincipal CustomUserPrincipal userPrincipal,
                                                  @RequestBody @Valid BubbleRequestDto.CreateDto request) {
@@ -94,7 +98,8 @@ public class BubbleRestController {
 
     }
 
-    //버블 삭제
+
+    @Operation(summary = "버블 soft delete", description = "bubbleId로 버블을 soft delete하는 기능입니다.")
     @PatchMapping("/{bubbleId}/delete")
     public ResponseEntity<Response> deleteBubble(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
@@ -103,7 +108,8 @@ public class BubbleRestController {
         return Response.onSuccess(SuccessStatus._OK, result);
     }
 
-    //버블 수정
+
+    @Operation(summary = "버블 수정", description = "bubbleId로 버블을 수정하는 기능입니다.")
     @PatchMapping("/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> updateBubble(
@@ -114,7 +120,8 @@ public class BubbleRestController {
         return Response.onSuccess(SuccessStatus._OK, response);
     }
 
-    //버블 복원
+
+    @Operation(summary = "버블 복원", description = "bubbleId로 soft delete된 버블을 복원하는 기능입니다.")
     @PatchMapping("/{bubbleId}/restore")
     public ResponseEntity<Response> restoreBubble(
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
@@ -123,7 +130,8 @@ public class BubbleRestController {
         return Response.onSuccess(SuccessStatus._OK, result);
     }
 
-    // 버블 hard-delete
+
+    @Operation(summary = "버블 hard delete", description = "bubbleId로 버블을 hard delete하는 기능입니다.")
     @DeleteMapping("/trashbin/{bubbleId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> hardDeleteBubble(
@@ -133,7 +141,8 @@ public class BubbleRestController {
         return Response.onSuccess(SuccessStatus._OK);
     }
 
-    // 전체 버블 조회(소프트딜리트 포함)
+
+    @Operation(summary = "전체 버블 목록 조회", description = "소프트딜리트 된 버블을 포함한 모든 버블 목록을 조회하는 기능입니다.")
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> getAllBubbles(
@@ -145,10 +154,8 @@ public class BubbleRestController {
         return bubbleService.getAllBubbles(userPrincipal, pageable);
     }
 
-    /**
-     * 단일 버블 벡터화
-     * POST /bubbles/{localIdx}/vectorize
-     */
+
+    @Operation(summary = "단일 버블 벡터화", description = "localIdx로 soft delete되지 않은 버블을 벡터화하는 기능입니다.")
     @PostMapping("/{localIdx}/vectorize")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> vectorizeBubble(
@@ -158,10 +165,8 @@ public class BubbleRestController {
         return Response.onSuccess(SuccessStatus._OK, result);
     }
 
-    /**
-     * 모든 버블 벡터화
-     * POST /bubbles/vectorize-all
-     */
+
+    @Operation(summary = "모든 버블 벡터화", description = "soft delete되지 않은 모든 버블을 벡터화하는 기능입니다.")
     @PostMapping("/vectorize-all")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> vectorizeAllBubbles(
@@ -169,10 +174,8 @@ public class BubbleRestController {
         return bubbleService.vectorizeAllBubbles(userPrincipal);
     }
 
-    /**
-     * 사용자의 모든 버블 2D 벡터 좌표 조회
-     * GET /bubbles/embeddings
-     */
+
+    @Operation(summary = "모든 버블 벡터 조회", description = "soft delete되지 않은 모든 버블의 벡터를 조회하는 기능입니다.")
     @GetMapping("/embeddings")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Response> getAllBubbleEmbeddings(
