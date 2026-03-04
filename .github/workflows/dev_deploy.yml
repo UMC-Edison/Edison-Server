@@ -112,7 +112,7 @@ jobs:
             SPRING_TAG=${{ github.sha }}
             AI_TAG=latest
             
-            RDS_URL=${{ vars.RDS_URL }}
+            SPRING_DATASOURCE_URL=${{ vars.RDS_URL }}
             RDS_USERNAME=${{ vars.RDS_USERNAME }}
             RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             
@@ -160,7 +160,7 @@ jobs:
             SPRING_TAG=${{ github.sha }}
             AI_TAG=latest
             
-            RDS_URL=${{ vars.RDS_URL }}
+            SPRING_DATASOURCE_URL=${{ vars.RDS_URL }}
             RDS_USERNAME=${{ vars.RDS_USERNAME }}
             RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
             
