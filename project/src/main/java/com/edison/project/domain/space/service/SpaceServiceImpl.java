@@ -1,20 +1,13 @@
 package com.edison.project.domain.space.service;
 
 import com.edison.project.common.exception.GeneralException;
-import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.status.ErrorStatus;
-import com.edison.project.common.status.SuccessStatus;
-import com.edison.project.domain.bubble.dto.BubbleResponseDto;
-import com.edison.project.domain.bubble.entity.BubbleBacklink;
-import com.edison.project.domain.bubble.entity.BubbleLabel;
 import com.edison.project.domain.member.entity.Member;
 import com.edison.project.domain.member.repository.MemberRepository;
 import com.edison.project.domain.member.service.MemberService;
 import com.edison.project.domain.space.dto.*;
 import com.edison.project.domain.space.entity.Dataset;
-import com.edison.project.domain.space.entity.Space;
-import okhttp3.MediaType;
-import okhttp3.RequestBody;
 import org.springframework.http.HttpHeaders;
 import com.edison.project.domain.space.repository.DatasetRepository;
 import com.edison.project.domain.space.repository.SpaceRepository;
@@ -22,24 +15,16 @@ import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 import com.edison.project.global.security.CustomUserPrincipal;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.*;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -190,7 +175,7 @@ public class SpaceServiceImpl implements SpaceService {
     /*
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
+    public ResponseEntity<Response> processSpaces(CustomUserPrincipal userPrincipal, Pageable pageable, String userIdentityKeywords) {
         Long memberId = userPrincipal.getMemberId();
         System.out.println(" [Process Spaces - 전체] 실행 - 사용자 ID: " + memberId);
 
@@ -200,7 +185,7 @@ public class SpaceServiceImpl implements SpaceService {
         System.out.println(" 사용자의 Bubble 개수: " + bubbles.size());
 
         if (bubbles.isEmpty()) {
-            return ApiResponse.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
+            return Response.onFailure(ErrorStatus.NO_BUBBLES_FOUND);
         }
 
         Map<String, String> requestData = createRequestDataWithLocalIdx(bubbles);
@@ -214,7 +199,7 @@ public class SpaceServiceImpl implements SpaceService {
         List<SpaceResponseDto> spaceDtos = newSpaces.stream()
                 .map(SpaceResponseDto::new)
                 .collect(Collectors.toList());
-        return ApiResponse.onSuccess(SuccessStatus._OK, spaceDtos);
+        return Response.onSuccess(SuccessStatus._OK, spaceDtos);
     }
 
 
@@ -399,5 +384,3 @@ public class SpaceServiceImpl implements SpaceService {
     }
      */
 }
-
-

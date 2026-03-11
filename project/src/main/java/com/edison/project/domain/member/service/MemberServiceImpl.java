@@ -1,7 +1,7 @@
 package com.edison.project.domain.member.service;
 
 import com.edison.project.common.exception.GeneralException;
-import com.edison.project.common.response.ApiResponse;
+import com.edison.project.common.response.Response;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
 import com.edison.project.domain.keywords.entity.Keywords;
@@ -172,7 +172,7 @@ public class MemberServiceImpl implements MemberService{
     // 로그아웃 API
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> logout(CustomUserPrincipal userPrincipal) {
+    public ResponseEntity<Response> logout(CustomUserPrincipal userPrincipal) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String token = (String) authentication.getCredentials();
 
@@ -183,12 +183,12 @@ public class MemberServiceImpl implements MemberService{
         // refresh 토큰 삭제
         refreshTokenRepository.deleteByEmail(userPrincipal.getEmail());
 
-        return ApiResponse.onSuccess(_OK);
+        return Response.onSuccess(_OK);
     }
 
     // 액세스토큰 재발급 API
     @Override
-    public ResponseEntity<ApiResponse> refreshAccessToken(String refreshToken) {
+    public ResponseEntity<Response> refreshAccessToken(String refreshToken) {
 
         Long memberId = jwtUtil.extractUserId(refreshToken);
         String email = jwtUtil.extractEmail(refreshToken);
@@ -199,14 +199,14 @@ public class MemberServiceImpl implements MemberService{
                 .accessToken(newAccessToken)
                 .build();
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, response);
+        return Response.onSuccess(SuccessStatus._OK, response);
 
     }
 
     // 회원 탈퇴 API
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> cancel(CustomUserPrincipal userPrincipal) {
+    public ResponseEntity<Response> cancel(CustomUserPrincipal userPrincipal) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // access토큰 블랙리스트에 추가
@@ -219,14 +219,14 @@ public class MemberServiceImpl implements MemberService{
         //member 삭제
         memberRepository.deleteByMemberId(userPrincipal.getMemberId());
 
-        return ApiResponse.onSuccess(_OK);
+        return Response.onSuccess(_OK);
     }
 
 
     // 개인정보 변경 API
     @Override
     @Transactional
-    public ResponseEntity<ApiResponse> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
+    public ResponseEntity<Response> updateProfile(CustomUserPrincipal userPrincipal, MemberRequestDto.UpdateProfileDto request) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
         validateNickname(request.getNickname());
@@ -238,7 +238,7 @@ public class MemberServiceImpl implements MemberService{
         updateNicknameOrProfile(member, request.getNickname(), request.getImageUrl());
         memberRepository.save(member);
 
-        return ApiResponse.onSuccess(SuccessStatus._OK, new MemberResponseDto.UpdateProfileResultDto(member.getNickname(), member.getProfileImg()));
+        return Response.onSuccess(SuccessStatus._OK, new MemberResponseDto.UpdateProfileResultDto(member.getNickname(), member.getProfileImg()));
 
     }
 
@@ -257,10 +257,10 @@ public class MemberServiceImpl implements MemberService{
 
     // 개인정보 조회 API
     @Override
-    public ResponseEntity<ApiResponse> getProfile(CustomUserPrincipal userPrincipal) {
+    public ResponseEntity<Response> getProfile(CustomUserPrincipal userPrincipal) {
 
         Member member = memberRepository.findByMemberId(userPrincipal.getMemberId());
-        return ApiResponse.onSuccess(SuccessStatus._OK,
+        return Response.onSuccess(SuccessStatus._OK,
                 new MemberResponseDto.ProfileResultDto(
                         member.getEmail(),
                         member.getNickname(),
