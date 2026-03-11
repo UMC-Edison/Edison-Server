@@ -11,7 +11,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,9 +29,9 @@ jobs:
           spring.jpa.hibernate.ddl-auto=update
           server.forward-headers-strategy=framework
           
-          spring.datasource.url=\${SPRING_DATASOURCE_URL}
-          spring.datasource.username=\${SPRING_DATASOURCE_USERNAME}
-          spring.datasource.password=\${SPRING_DATASOURCE_PASSWORD}
+          spring.datasource.url=\${RDS_URL}?currentSchema=\${DB_SCHEMA:public}
+          spring.datasource.username=\${RDS_USERNAME}
+          spring.datasource.password=\${RDS_PASSWORD}
           spring.datasource.driver-class-name=\${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
           spring.jpa.database-platform=\${SPRING_JPA_DATABASE_PLATFORM:org.hibernate.dialect.PostgreSQLDialect}
           
@@ -95,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     environment: development
-    
+
     steps:
       - name: Deploy to Dev Server
         uses: appleboy/ssh-action@v1.0.3
@@ -105,37 +105,39 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/edison-infra
-            
+
             cat > .env << 'ENVEOF'
             DOCKERHUB_USERNAME=${{ vars.DOCKERHUB_USERNAME }}
-            
+
             SPRING_TAG=${{ github.sha }}
             AI_TAG=latest
-            
-            SPRING_DATASOURCE_URL=${{ vars.RDS_URL }}
+
+            RDS_URL=${{ vars.RDS_URL }}
             RDS_USERNAME=${{ vars.RDS_USERNAME }}
             RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
-            
+            DB_SCHEMA=edison_dev
+
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-            
+
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_ACCESS_EXPIRATION=${{ vars.JWT_ACCESS_EXPIRATION }}
             JWT_REFRESH_EXPIRATION=${{ vars.JWT_REFRESH_EXPIRATION }}
-            
+
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            
+
             OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-            
+            OPENAI_SECRET_KEY=${{ secrets.OPENAI_KEY }}
+
             AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             CLOUD_AWS_CREDENTIALS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             CLOUD_AWS_S3_BUCKET=${{ vars.AWS_S3_BUCKET }}
             ENVEOF
-            
+
             ./deploy.sh spring ${{ github.sha }} dev
-            
+
             echo "✅ Deployed to DEV server"
 
   deploy-prod:
@@ -153,35 +155,37 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/edison-infra
-            
+
             cat > .env << 'ENVEOF'
             DOCKERHUB_USERNAME=${{ vars.DOCKERHUB_USERNAME }}
-            
+
             SPRING_TAG=${{ github.sha }}
             AI_TAG=latest
-            
-            SPRING_DATASOURCE_URL=${{ vars.RDS_URL }}
+
+            RDS_URL=${{ vars.RDS_URL }}
             RDS_USERNAME=${{ vars.RDS_USERNAME }}
             RDS_PASSWORD=${{ secrets.RDS_PASSWORD }}
-            
+            DB_SCHEMA=public
+
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-            
+
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_ACCESS_EXPIRATION=${{ vars.JWT_ACCESS_EXPIRATION }}
             JWT_REFRESH_EXPIRATION=${{ vars.JWT_REFRESH_EXPIRATION }}
-            
+
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            
+
             OPENAI_KEY=${{ secrets.OPENAI_KEY }}
-            
+            OPENAI_SECRET_KEY=${{ secrets.OPENAI_KEY }}
+
             AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}
             CLOUD_AWS_CREDENTIALS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}
             CLOUD_AWS_S3_BUCKET=${{ vars.AWS_S3_BUCKET }}
             ENVEOF
-            
+
             ./deploy.sh spring ${{ github.sha }} prod
-            
+
             echo "✅ Deployed to PROD server"
