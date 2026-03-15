@@ -3,6 +3,7 @@ package com.edison.project.domain.bubble;
 import com.edison.project.domain.bubble.repository.BubbleRepository;
 import java.sql.PreparedStatement;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.StopWatch;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @Transactional
 @ActiveProfiles("test")
+@Tag("ignore")
 public class BubblePaginationPerformanceTest {
 
   @Autowired

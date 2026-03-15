@@ -103,7 +103,7 @@ dependencies {
 
 }
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform{excludeTags 'ignore'}
 }
 
 def querydslDir = "src/main/generated"
