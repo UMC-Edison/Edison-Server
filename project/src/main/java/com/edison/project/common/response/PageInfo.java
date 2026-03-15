@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class PageInfo {
+public class PageInfo implements Pagination{
     private Integer page;
     private Integer size;
     private Boolean hasNext;
