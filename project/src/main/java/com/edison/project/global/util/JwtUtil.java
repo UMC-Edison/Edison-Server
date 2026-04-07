@@ -14,6 +14,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 
@@ -32,8 +33,10 @@ public class JwtUtil {
     private static final String GOOGLE_ISSUER = "https://accounts.google.com";
     
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String clientId;
+    private String webClientId;
 
+    @Value("${google.android-client-id}")
+    private String androidClientId;
 
     public String generateAccessToken(Long memberId, String email) {
         return JWT.create()
@@ -111,7 +114,7 @@ public class JwtUtil {
                     new NetHttpTransport(),
                     new GsonFactory()
             )
-                    .setAudience(Collections.singletonList(clientId)) // 내 앱의 Client ID
+                    .setAudience(Arrays.asList(webClientId, androidClientId)) // 내 앱의 Client ID
                     .setIssuer(GOOGLE_ISSUER) // Google이 발급한 토큰인지 확인
                     .build();
 

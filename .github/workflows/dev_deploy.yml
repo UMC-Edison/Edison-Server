@@ -40,6 +40,7 @@ jobs:
           spring.data.redis.password=\${SPRING_DATA_REDIS_PASSWORD}
           
           jwt.secret=\${JWT_SECRET}
+          google.android-client-id=\${GOOGLE_ANDROID_CLIENT_ID}
           spring.security.oauth2.client.registration.google.client-id=\${GOOGLE_CLIENT_ID}
           spring.security.oauth2.client.registration.google.client-secret=\${GOOGLE_CLIENT_SECRET}
           
@@ -122,7 +123,8 @@ jobs:
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_ACCESS_EXPIRATION=${{ vars.JWT_ACCESS_EXPIRATION }}
             JWT_REFRESH_EXPIRATION=${{ vars.JWT_REFRESH_EXPIRATION }}
-
+            
+            GOOGLE_ANDROID_CLIENT_ID=${{ vars.GOOGLE_ANDROID_CLIENT_ID }}
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
 
@@ -173,6 +175,7 @@ jobs:
             JWT_ACCESS_EXPIRATION=${{ vars.JWT_ACCESS_EXPIRATION }}
             JWT_REFRESH_EXPIRATION=${{ vars.JWT_REFRESH_EXPIRATION }}
 
+            GOOGLE_ANDROID_CLIENT_ID=${{ vars.GOOGLE_ANDROID_CLIENT_ID }}
             GOOGLE_CLIENT_ID=${{ vars.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
 
