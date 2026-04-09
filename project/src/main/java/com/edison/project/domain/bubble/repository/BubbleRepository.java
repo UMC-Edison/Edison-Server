@@ -4,6 +4,7 @@ import com.edison.project.domain.bubble.entity.Bubble;
 import com.edison.project.domain.member.entity.Member;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -83,4 +84,6 @@ public interface BubbleRepository extends JpaRepository<Bubble, Long> {
             Pageable pageable
     );
 
+    Slice<Bubble> findByMember_MemberIdAndIsTrashedFalseOrderByBubbleIdDesc(Long memberId, Pageable pageable);
+    Slice<Bubble> findByMember_MemberIdAndIsTrashedFalseAndBubbleIdLessThanOrderByBubbleIdDesc(Long memberId, Long cusorId, Pageable pageable);
 }

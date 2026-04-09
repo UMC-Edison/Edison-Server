@@ -19,7 +19,7 @@ public class Response {
     private final String message;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private final PageInfo pageInfo;
+    private final Pagination pageInfo;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Object result;
@@ -32,14 +32,22 @@ public class Response {
         );
     }
 
+    // 성공한 경우 응답 생성
+    public static ResponseEntity<Response> onSuccess(SuccessStatus status, CursorPageInfo pageInfo, Object result) {
+        return new ResponseEntity<>(
+            new Response(true, status.getCode(), status.getMessage(), pageInfo, result),
+            status.getHttpStatus()
+        );
+    }
+
     // 성공 - 기본 응답
     public static ResponseEntity<Response> onSuccess(SuccessStatus status) {
-        return onSuccess(status, null, null);
+        return onSuccess(status, (PageInfo) null, null);
     }
 
     // 성공 - 데이터 포함
-    public static ResponseEntity<Response> onSuccess(SuccessStatus status, Object result) {
-        return onSuccess(status, null, result);
+   public static ResponseEntity<Response> onSuccess(SuccessStatus status, Object result) {
+        return onSuccess(status, (PageInfo) null, result);
     }
 
     // 성공 - 페이지네이션 포함

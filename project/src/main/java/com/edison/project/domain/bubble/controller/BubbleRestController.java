@@ -40,6 +40,20 @@ public class BubbleRestController {
         return response;
     }
 
+    @Operation(summary = "삭제되지 않은 버블 전체 목록 조회(커서페이징기반)", description = "soft delete된 버블을 제외한 전체 목록을 조회하는 기능입니다.(커서페이징기반)")
+    @GetMapping("v2/space")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Response> getCursorBubblesByMember(
+        @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
+        @RequestParam(required = false) Long cursorId,
+        @RequestParam(defaultValue = "20") int size) {
+
+        // 최신순 정렬
+        Pageable pageable = PageRequest.of(0, size);
+        ResponseEntity<Response> response = bubbleService.getCursorBubblesByMember(userPrincipal, cursorId, pageable);
+        return response;
+    }
+
     @Operation(summary = "soft delete된 버블 전체 목록 조회", description = "soft delete된 버블 전체 목록을 조회하는 기능입니다.")
     @GetMapping("/deleted")
     @PreAuthorize("isAuthenticated()")

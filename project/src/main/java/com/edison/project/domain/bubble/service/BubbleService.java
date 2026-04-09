@@ -4,6 +4,7 @@ import com.edison.project.common.response.Response;
 import com.edison.project.domain.bubble.dto.BubbleRequestDto;
 import com.edison.project.domain.bubble.dto.BubbleResponseDto;
 import com.edison.project.global.security.CustomUserPrincipal;
+import com.edison.project.domain.bubble.entity.Bubble;
 
 import org.springframework.http.ResponseEntity;
 
@@ -43,4 +44,6 @@ public interface BubbleService {
      * 사용자의 모든 Bubble 2D 임베딩 좌표 조회
      */
     ResponseEntity<Response> getAllBubbleEmbeddings(CustomUserPrincipal userPrincipal, Pageable pageable);
+
+    ResponseEntity<Response> getCursorBubblesByMember(CustomUserPrincipal userPrincipal, Long cursorId, Pageable pageable);
 }

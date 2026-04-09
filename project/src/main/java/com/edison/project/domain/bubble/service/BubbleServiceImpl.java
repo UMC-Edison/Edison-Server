@@ -2,6 +2,7 @@ package com.edison.project.domain.bubble.service;
 
 import com.edison.project.common.exception.GeneralException;
 import com.edison.project.common.response.Response;
+import com.edison.project.common.response.CursorPageInfo;
 import com.edison.project.common.response.PageInfo;
 import com.edison.project.common.status.ErrorStatus;
 import com.edison.project.common.status.SuccessStatus;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,6 +81,32 @@ public class BubbleServiceImpl implements BubbleService {
 
         PageInfo pageInfo = new PageInfo(bubblePage.getNumber(), bubblePage.getSize(), bubblePage.hasNext(),
                 bubblePage.getTotalElements(), bubblePage.getTotalPages());
+
+        return Response.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
+    }
+
+    @Override
+    public ResponseEntity<Response> getCursorBubblesByMember(CustomUserPrincipal userPrincipal, Long cursorId, Pageable pageable){
+        Long memberId = userPrincipal.getMemberId();
+        Slice<Bubble> bubbleSlice;
+
+        if(cursorId == null){
+            bubbleSlice = bubbleRepository.findByMember_MemberIdAndIsTrashedFalseOrderByBubbleIdDesc(memberId, pageable);
+        }
+        else{
+            bubbleSlice = bubbleRepository.findByMember_MemberIdAndIsTrashedFalseAndBubbleIdLessThanOrderByBubbleIdDesc(memberId, cursorId, pageable);
+        }
+
+        List<BubbleResponseDto.SyncResultDto> bubbles = bubbleSlice.getContent().stream()
+            .map(this::convertToBubbleResponseDto)
+            .collect(Collectors.toList());
+
+        Long nextCursorId = null;
+        if(!bubbles.isEmpty()){
+            nextCursorId = bubbleSlice.getContent().get(bubbles.size()-1).getBubbleId();
+        }
+
+        CursorPageInfo pageInfo = new CursorPageInfo(cursorId, bubbleSlice.hasNext(), pageable.getPageSize());
 
         return Response.onSuccess(SuccessStatus._OK, pageInfo, bubbles);
     }
@@ -343,7 +371,7 @@ public class BubbleServiceImpl implements BubbleService {
         List<Bubble> bubbles = bubbleRepository.findByMember_MemberIdAndIsTrashedFalse(member.getMemberId());
 
         if (bubbles.isEmpty()) {
-            return Response.onSuccess(SuccessStatus._OK, null, "No bubbles found");
+            return Response.onSuccess(SuccessStatus._OK, (PageInfo)null, "No bubbles found");
         }
 
         List<BubbleResponseDto.VectorizeResultDto> results = new ArrayList<>();
